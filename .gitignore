@@ -1,3 +1,11 @@
+### ----- Backend -----
+
+# Database
+data/postgres/
+
+
+## ----- Frontend -----
+
 # Miscellaneous
 *.class
 *.lock
