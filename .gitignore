@@ -1,4 +1,11 @@
-### ----- Backend -----
+## ----- Project -----
+
+.env
+
+# IDE
+.idea/
+
+## ----- Backend -----
 
 # Database
 data/postgres/
