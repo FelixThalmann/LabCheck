@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/date_widget.dart';
 import '../widgets/hours_widget.dart';
+import '../widgets/days_widget.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -15,11 +17,11 @@ class HomePage extends StatelessWidget {
       body: Container(
         width: screenWidth,
         height: screenHeight,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment(0.50, -0.00),
             end: Alignment(0.50, 1.00),
-            colors: [Color(0xFF599CD1), Color(0xFF88B8DE), Color(0xFFFEFEFE)],
+            colors: [AppColors.primary, Color(0xFF88B8DE), Colors.white],
           ),
         ),
         child: Column(
@@ -32,6 +34,10 @@ class HomePage extends StatelessWidget {
             Padding(
               padding: EdgeInsets.only(top: screenHeight * 0.04),
               child: const HoursWidget(),
+            ),
+            Padding(
+              padding: EdgeInsets.only(top: screenHeight * 0.04),
+              child: const DaysWidget(),
             ),
           ],
         ),
