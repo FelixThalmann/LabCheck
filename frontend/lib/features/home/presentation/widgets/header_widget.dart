@@ -8,7 +8,7 @@ class HeaderWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final headerHeight = screenHeight * 0.25;
+    final headerHeight = screenHeight * 0.15;
     final logoSize = screenWidth * 0.24;
     final logoHeight = logoSize * 0.3;
 

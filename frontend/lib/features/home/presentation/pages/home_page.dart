@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/header_widget.dart';
+import '../widgets/date_widget.dart';
+import '../widgets/hours_widget.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -20,7 +22,19 @@ class HomePage extends StatelessWidget {
             colors: [Color(0xFF599CD1), Color(0xFF88B8DE), Color(0xFFFEFEFE)],
           ),
         ),
-        child: Column(children: const [HeaderWidget()]),
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.only(top: screenHeight * 0.05),
+              child: const HeaderWidget(),
+            ),
+            const DateWidget(),
+            Padding(
+              padding: EdgeInsets.only(top: screenHeight * 0.04),
+              child: const HoursWidget(),
+            ),
+          ],
+        ),
       ),
     );
   }
