@@ -21,7 +21,7 @@ class HeaderWidget extends StatelessWidget {
           Positioned(
             right: screenWidth * 0.02,
             top: headerHeight * 0.42,
-            child: Container(
+            child: SizedBox(
               width: logoSize,
               height: logoHeight,
               child: SvgPicture.asset(
@@ -29,7 +29,10 @@ class HeaderWidget extends StatelessWidget {
                 width: logoSize,
                 height: logoHeight,
                 fit: BoxFit.contain,
-                colorBlendMode: BlendMode.srcIn,
+                colorFilter: const ColorFilter.mode(
+                  Colors.black,
+                  BlendMode.srcIn,
+                ),
                 placeholderBuilder:
                     (BuildContext context) => Container(
                       width: logoSize,
