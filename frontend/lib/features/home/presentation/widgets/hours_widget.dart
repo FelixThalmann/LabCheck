@@ -11,7 +11,7 @@ class HoursWidget extends StatefulWidget {
 }
 
 class _HoursWidgetState extends State<HoursWidget> {
-  List<Color> gradientColors = [Colors.cyan, Colors.blue];
+  List<Color> gradientColors = [AppColors.secondary, Colors.blue];
 
   List<Map<String, dynamic>> dayPredictions = [
     {'value': 0, 'label': '8 AM', 'color': AppColors.green},
@@ -137,9 +137,7 @@ class _HoursWidgetState extends State<HoursWidget> {
       ),
       borderData: FlBorderData(
         show: true,
-        border: const Border(
-          bottom: BorderSide(color: Color(0xff37434d), width: 1),
-        ),
+        border: const Border(bottom: BorderSide(color: Colors.black, width: 1)),
       ),
       minX: 0,
       maxX: 10,
