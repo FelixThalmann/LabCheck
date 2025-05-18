@@ -18,6 +18,8 @@ class DateWidget extends StatelessWidget {
       width: containerWidth,
       height: containerHeight,
       decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(17.0),
         boxShadow: const [
           BoxShadow(
             color: Color(0x3F000000),
