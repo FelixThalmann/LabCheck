@@ -29,10 +29,17 @@ class HomePage extends StatelessWidget {
             Column(
               children: [
                 Padding(
-                  padding: EdgeInsets.only(top: screenHeight * 0.05),
+                  padding: EdgeInsets.only(
+                    top: screenHeight * 0.07,
+                    left: screenWidth * 0.1,
+                    right: screenWidth * 0.1,
+                  ),
                   child: const HeaderWidget(),
                 ),
-                const DateWidget(),
+                Padding(
+                  padding: EdgeInsets.only(top: screenHeight * 0.01),
+                  child: const DateWidget(),
+                ),
                 Padding(
                   padding: EdgeInsets.only(top: screenHeight * 0.04),
                   child: const HoursWidget(),

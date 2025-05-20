@@ -7,20 +7,19 @@ class HeaderWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final headerHeight = screenHeight * 0.15;
+    final containerWidth = screenWidth * 0.85;
+    final containerHeight = containerWidth * 0.3;
     final logoSize = screenWidth * 0.24;
     final logoHeight = logoSize * 0.3;
 
-    return Container(
-      width: screenWidth,
-      height: headerHeight,
-      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+    return SizedBox(
+      width: containerWidth,
+      height: containerHeight,
       child: Stack(
         children: [
           Positioned(
-            right: screenWidth * 0.02,
-            top: headerHeight * 0.40,
+            right: containerWidth * 0.00,
+            top: containerHeight * 0.40,
             child: SizedBox(
               width: logoSize,
               height: logoHeight,
@@ -43,15 +42,15 @@ class HeaderWidget extends StatelessWidget {
             ),
           ),
           Positioned(
-            left: screenWidth * 0.05,
-            top: headerHeight * 0.4,
+            left: containerWidth * 0.00,
+            top: containerHeight * 0.4,
             child: SizedBox(
               width: screenWidth * 0.6,
               child: Text(
                 'Ubiquitous Systems Lab',
                 style: TextStyle(
                   color: Colors.black,
-                  fontSize: screenWidth * 0.045,
+                  fontSize: screenWidth * 0.04,
                   fontFamily: 'Inter',
                   fontWeight: FontWeight.w700,
                   height: 0.85,
@@ -60,8 +59,8 @@ class HeaderWidget extends StatelessWidget {
             ),
           ),
           Positioned(
-            left: screenWidth * 0.05,
-            top: headerHeight * 0.5,
+            left: containerWidth * 0.00,
+            top: containerHeight * 0.55,
             child: SizedBox(
               width: screenWidth * 0.6,
               child: Text(
