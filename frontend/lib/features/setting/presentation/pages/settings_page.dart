@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:labcheck/core/theme/app_colors.dart';
-import 'package:labcheck/features/setting/presentation/widgets/header_widget.dart';
+import 'package:labcheck/shared/widgets/header_widget.dart';
 import 'package:labcheck/features/setting/presentation/widgets/password_input_widget.dart';
 import 'package:labcheck/features/setting/presentation/widgets/seats_input_widget.dart';
 
@@ -94,7 +94,7 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 Padding(
                   padding: EdgeInsets.only(top: screenHeight * 0.05),
-                  child: const HeaderWidget(),
+                  child: const HeaderWidget(title: 'Settings'),
                 ),
                 Padding(
                   padding: EdgeInsets.only(top: screenHeight * 0.01),
