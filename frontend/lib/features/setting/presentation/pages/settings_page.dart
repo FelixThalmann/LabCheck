@@ -130,6 +130,16 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
               ),
             ),
+            Positioned(
+              top: screenHeight * 0.05,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.info, color: Colors.black, size: 24),
+                onPressed: () {
+                  Navigator.pushNamed(context, '/about');
+                },
+              ),
+            ),
           ],
         ),
       ),
