@@ -21,7 +21,7 @@ class HeaderWidget extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.black,
-            fontSize: screenWidth * 0.045,
+            fontSize: screenWidth * 0.04,
             fontFamily: 'Inter',
             fontWeight: FontWeight.w700,
             height: 0.85,
