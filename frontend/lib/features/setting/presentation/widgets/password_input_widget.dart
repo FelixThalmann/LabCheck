@@ -63,6 +63,8 @@ class PasswordInputWidget extends StatelessWidget {
               ElevatedButton(
                 onPressed: onConfirm,
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
                   textStyle: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: screenWidth * 0.035,

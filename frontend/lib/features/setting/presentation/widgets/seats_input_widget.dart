@@ -49,6 +49,8 @@ class SeatsInputWidget extends StatelessWidget {
               ElevatedButton(
                 onPressed: onSave,
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
                   textStyle: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: screenWidth * 0.035,
