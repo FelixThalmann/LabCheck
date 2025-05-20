@@ -20,7 +20,7 @@ class HeaderWidget extends StatelessWidget {
         children: [
           Positioned(
             right: screenWidth * 0.02,
-            top: headerHeight * 0.42,
+            top: headerHeight * 0.40,
             child: SizedBox(
               width: logoSize,
               height: logoHeight,
