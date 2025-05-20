@@ -24,20 +24,34 @@ class HomePage extends StatelessWidget {
             colors: [AppColors.primary, Color(0xFF88B8DE), Colors.white],
           ),
         ),
-        child: Column(
+        child: Stack(
           children: [
-            Padding(
-              padding: EdgeInsets.only(top: screenHeight * 0.05),
-              child: const HeaderWidget(),
+            Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(top: screenHeight * 0.05),
+                  child: const HeaderWidget(),
+                ),
+                const DateWidget(),
+                Padding(
+                  padding: EdgeInsets.only(top: screenHeight * 0.04),
+                  child: const HoursWidget(),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(top: screenHeight * 0.04),
+                  child: const DaysWidget(),
+                ),
+              ],
             ),
-            const DateWidget(),
-            Padding(
-              padding: EdgeInsets.only(top: screenHeight * 0.04),
-              child: const HoursWidget(),
-            ),
-            Padding(
-              padding: EdgeInsets.only(top: screenHeight * 0.04),
-              child: const DaysWidget(),
+            Positioned(
+              top: screenHeight * 0.05,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.settings, color: Colors.black, size: 24),
+                onPressed: () {
+                  Navigator.pushNamed(context, '/settings');
+                },
+              ),
             ),
           ],
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'features/home/presentation/pages/home_page.dart';
+import 'features/setting/presentation/pages/settings_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,6 +17,7 @@ class MyApp extends StatelessWidget {
       title: 'LabCheck',
       theme: AppTheme.lightTheme,
       home: const HomePage(),
+      routes: {'/settings': (context) => const SettingsPage()},
     );
   }
 }
