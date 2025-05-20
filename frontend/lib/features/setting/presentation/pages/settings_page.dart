@@ -3,6 +3,7 @@ import 'package:labcheck/core/theme/app_colors.dart';
 import 'package:labcheck/shared/widgets/header_widget.dart';
 import 'package:labcheck/features/setting/presentation/widgets/password_input_widget.dart';
 import 'package:labcheck/features/setting/presentation/widgets/seats_input_widget.dart';
+import 'package:labcheck/features/setting/domain/settings_domain.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -14,12 +15,12 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _seatsController = TextEditingController();
+  final SettingsDomain _settingsDomain = SettingsDomain();
   bool _isAuthenticated = false;
   String _errorMessage = '';
 
   void _authenticate() {
-    // TODO: Implement actual password verification (check with backend)
-    if (_passwordController.text == 'admin123') {
+    if (_settingsDomain.authenticate(_passwordController.text)) {
       setState(() {
         _isAuthenticated = true;
         _errorMessage = '';
@@ -32,9 +33,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _saveSeats() {
-    // TODO: Implement saving seats
-    final seats = int.tryParse(_seatsController.text);
-    if (seats != null && seats > 0) {
+    if (_settingsDomain.validateAndSaveSeats(_seatsController.text)) {
       // Save seats
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
