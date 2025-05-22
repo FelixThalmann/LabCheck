@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Sensor {
+  id        String   @id @default(cuid())
+  esp32Id   String   @unique // Eindeutige ID des ESP32-Boards
+  location  String?  // Optionaler Standort des Sensors, z.B. "Laborraum A101 Tür Nord"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doorEvents   DoorEvent[]
+  passageEvents PassageEvent[]
+  motionEvents MotionEvent[]
+}
+
+model DoorEvent {
+  id               String   @id @default(cuid())
+  eventTimestamp   DateTime // Zeitstempel vom Sensor oder Backend-Eingang
+  doorIsOpen       Boolean  // true wenn Tür offen, false wenn geschlossen
+  createdAt        DateTime @default(now()) // Backend Zeitstempel der Erfassung
+
+  sensor   Sensor @relation(fields: [sensorId], references: [id])
+  sensorId String
+}
+
+enum PassageDirection {
+  IN
+  OUT
+}
+
+model PassageEvent {
+  id               String           @id @default(cuid())
+  eventTimestamp   DateTime         // Zeitstempel des Ereignisses
+  direction        PassageDirection // Rein oder Raus
+  createdAt        DateTime         @default(now())
+
+  sensor   Sensor @relation(fields: [sensorId], references: [id])
+  sensorId String
+}
+
+model MotionEvent {
+  id               String   @id @default(cuid())
+  eventTimestamp   DateTime // Zeitstempel des Ereignisses
+  motionDetected   Boolean  @default(true) // In der Regel wird nur das Event des Detektierens gespeichert
+  createdAt        DateTime @default(now())
+
+  sensor   Sensor @relation(fields: [sensorId], references: [id])
+  sensorId String
+}
+
+model LabSetting {
+  key       String   @id // z.B. "lab_total_capacity", "lab_name"
+  value     String
+  notes     String?  // Optionale Notizen zur Einstellung
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Models for Phase 2 (ML Predictions) and Phase 3 (LLM) will be added later
+// model MlPrediction { ... }
+// model UniversityCalendarEvent { ... }
+
+// Model for Phase 4 (Security) will be added later if needed for user management beyond basic auth
+// model User { ... }

@@ -1,0 +1,105 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type DoorEventModel {
+  doorIsOpen: Boolean!
+  eventTimestamp: String!
+  id: ID!
+  sensorId: String!
+}
+
+type DoorStatusModel {
+  id: ID
+  isOpen: Boolean!
+  sensorId: String!
+  timestamp: String!
+}
+
+"""Represents a laboratory setting"""
+type LabSettingModel {
+  """Timestamp of creation"""
+  createdAt: DateTime!
+
+  """The unique key of the setting"""
+  key: ID!
+
+  """Optional notes for the setting"""
+  notes: String
+
+  """Timestamp of last update"""
+  updatedAt: DateTime!
+
+  """The value of the setting"""
+  value: String!
+}
+
+type MotionEventModel {
+  eventTimestamp: String!
+  id: ID!
+  motionDetected: Boolean!
+  sensorId: String!
+}
+
+type Mutation {
+  """Set the total capacity of the lab"""
+  setLabCapacity(input: SetCapacityInput!): LabSettingModel!
+}
+
+type OccupancyStatusModel {
+  currentOccupancy: Int!
+
+  """Percentage of capacity currently used"""
+  percentageFull: Int
+  timestamp: String!
+  totalCapacity: Int!
+}
+
+"""Direction of the passage event (IN or OUT)"""
+enum PassageDirection {
+  IN
+  OUT
+}
+
+type PassageEventModel {
+  direction: PassageDirection!
+  eventTimestamp: String!
+  id: ID!
+  sensorId: String!
+}
+
+type Query {
+  """Get the current occupancy status"""
+  currentOccupancy(sensorId: String): OccupancyStatusModel!
+
+  """Get door events within a time range"""
+  doorEvents(from: String, limit: Int = 100, offset: Int = 0, sensorId: String, to: String): [DoorEventModel!]!
+
+  """Get the total capacity of the lab"""
+  labCapacity: Int!
+
+  """Get a lab setting by key"""
+  labSetting(key: String!): LabSettingModel!
+
+  """Get all lab settings"""
+  labSettings: [LabSettingModel!]!
+
+  """Get the latest door status"""
+  latestDoorStatus(sensorId: String): DoorStatusModel!
+
+  """Get motion events within a time range"""
+  motionEvents(from: String, limit: Int = 100, offset: Int = 0, sensorId: String, to: String): [MotionEventModel!]!
+
+  """Get passage events within a time range"""
+  passageEvents(from: String, limit: Int = 100, offset: Int = 0, sensorId: String, to: String): [PassageEventModel!]!
+}
+
+input SetCapacityInput {
+  """The total capacity of the lab"""
+  capacity: Int!
+}
