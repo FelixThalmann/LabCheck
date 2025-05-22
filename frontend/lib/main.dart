@@ -4,8 +4,10 @@ import 'core/theme/app_theme.dart';
 import 'features/home/presentation/pages/home_page.dart';
 import 'features/setting/presentation/pages/settings_page.dart';
 import 'features/about/presentation/pages/about_page.dart';
+import 'core/logger/app_logger.dart';
 
 void main() {
+  AppLogger.init();
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/date_widget.dart';
 import '../widgets/hours_widget.dart';
@@ -16,13 +17,14 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool _isLoading = false;
   final HomeDomain _homeDomain = HomeDomain();
+  final _logger = Logger('HomePage');
 
   Future<void> _onRefresh() async {
     setState(() {
       _isLoading = true;
     });
 
-    print('Refreshing...');
+    _logger.info('Refreshing...');
     await _homeDomain.refreshData();
 
     setState(() {
