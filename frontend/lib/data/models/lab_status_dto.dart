@@ -2,7 +2,7 @@ class LabStatusDto {
   final bool isOpen;
   final int currentOccupancy;
   final int maxOccupancy;
-  final DateTime date;
+  final DateTime currentDate;
   final DateTime lastUpdated;
 
   LabStatusDto({
@@ -10,7 +10,7 @@ class LabStatusDto {
     required this.currentOccupancy,
     required this.maxOccupancy,
     required this.lastUpdated,
-    required this.date,
+    required this.currentDate,
   });
 
   // Factory-Konstruktor für die Erstellung aus JSON
@@ -19,7 +19,7 @@ class LabStatusDto {
       isOpen: json['isOpen'] as bool,
       currentOccupancy: json['currentOccupancy'] as int,
       maxOccupancy: json['maxOccupancy'] as int,
-      date: DateTime.parse(json['date'] as String),
+      currentDate: DateTime.parse(json['currentDate'] as String),
       lastUpdated: DateTime.parse(json['lastUpdated'] as String),
     );
   }
@@ -30,7 +30,7 @@ class LabStatusDto {
       'isOpen': isOpen,
       'currentOccupancy': currentOccupancy,
       'maxOccupancy': maxOccupancy,
-      'date': date.toIso8601String(),
+      'date': currentDate.toIso8601String(),
       'lastUpdated': lastUpdated.toIso8601String(),
     };
   }
