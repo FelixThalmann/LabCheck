@@ -7,7 +7,12 @@
 
 #define MAGNETIC 15
 #define SIGNALLED 2
-#define SPEAKER 4
+#define LEDGREEN 17
+#define LEDYELLOW 18
+#define LEDRED 19
+#define SPEAKER 13
+#define PUSHONE 4
+#define PUSHTWO 16
 
 const int timeout = 20000;
 char menuOption = 0;
@@ -34,10 +39,16 @@ int melody[] = {
 int noteDuration = 75;
 int melodyCounter = 0;
 
+bool pushOnePressed = false;
+bool pushTwoPressed = false;
+
 char menu();
 void menuInstructions();
 void connectToWifi();
 void setupWiFi();
+void testLeds();
+void testButtons();
+String readStringUntilMulti(const char* terminators);
 
 void setup() {
   // put your setup code here, to run once:
@@ -46,6 +57,13 @@ void setup() {
 
   pinMode(MAGNETIC, INPUT_PULLUP);
   pinMode(SIGNALLED, OUTPUT);
+  pinMode(LEDGREEN, OUTPUT);
+  pinMode(LEDYELLOW, OUTPUT);
+  pinMode(LEDRED, OUTPUT);
+  pinMode(SPEAKER, OUTPUT);
+  pinMode(PUSHONE, INPUT_PULLUP);
+  pinMode(PUSHTWO, INPUT_PULLUP);
+
   prefs.begin("settings", false);
   ssid = prefs.getString("ssid", DEF_SSID);
   password = prefs.getString("password", DEF_PASSWORD);
@@ -102,6 +120,15 @@ void loop() {
     menuOption = menu();
   }
 
+  if(menuOption == '5'){
+    testLeds();
+    menuOption = menu();
+  }
+
+  if(menuOption == '6'){
+    testButtons();
+  }
+
   if (Serial.available()){
     char c = Serial.read();
     if (c == 'c'){
@@ -128,9 +155,13 @@ char menu(){
       } else if (c == '2'){
         Serial.println(F("Spiele nun Tales Song..."));
       } else if (c == '3'){
-        Serial.println(F("WiFi Verbindung..."));
+        Serial.println(F("WiFi Verbindung"));
       } else if (c == '4'){
         Serial.println(F("WiFi Setup"));
+      } else if (c == '5'){
+        Serial.println(F("LED Test"));
+      } else if (c == '6'){
+        Serial.println(F("Button Test"));
       } else if (c == 'c'){
         Serial.println(F("Zurueck ins Menu..."));
       } else {
@@ -151,6 +182,8 @@ void menuInstructions(){
   Serial.println(F("(2) Secret Song"));
   Serial.println(F("(3) WiFi Test: Connect and print IP address"));
   Serial.println(F("(4) WiFi Setup: Set SSID and Password"));
+  Serial.println(F("(5) Test LEDs"));
+  Serial.println(F("(6) Test Buttons"));
   Serial.println(F("(menu) send something else or press the board reset button\n"));
 }
 
@@ -190,15 +223,82 @@ void setupWiFi(){
   Serial.setTimeout(10000);
   Serial.print(F("Input SSID: "));
   while(!Serial.available());
-  ssid = Serial.readStringUntil('\n');
+  ssid = readStringUntilMulti("\r\n\t");
   prefs.putString("ssid", ssid);
+  while (Serial.available()) {Serial.read();};
   Serial.println(F(ssid.c_str()));
   
   Serial.print(F("Input password: "));
   while(!Serial.available());
-  password = Serial.readStringUntil('\n');
+  password = readStringUntilMulti("\r\n\t");
+  while (Serial.available()) {Serial.read();};
   prefs.putString("password", password);
   Serial.println(F("OK"));
+  
   Serial.setTimeout(1000);
   Serial.println(F("Setup completed."));
 }
+
+String readStringUntilMulti(const char* terminators) {
+  String result = "";
+  while (true) {
+    while (!Serial.available()) delay(1);
+    char c = Serial.read();
+    // Prüfe, ob das Zeichen einer der Terminatoren ist
+    for (const char* t = terminators; *t; ++t) {
+      if (c == *t) return result;
+    }
+    result += c;
+  }
+}
+
+void testLeds(){
+  Serial.print(F("Testing LEDs"));
+  Serial.print(F("Green..."));
+  for (int i = 0; i < 3; i++){
+    digitalWrite(LEDGREEN, HIGH);
+    delay(200);
+    digitalWrite(LEDGREEN, LOW);
+    delay(200);
+  }
+  Serial.print(F("Yellow..."));
+  for (int i = 0; i < 3; i++){
+    digitalWrite(LEDYELLOW, HIGH);
+    delay(200);
+    digitalWrite(LEDYELLOW, LOW);
+    delay(200);
+  }
+  Serial.print(F("Red..."));
+  for (int i = 0; i < 3; i++){
+    digitalWrite(LEDRED, HIGH);
+    delay(200);
+    digitalWrite(LEDRED, LOW);
+    delay(200);
+  }
+}
+
+// buttons are inputs. test if they are pressed
+void testButtons(){
+  if(digitalRead(PUSHONE) == LOW && !pushOnePressed){
+    pushOnePressed = true;
+    Serial.println(F("Button 1 pressed!"));
+    digitalWrite(LEDGREEN, HIGH);
+  }
+  if(digitalRead(PUSHTWO) == LOW && !pushTwoPressed){
+    pushTwoPressed = true;
+    Serial.println(F("Button 2 pressed!"));
+    digitalWrite(LEDYELLOW, HIGH);
+  }
+  if(digitalRead(PUSHONE) == HIGH && pushOnePressed){
+    pushOnePressed = false;
+    Serial.println(F("Button 1 released!"));
+    digitalWrite(LEDGREEN, LOW);
+  }
+  if(digitalRead(PUSHTWO) == HIGH && pushTwoPressed){
+    pushTwoPressed = false;
+    Serial.println(F("Button 2 released!"));
+    digitalWrite(LEDYELLOW, LOW);
+  }
+  delay(200);
+}
+
