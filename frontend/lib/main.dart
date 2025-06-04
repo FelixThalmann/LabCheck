@@ -5,10 +5,16 @@ import 'features/home/presentation/pages/home_page.dart';
 import 'features/setting/presentation/pages/settings_page.dart';
 import 'features/about/presentation/pages/about_page.dart';
 import 'core/logger/app_logger.dart';
+import 'core/config/environment_config.dart';
 
-void main() {
+void main() async {
   AppLogger.init();
   WidgetsFlutterBinding.ensureInitialized();
+
+  await EnvironmentConfig.initialize();
+
+  EnvironmentConfig.printAllVariables();
+
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

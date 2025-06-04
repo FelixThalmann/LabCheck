@@ -2,6 +2,10 @@
 
 ## Frontend - Flutter
 
+### Setup
+
+Add the `.env` file to the `frontend/assets/` directory.
+
 ### Install dependencies
 
 ```bash
