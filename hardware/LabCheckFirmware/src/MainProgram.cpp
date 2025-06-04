@@ -44,14 +44,14 @@ void MainProgram::update(){
     case 0:
       if(!magneticSensor.isActive()){
         Serial.println(F("Door opened!"));
-        mqtt.publish("labcheck/door", "opened");
+        mqtt.publish("labcheck/door", "1");
         prepareMode(1);
       }   
     // Main behavior loop if door sensor inactive
     case 1:
       if(magneticSensor.isActive()){
         Serial.println(F("Door closed! Idleing..."));
-        mqtt.publish("labcheck/door", "closed");
+        mqtt.publish("labcheck/door", "0");
         prepareMode(0);
         break;
       }
@@ -94,7 +94,7 @@ void MainProgram::update(){
         Serial.println(F(" ms to pass!"));
         speaker.playSuccess();
         peopleCounter++;
-        mqtt.publish("labcheck/entrance", "in");
+        mqtt.publish("labcheck/entrance", "1");
         storeSensorData(1, 123);
         prepareMode(4);
       }
@@ -113,7 +113,7 @@ void MainProgram::update(){
           Serial.println(F(" ms to pass!"));
           speaker.playSuccess();
           peopleCounter--;
-          mqtt.publish("labcheck/entrance", "out");
+          mqtt.publish("labcheck/entrance", "0");
           storeSensorData(0, 123);
           prepareMode(4);
         }
