@@ -23,6 +23,7 @@ model Sensor {
   doorEvents   DoorEvent[]
   passageEvents PassageEvent[]
   motionEvents MotionEvent[]
+  lightBarrierEvents LightBarrierEvent[]
 }
 
 model DoorEvent {
@@ -60,6 +61,18 @@ model MotionEvent {
   sensorId String
 }
 
+model LightBarrierEvent {
+  id             String   @id @default(cuid())
+  eventTimestamp DateTime @default(now()) // Zeitstempel der Erfassung durch das Backend
+  isInterrupted  Boolean  // true, wenn Lichtschranke unterbrochen ("1"), false, wenn frei ("0")
+  createdAt      DateTime @default(now()) // Wird durch @default(now()) redundant, aber für Konsistenz beibehalten
+
+  sensor   Sensor @relation(fields: [sensorId], references: [id])
+  sensorId String
+
+  @@map("light_barrier_events") // Expliziter Tabellenname
+}
+
 model LabSetting {
   key       String   @id // z.B. "lab_total_capacity", "lab_name"
   value     String
@@ -67,6 +80,26 @@ model LabSetting {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // Wird gehasht gespeichert
+  name      String?  // Optionaler Name des Benutzers
+  // Hier könnten später Rollen oder weitere benutzerspezifische Daten hinzukommen
+  // Beispiel: role Role @default(USER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Optional: Beziehung zu Sensoren, falls ein Benutzer Sensoren "besitzen" oder verwalten kann
+  // sensors Sensor[]
+}
+
+// enum Role {
+//  USER
+//  ADMIN
+// }
 
 // Models for Phase 2 (ML Predictions) and Phase 3 (LLM) will be added later
 // model MlPrediction { ... }

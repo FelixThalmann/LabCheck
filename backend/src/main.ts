@@ -2,9 +2,26 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as passport from 'passport';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // MQTT Microservice Konfiguration
+  const mqttBrokerUrl = app.get(ConfigService).get<string>('MQTT_BROKER_URL', 'mqtt://localhost:1883');
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.MQTT,
+    options: {
+      url: mqttBrokerUrl, // URL Ihres Mosquitto-Brokers
+      // Weitere Optionen hier, falls benötigt (z.B. Benutzername, Passwort)
+      // username: 'user',
+      // password: 'password',
+      // clientId: `nest-mqtt-client-${Math.random().toString(16).substring(2, 8)}` // Eindeutige Client-ID
+    },
+  });
+
+  app.use(passport.initialize());
 
   // Globale ValidationPipe für automatische Validierung von DTOs
   app.useGlobalPipes(
@@ -21,7 +38,9 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') || 3000;
 
+  await app.startAllMicroservices(); // Startet alle Microservices (inkl. MQTT)
   await app.listen(port);
   console.log(`Application is running on: ${await app.getUrl()}`);
+  console.log(`MQTT Microservice connected to: ${mqttBrokerUrl}`);
 }
 bootstrap();

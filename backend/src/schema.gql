@@ -2,6 +2,15 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type CombinedLabStatus {
+  color: String!
+  currentDate: DateTime!
+  currentOccupancy: Int!
+  isOpen: Boolean!
+  lastUpdated: DateTime!
+  maxOccupancy: Int!
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
@@ -74,6 +83,8 @@ type PassageEventModel {
 }
 
 type Query {
+  combinedLabStatus: CombinedLabStatus!
+
   """Get the current occupancy status"""
   currentOccupancy(sensorId: String): OccupancyStatusModel!
 
@@ -84,7 +95,7 @@ type Query {
   labCapacity: Int!
 
   """Get a lab setting by key"""
-  labSetting(key: String!): LabSettingModel!
+  labSetting(key: String!): LabSettingModel
 
   """Get all lab settings"""
   labSettings: [LabSettingModel!]!
