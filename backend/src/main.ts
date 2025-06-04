@@ -9,7 +9,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // MQTT Microservice Konfiguration
-  const mqttBrokerUrl = app.get(ConfigService).get<string>('MQTT_BROKER_URL', 'mqtt://localhost:1883');
+  const mqttBrokerUrl = app
+    .get(ConfigService)
+    .get<string>('MQTT_BROKER_URL', 'mqtt://localhost:1883');
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.MQTT,
     options: {
