@@ -2,9 +2,12 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import '../../../../core/theme/app_colors.dart';
+import '../../../../data/models/day_prediction_dto.dart';
 
 class HoursWidget extends StatefulWidget {
-  const HoursWidget({super.key});
+  final List<Prediction> predictions;
+
+  const HoursWidget({super.key, required this.predictions});
 
   @override
   State<HoursWidget> createState() => _HoursWidgetState();
@@ -13,14 +16,30 @@ class HoursWidget extends StatefulWidget {
 class _HoursWidgetState extends State<HoursWidget> {
   List<Color> gradientColors = [AppColors.secondary, Colors.blue];
 
-  List<Map<String, dynamic>> dayPredictions = [
-    {'value': 0, 'label': '8 AM', 'color': AppColors.green},
-    {'value': 1, 'label': '10 AM', 'color': AppColors.green},
-    {'value': 4, 'label': '12 PM', 'color': AppColors.yellow},
-    {'value': 4, 'label': '2 PM', 'color': AppColors.yellow},
-    {'value': 3, 'label': '4 PM', 'color': AppColors.yellow},
-    {'value': 0, 'label': '6 PM', 'color': AppColors.green},
-  ]; // Need to get this from the backend
+  List<Map<String, dynamic>> get dayPredictions {
+    return widget.predictions.map((prediction) {
+      Color color;
+      switch (prediction.color.toLowerCase()) {
+        case 'green':
+          color = AppColors.green;
+          break;
+        case 'yellow':
+          color = AppColors.yellow;
+          break;
+        case 'red':
+          color = AppColors.red;
+          break;
+        default:
+          color = AppColors.green;
+      }
+
+      return {
+        'value': prediction.occupancy,
+        'label': prediction.time,
+        'color': color,
+      };
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {

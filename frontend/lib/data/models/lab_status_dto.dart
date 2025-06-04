@@ -2,6 +2,7 @@ class LabStatusDto {
   final bool isOpen;
   final int currentOccupancy;
   final int maxOccupancy;
+  final String color;
   final DateTime currentDate;
   final DateTime lastUpdated;
 
@@ -9,6 +10,7 @@ class LabStatusDto {
     required this.isOpen,
     required this.currentOccupancy,
     required this.maxOccupancy,
+    required this.color,
     required this.lastUpdated,
     required this.currentDate,
   });
@@ -19,6 +21,7 @@ class LabStatusDto {
       isOpen: json['isOpen'] as bool,
       currentOccupancy: json['currentOccupancy'] as int,
       maxOccupancy: json['maxOccupancy'] as int,
+      color: json['color'] as String,
       currentDate: DateTime.parse(json['currentDate'] as String),
       lastUpdated: DateTime.parse(json['lastUpdated'] as String),
     );
@@ -30,6 +33,7 @@ class LabStatusDto {
       'isOpen': isOpen,
       'currentOccupancy': currentOccupancy,
       'maxOccupancy': maxOccupancy,
+      'color': color,
       'date': currentDate.toIso8601String(),
       'lastUpdated': lastUpdated.toIso8601String(),
     };

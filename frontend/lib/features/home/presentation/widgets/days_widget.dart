@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../data/models/week_prediction_dto.dart';
 
 class _BarChart extends StatelessWidget {
   final List<Map<String, dynamic>> predictions;
@@ -113,20 +114,39 @@ class _BarChart extends StatelessWidget {
 }
 
 class DaysWidget extends StatefulWidget {
-  const DaysWidget({super.key});
+  final List<WeekPrediction> predictions;
+
+  const DaysWidget({super.key, required this.predictions});
 
   @override
   State<DaysWidget> createState() => _DaysWidgetState();
 }
 
 class _DaysWidgetState extends State<DaysWidget> {
-  List<Map<String, dynamic>> daysPredictions = [
-    {'value': 4, 'label': 'Mon', 'color': AppColors.yellow},
-    {'value': 1, 'label': 'Tue', 'color': AppColors.green},
-    {'value': 0, 'label': 'Wed', 'color': AppColors.red},
-    {'value': 4, 'label': 'Thu', 'color': AppColors.yellow},
-    {'value': 3, 'label': 'Fri', 'color': AppColors.yellow},
-  ]; // Need to get this from the backend
+  List<Map<String, dynamic>> get daysPredictions {
+    return widget.predictions.map((prediction) {
+      Color color;
+      switch (prediction.color) {
+        case 'green':
+          color = AppColors.green;
+          break;
+        case 'yellow':
+          color = AppColors.yellow;
+          break;
+        case 'red':
+          color = AppColors.red;
+          break;
+        default:
+          color = AppColors.red;
+      }
+
+      return {
+        'value': prediction.occupancy,
+        'label': prediction.day,
+        'color': color,
+      };
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {

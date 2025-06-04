@@ -1,14 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import 'package:labcheck/core/theme/app_colors.dart';
 
 class DateWidget extends StatelessWidget {
-  const DateWidget({super.key});
+  final bool isOpen;
+  final int currentOccupancy;
+  final int maxOccupancy;
+  final String color;
+  final DateTime currentDate;
+
+  const DateWidget({
+    super.key,
+    required this.isOpen,
+    required this.currentOccupancy,
+    required this.maxOccupancy,
+    required this.color,
+    required this.currentDate,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final formattedDate = DateFormat('EEE d. MMM', 'en_US').format(now);
+    final formattedDate = DateFormat('EEE d. MMM', 'en_US').format(currentDate);
     final screenWidth = MediaQuery.of(context).size.width;
     final containerWidth = screenWidth * 0.85; // 85% of screen width
     final containerHeight =
@@ -38,7 +51,12 @@ class DateWidget extends StatelessWidget {
               width: containerWidth,
               height: containerHeight,
               decoration: ShapeDecoration(
-                color: const Color(0xFF82FFA7),
+                color:
+                    color == 'green'
+                        ? AppColors.green
+                        : (color == 'yellow'
+                            ? AppColors.yellow
+                            : AppColors.red),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(17),
                 ),
@@ -62,7 +80,7 @@ class DateWidget extends StatelessWidget {
             left: containerWidth * 0.35, // 35% from left edge
             top: containerHeight * 0.45, // 45% from top
             child: Text(
-              '1 of 5',
+              '$currentOccupancy of $maxOccupancy',
               style: TextStyle(
                 color: Colors.black,
                 fontSize: containerWidth * 0.05, // 5% of container width

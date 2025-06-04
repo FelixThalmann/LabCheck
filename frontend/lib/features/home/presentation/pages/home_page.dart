@@ -18,6 +18,7 @@ class _HomePageState extends State<HomePage> {
   bool _isLoading = false;
   final HomeDomain _homeDomain = HomeDomain();
   final _logger = Logger('HomePage');
+  Map<String, dynamic> _data = {};
 
   Future<void> _onRefresh() async {
     setState(() {
@@ -25,11 +26,17 @@ class _HomePageState extends State<HomePage> {
     });
 
     _logger.info('Refreshing...');
-    await _homeDomain.refreshData();
+    _data = await _homeDomain.refreshData();
 
     setState(() {
       _isLoading = false;
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _onRefresh();
   }
 
   @override
@@ -70,15 +77,28 @@ class _HomePageState extends State<HomePage> {
                     ),
                     Padding(
                       padding: EdgeInsets.only(top: screenHeight * 0.01),
-                      child: const DateWidget(),
+                      child: DateWidget(
+                        isOpen: _data['labStatus']?.isOpen ?? false,
+                        currentOccupancy:
+                            _data['labStatus']?.currentOccupancy ?? 0,
+                        maxOccupancy: _data['labStatus']?.maxOccupancy ?? 0,
+                        color: _data['labStatus']?.color ?? 'red',
+                        currentDate:
+                            _data['labStatus']?.currentDate ?? DateTime.now(),
+                      ),
                     ),
                     Padding(
                       padding: EdgeInsets.only(top: screenHeight * 0.04),
-                      child: const HoursWidget(),
+                      child: HoursWidget(
+                        predictions: _data['dayPredictions']?.predictions ?? [],
+                      ),
                     ),
                     Padding(
                       padding: EdgeInsets.only(top: screenHeight * 0.04),
-                      child: const DaysWidget(),
+                      child: DaysWidget(
+                        predictions:
+                            _data['weekPredictions']?.predictions ?? [],
+                      ),
                     ),
                   ],
                 ),

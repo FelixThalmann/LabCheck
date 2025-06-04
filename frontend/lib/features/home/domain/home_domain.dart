@@ -9,10 +9,11 @@ class HomeDomain {
     // Demo data
     return LabStatusDto(
       isOpen: true,
-      currentOccupancy: 10,
-      maxOccupancy: 20,
-      lastUpdated: DateTime.now(),
+      currentOccupancy: 1,
+      maxOccupancy: 5,
+      color: 'green',
       currentDate: DateTime.now(),
+      lastUpdated: DateTime.now(),
     );
   }
 
@@ -22,12 +23,12 @@ class HomeDomain {
     // Demo data
     return DayPredictionDto(
       predictions: [
-        Prediction(occupancy: 10, time: '8 AM', color: 'green'),
-        Prediction(occupancy: 15, time: '10 AM', color: 'yellow'),
-        Prediction(occupancy: 20, time: '12 PM', color: 'red'),
-        Prediction(occupancy: 18, time: '2 PM', color: 'yellow'),
-        Prediction(occupancy: 12, time: '4 PM', color: 'green'),
-        Prediction(occupancy: 8, time: '6 PM', color: 'green'),
+        Prediction(occupancy: 1, time: '8 AM', color: 'green'),
+        Prediction(occupancy: 4, time: '10 AM', color: 'yellow'),
+        Prediction(occupancy: 5, time: '12 PM', color: 'red'),
+        Prediction(occupancy: 4, time: '2 PM', color: 'yellow'),
+        Prediction(occupancy: 2, time: '4 PM', color: 'green'),
+        Prediction(occupancy: 1, time: '6 PM', color: 'green'),
       ],
       lastUpdated: DateTime.now(),
     );
@@ -39,11 +40,11 @@ class HomeDomain {
     // Demo data
     return WeekPredictionDto(
       predictions: [
-        WeekPrediction(occupancy: 15, day: 'Mon', color: 'yellow'),
-        WeekPrediction(occupancy: 20, day: 'Tue', color: 'red'),
-        WeekPrediction(occupancy: 12, day: 'Wed', color: 'green'),
-        WeekPrediction(occupancy: 18, day: 'Thu', color: 'yellow'),
-        WeekPrediction(occupancy: 10, day: 'Fri', color: 'green'),
+        WeekPrediction(occupancy: 1, day: 'Mon', color: 'green'),
+        WeekPrediction(occupancy: 4, day: 'Tue', color: 'yellow'),
+        WeekPrediction(occupancy: 5, day: 'Wed', color: 'red'),
+        WeekPrediction(occupancy: 4, day: 'Thu', color: 'yellow'),
+        WeekPrediction(occupancy: 2, day: 'Fri', color: 'green'),
       ],
       lastUpdated: DateTime.now(),
     );
