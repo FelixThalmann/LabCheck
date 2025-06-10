@@ -12,7 +12,7 @@ class HomeDomain {
     try {
       final url = '/lab/status';
       final response = await ApiService().get(url);
-      _logger.info('LabStatusDto: ${response}');
+      _logger.info('LabStatusDto: $response');
       return LabStatusDto.fromJson(response);
     } catch (e) {
       _logger.warning('Failed to fetch lab status from API: $e');
@@ -27,7 +27,7 @@ class HomeDomain {
       // TODO: Implementierung für echte API-Aufrufe wenn Backend verfügbar
       final url = '/lab/day-predictions';
       final response = await ApiService().get(url);
-      _logger.info('DayPredictionDto: ${response}');
+      _logger.info('DayPredictionDto: $response');
       return DayPredictionDto.fromJson(response);
     } catch (e) {
       _logger.warning('Failed to fetch day predictions from API: $e');
@@ -42,7 +42,7 @@ class HomeDomain {
       // TODO: Implementierung für echte API-Aufrufe wenn Backend verfügbar
       final url = '/lab/week-predictions';
       final response = await ApiService().get(url);
-      _logger.info('WeekPredictionDto: ${response}');
+      _logger.info('WeekPredictionDto: $response');
       return WeekPredictionDto.fromJson(response);
     } catch (e) {
       _logger.warning('Failed to fetch week predictions from API: $e');
