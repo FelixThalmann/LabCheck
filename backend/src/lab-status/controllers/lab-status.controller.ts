@@ -1,0 +1,120 @@
+import { Controller, Get, Post, Body, Logger } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiSecurity } from '@nestjs/swagger';
+import { LabStatusService } from '../services/lab-status.service';
+import { 
+  LabStatusResponseDto, 
+  LabCapacityResponseDto, 
+  LabSettingResponseDto,
+  SetLabCapacityDto 
+} from '../dto';
+
+/**
+ * @class LabStatusController
+ * @description Erweiterte REST Controller für Laborstatus-Endpunkte
+ * Implementiert die API-Spezifikation für /api/lab/* mit vollständiger GraphQL-Migration
+ */
+@Controller('api/lab')
+@ApiTags('Lab Status & Settings')
+@ApiSecurity('api-key')
+export class LabStatusController {
+  private readonly logger = new Logger(LabStatusController.name);
+
+  constructor(private readonly labStatusService: LabStatusService) {}
+
+  /**
+   * @method getLabStatus
+   * @description Liefert den aktuellen Status und die Belegung des Labors
+   * Entspricht GET /api/lab/status aus der API-Dokumentation
+   */
+  @Get('status')
+  @ApiOperation({
+    summary: 'Aktueller Laborstatus',
+    description: 'Liefert den aktuellen Status und die Belegung des Labors',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Laborstatus erfolgreich abgerufen',
+    type: LabStatusResponseDto,
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Interner Server-Fehler',
+  })
+  async getLabStatus(): Promise<LabStatusResponseDto> {
+    this.logger.debug('REST API: GET /api/lab/status');
+    return this.labStatusService.getCombinedLabStatus();
+  }
+
+  /**
+   * @method getCombinedStatusLegacy
+   * @description Liefert den kombinierten Laborstatus mit exakter GraphQL Resolver-Logik
+   * Nutzt OccupancyServicePlaceholder wie der ursprüngliche Resolver
+   */
+  @Get('status/combined')
+  @ApiOperation({
+    summary: 'Kombinierter Laborstatus (Legacy GraphQL-Logik)',
+    description: 'Liefert den Laborstatus mit exakter Nachbildung der GraphQL Resolver-Logik',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Kombinierter Laborstatus erfolgreich abgerufen',
+    type: LabStatusResponseDto,
+  })
+  async getCombinedStatusLegacy(): Promise<LabStatusResponseDto> {
+    this.logger.debug('REST API: GET /api/lab/status/combined');
+    return this.labStatusService.getCombinedLabStatusLegacy();
+  }
+
+  /**
+   * @method getLabCapacity
+   * @description Liefert die aktuelle Laborkapazität
+   * Entspricht der GraphQL labCapacity Query
+   */
+  @Get('capacity')
+  @ApiOperation({
+    summary: 'Aktuelle Laborkapazität abrufen',
+    description: 'Liefert die aktuell konfigurierte Laborkapazität',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Laborkapazität erfolgreich abgerufen',
+    type: LabCapacityResponseDto,
+  })
+  async getLabCapacity(): Promise<LabCapacityResponseDto> {
+    this.logger.debug('REST API: GET /api/lab/capacity');
+    return this.labStatusService.getLabCapacity();
+  }
+
+  /**
+   * @method setLabCapacity
+   * @description Setzt die Laborkapazität mit Passwort-Schutz
+   * Entspricht der GraphQL setLabCapacity Mutation mit zusätzlicher Sicherheit
+   */
+  @Post('capacity')
+  @ApiOperation({
+    summary: 'Laborkapazität setzen',
+    description: 'Setzt die Laborkapazität mit Administratorpasswort-Schutz',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Laborkapazität erfolgreich gesetzt',
+    type: LabSettingResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Ungültige Eingabedaten',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Ungültiges Administratorpasswort',
+  })
+  async setLabCapacity(
+    @Body() setCapacityDto: SetLabCapacityDto,
+  ): Promise<LabSettingResponseDto> {
+    this.logger.debug(`REST API: POST /api/lab/capacity - capacity: ${setCapacityDto.capacity}`);
+    return this.labStatusService.setLabCapacity(
+      setCapacityDto.capacity,
+      setCapacityDto.password,
+    );
+  }
+}

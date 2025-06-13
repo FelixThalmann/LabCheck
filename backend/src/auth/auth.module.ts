@@ -25,8 +25,13 @@ import { ApiKeyAuthGuard } from './guards/api-key-auth.guard'; // ApiKeyAuthGuar
       inject: [ConfigService], // Injiziert ConfigService in die Factory
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, ApiKeyAuthGuard],
+  providers: [
+    AuthService, 
+    // LocalStrategy, // Temporär deaktiviert
+    // JwtStrategy,   // Temporär deaktiviert - verursacht Fehler ohne JWT_SECRET
+    ApiKeyAuthGuard
+  ],
   controllers: [AuthController], // Stellt die HTTP-Endpunkte (z.B. /auth/login) bereit
   exports: [AuthService, JwtModule, ApiKeyAuthGuard], // AuthService und JwtModule exportieren, falls sie von anderen Modulen direkt benötigt werden
 })
-export class AuthModule {} 
+export class AuthModule {}

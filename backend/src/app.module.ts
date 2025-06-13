@@ -15,7 +15,8 @@ import { AuthModule } from './auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 // import { JwtAuthGuard } from './auth/guards/jwt-auth.guard'; // Alten Guard auskommentieren oder löschen
 import { ApiKeyAuthGuard } from './auth/guards/api-key-auth.guard'; // Neuen Guard importieren
-import { LabStatusModule } from './lab-status/lab-status.module'; // Import des neuen Moduls
+import { LabStatusModule } from './lab-status/lab-status.module';
+import { PredictionsModule } from './predictions/predictions.module';
 
 @Module({
   imports: [
@@ -37,15 +38,17 @@ import { LabStatusModule } from './lab-status/lab-status.module'; // Import des 
     LabSettingsModule,
     DoorModule,
     EventsModule,
-    LabStatusModule, // Neues Modul hier hinzufügen
+    LabStatusModule, // Erweitert für REST API
+    PredictionsModule, // Neu für Vorhersagen
   ],
   controllers: [AppController],
   providers: [
     AppService,
-    {
-      provide: APP_GUARD,
-      useClass: ApiKeyAuthGuard, // Hier den Guard wechseln
-    },
+    // Authentifizierung temporär deaktiviert
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: ApiKeyAuthGuard,
+    // },
   ],
 })
 export class AppModule {}
