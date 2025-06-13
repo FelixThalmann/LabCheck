@@ -13,11 +13,10 @@ import { plainToClass } from 'class-transformer';
 import { validate, ValidationError } from 'class-validator';
 import { EventsGateway } from '../../events/events/events.gateway';
 import { DoorService } from '../../door/door/door.service';
-import { Sensor, LightBarrierEvent } from '@prisma/client';
+import { Sensor } from '@prisma/client';
 
-const JSON_BASED_EVENTS_TOPIC_PREFIX = 'uni/lab/door/';
-const LIGHT_BARRIER_TOPIC_PREFIX = 'sensor/lichtschranke/';
-const LIGHT_BARRIER_TOPIC_SUFFIX = '/status';
+const JSON_BASED_EVENTS_TOPIC_PREFIX = 'labcheck/entrance';
+const LIGHT_BARRIER_TOPIC_PREFIX = 'labcheck/door';
 
 /**
  * @class MqttIngestionService
@@ -90,8 +89,8 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
     this.client.on('connect', () => {
       this.logger.log(`Successfully connected to MQTT broker at ${brokerUrl}`);
       const topicsToSubscribe = [
-        { name: `${JSON_BASED_EVENTS_TOPIC_PREFIX}+/events`, description: 'JSON-based sensor events' }, 
-        { name: `${LIGHT_BARRIER_TOPIC_PREFIX}+${LIGHT_BARRIER_TOPIC_SUFFIX}`, description: 'Light barrier status events' }
+        { name: `${JSON_BASED_EVENTS_TOPIC_PREFIX}`, description: 'JSON-based sensor events' }, 
+        { name: `${LIGHT_BARRIER_TOPIC_PREFIX}`, description: 'Light barrier status events' }
       ];
 
       topicsToSubscribe.forEach(topicInfo => {
@@ -109,13 +108,13 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
       const messageContent = payload.toString();
       this.logger.debug(`Received raw message on topic '${topic}': "${messageContent}"`);
 
-      if (topic.startsWith(LIGHT_BARRIER_TOPIC_PREFIX) && topic.endsWith(LIGHT_BARRIER_TOPIC_SUFFIX)) {
-        const esp32IdFromTopic = topic.substring(LIGHT_BARRIER_TOPIC_PREFIX.length, topic.length - LIGHT_BARRIER_TOPIC_SUFFIX.length);
+      if (topic.startsWith(LIGHT_BARRIER_TOPIC_PREFIX)) {
+        const esp32IdFromTopic = topic.substring(LIGHT_BARRIER_TOPIC_PREFIX.length);
         if (esp32IdFromTopic && !esp32IdFromTopic.includes('/')) { // Einfache Prüfung, ob ID vorhanden und kein weiteres /-Segment
           this.logger.verbose(`Extracted ESP32 ID '${esp32IdFromTopic}' from light barrier topic '${topic}'.`);
           await this.handleLightBarrierEvent(esp32IdFromTopic, messageContent);
         } else {
-          this.logger.warn(`Malformed topic for light barrier: '${topic}'. Expected format '${LIGHT_BARRIER_TOPIC_PREFIX}{sensorId}${LIGHT_BARRIER_TOPIC_SUFFIX}'. Extracted ID part: '${esp32IdFromTopic}'. Message ignored.`);
+          this.logger.warn(`Malformed topic for light barrier: '${topic}'. Expected format '${LIGHT_BARRIER_TOPIC_PREFIX}{sensorId}'. Extracted ID part: '${esp32IdFromTopic}'. Message ignored.`);
         }
       } else if (topic.startsWith(JSON_BASED_EVENTS_TOPIC_PREFIX)) { 
         const topicParts = topic.split('/');
