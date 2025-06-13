@@ -9,6 +9,7 @@ class DateWidget extends StatelessWidget {
   final int maxOccupancy;
   final String color;
   final DateTime currentDate;
+  final bool noData;
 
   const DateWidget({
     super.key,
@@ -17,6 +18,7 @@ class DateWidget extends StatelessWidget {
     required this.maxOccupancy,
     required this.color,
     required this.currentDate,
+    required this.noData,
   });
 
   @override
@@ -52,11 +54,13 @@ class DateWidget extends StatelessWidget {
               height: containerHeight,
               decoration: ShapeDecoration(
                 color:
-                    color == 'green'
-                        ? AppColors.green
-                        : (color == 'yellow'
-                            ? AppColors.yellow
-                            : AppColors.red),
+                    noData
+                        ? Colors.grey[300]
+                        : (color == 'green'
+                            ? AppColors.green
+                            : (color == 'yellow'
+                                ? AppColors.yellow
+                                : AppColors.red)),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(17),
                 ),
@@ -70,8 +74,8 @@ class DateWidget extends StatelessWidget {
               'assets/images/door-open-solid.svg',
               width: containerWidth * 0.18, // 18% of container width
               height: containerWidth * 0.18,
-              colorFilter: const ColorFilter.mode(
-                Colors.black,
+              colorFilter: ColorFilter.mode(
+                noData ? Colors.grey[600]! : Colors.black,
                 BlendMode.srcIn,
               ),
             ),
@@ -80,9 +84,9 @@ class DateWidget extends StatelessWidget {
             left: containerWidth * 0.35, // 35% from left edge
             top: containerHeight * 0.45, // 45% from top
             child: Text(
-              '$currentOccupancy of $maxOccupancy',
+              noData ? 'No Data' : '$currentOccupancy of $maxOccupancy',
               style: TextStyle(
-                color: Colors.black,
+                color: noData ? Colors.grey[600] : Colors.black,
                 fontSize: containerWidth * 0.05, // 5% of container width
                 fontWeight: FontWeight.w700,
                 height: 1.29,
@@ -96,9 +100,11 @@ class DateWidget extends StatelessWidget {
               width: containerWidth * 0.55, // 55% of container width
               height: containerHeight * 0.25,
               child: Text(
-                'Current capacity - $formattedDate',
+                noData
+                    ? 'No Data Available'
+                    : 'Current capacity - $formattedDate',
                 style: TextStyle(
-                  color: Colors.black,
+                  color: noData ? Colors.grey[600] : Colors.black,
                   fontSize: containerWidth * 0.03, // 3% of container width
                   fontWeight: FontWeight.w700,
                   height: 2.20,

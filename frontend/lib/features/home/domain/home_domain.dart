@@ -3,12 +3,14 @@ import '../../../data/models/week_prediction_dto.dart';
 import '../../../data/models/lab_status_dto.dart';
 import '../../../data/services/api_service.dart';
 import 'package:logging/logging.dart';
+import '../../../core/config/environment_config.dart';
 
 class HomeDomain {
   final _logger = Logger('HomeDomain');
   Exception? lastException;
+  bool isDemoMode = EnvironmentConfig.isDemoMode;
 
-  Future<LabStatusDto> getLabStatus() async {
+  Future<LabStatusDto?> getLabStatus() async {
     try {
       final url = '/lab/status';
       final response = await ApiService().get(url);
@@ -17,12 +19,16 @@ class HomeDomain {
     } catch (e) {
       _logger.warning('Failed to fetch lab status from API: $e');
       lastException = e as Exception;
-      // Fallback to Demo-Data if error
-      return _getFallbackLabStatus();
+      if (isDemoMode) {
+        // Fallback to Demo-Data if error
+        return _getFallbackLabStatus();
+      } else {
+        return null;
+      }
     }
   }
 
-  Future<DayPredictionDto> getDayPredictions() async {
+  Future<DayPredictionDto?> getDayPredictions() async {
     try {
       // TODO: Implementierung für echte API-Aufrufe wenn Backend verfügbar
       final url = '/lab/day-predictions';
@@ -32,12 +38,16 @@ class HomeDomain {
     } catch (e) {
       _logger.warning('Failed to fetch day predictions from API: $e');
       lastException = e as Exception;
-      // Fallback to Demo-Data if error
-      return _getFallbackDayPredictions();
+      if (isDemoMode) {
+        // Fallback to Demo-Data if error
+        return _getFallbackDayPredictions();
+      } else {
+        return null;
+      }
     }
   }
 
-  Future<WeekPredictionDto> getWeekPredictions() async {
+  Future<WeekPredictionDto?> getWeekPredictions() async {
     try {
       // TODO: Implementierung für echte API-Aufrufe wenn Backend verfügbar
       final url = '/lab/week-predictions';
@@ -47,8 +57,12 @@ class HomeDomain {
     } catch (e) {
       _logger.warning('Failed to fetch week predictions from API: $e');
       lastException = e as Exception;
-      // Fallback to Demo-Data if error
-      return _getFallbackWeekPredictions();
+      if (isDemoMode) {
+        // Fallback to Demo-Data if error
+        return _getFallbackWeekPredictions();
+      } else {
+        return null;
+      }
     }
   }
 
@@ -65,6 +79,11 @@ class HomeDomain {
       result['error'] = lastException;
       lastException = null;
     }
+
+    result['noData'] =
+        result['labStatus'] == null ||
+        result['dayPredictions'] == null ||
+        result['weekPredictions'] == null;
 
     return result;
   }
@@ -86,7 +105,7 @@ class HomeDomain {
       predictions: [
         Prediction(occupancy: 1, time: '8 AM', color: 'green'),
         Prediction(occupancy: 4, time: '10 AM', color: 'yellow'),
-        Prediction(occupancy: 5, time: '12 PM', color: 'red'),
+        Prediction(occupancy: 10, time: '12 PM', color: 'red'),
         Prediction(occupancy: 4, time: '2 PM', color: 'yellow'),
         Prediction(occupancy: 2, time: '4 PM', color: 'green'),
         Prediction(occupancy: 1, time: '6 PM', color: 'green'),
@@ -100,7 +119,7 @@ class HomeDomain {
       predictions: [
         WeekPrediction(occupancy: 1, day: 'Mon', color: 'green'),
         WeekPrediction(occupancy: 4, day: 'Tue', color: 'yellow'),
-        WeekPrediction(occupancy: 5, day: 'Wed', color: 'red'),
+        WeekPrediction(occupancy: 10, day: 'Wed', color: 'red'),
         WeekPrediction(occupancy: 4, day: 'Thu', color: 'yellow'),
         WeekPrediction(occupancy: 2, day: 'Fri', color: 'green'),
       ],

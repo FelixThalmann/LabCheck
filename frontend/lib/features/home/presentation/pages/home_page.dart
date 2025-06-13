@@ -122,12 +122,14 @@ class _HomePageState extends State<HomePage> {
                         color: _data['labStatus']?.color ?? 'red',
                         currentDate:
                             _data['labStatus']?.currentDate ?? DateTime.now(),
+                        noData: _data['noData'] ?? false,
                       ),
                     ),
                     Padding(
                       padding: EdgeInsets.only(top: screenHeight * 0.04),
                       child: HoursWidget(
                         predictions: _data['dayPredictions']?.predictions ?? [],
+                        noData: _data['noData'] ?? false,
                       ),
                     ),
                     Padding(
@@ -135,6 +137,7 @@ class _HomePageState extends State<HomePage> {
                       child: DaysWidget(
                         predictions:
                             _data['weekPredictions']?.predictions ?? [],
+                        noData: _data['noData'] ?? false,
                       ),
                     ),
                   ],

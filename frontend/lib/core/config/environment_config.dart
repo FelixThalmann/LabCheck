@@ -38,6 +38,10 @@ ENVIRONMENT=development
     return dotenv.env['ENVIRONMENT'] ?? 'development';
   }
 
+  static bool get isDemoMode {
+    return dotenv.env['DEMO_MODE'] == 'true';
+  }
+
   /// Alle verfügbaren Umgebungsvariablen ausgeben (nur im Debug-Modus)
   static void printAllVariables() {
     if (!kDebugMode) return;
