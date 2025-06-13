@@ -10,6 +10,16 @@ class _BarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Finde the max value in the predictions
+    final maxValue = predictions.fold<int>(
+      0,
+      (max, prediction) =>
+          prediction['value'] > max ? prediction['value'] : max,
+    );
+
+    // Calculate the upper limit of the Y-axis with 20% buffer
+    final maxY = (maxValue * 1.2);
+
     return BarChart(
       BarChartData(
         barTouchData: barTouchData,
@@ -18,7 +28,7 @@ class _BarChart extends StatelessWidget {
         barGroups: barGroups,
         gridData: const FlGridData(show: false),
         alignment: BarChartAlignment.spaceAround,
-        maxY: 6, // TODO: need to changed by the user later
+        maxY: maxY,
       ),
     );
   }

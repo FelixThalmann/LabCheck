@@ -130,6 +130,16 @@ class _HoursWidgetState extends State<HoursWidget> {
   }
 
   LineChartData mainData() {
+    // Finde the max value in the predictions
+    final maxValue = dayPredictions.fold<int>(
+      0,
+      (max, prediction) =>
+          prediction['value'] > max ? prediction['value'] : max,
+    );
+
+    // Calculate the upper limit of the Y-axis (rounded up to the next multiple of 5)
+    final maxY = (maxValue * 1.2);
+
     return LineChartData(
       gridData: FlGridData(show: false),
       titlesData: FlTitlesData(
@@ -161,7 +171,7 @@ class _HoursWidgetState extends State<HoursWidget> {
       minX: 0,
       maxX: 10,
       minY: 0,
-      maxY: 6,
+      maxY: maxY,
       lineBarsData: [
         LineChartBarData(
           spots: List.generate(
