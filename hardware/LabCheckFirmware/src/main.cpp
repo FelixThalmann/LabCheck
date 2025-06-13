@@ -24,7 +24,7 @@ bool isButtonTestActive = false;
 bool isMainProgramActive = false;
 
 // MQTT Configuration
-const char* MQTT_BROKER = "broker.hivemq.com";  // Public test broker
+const char* MQTT_BROKER = "192.168.137.1"; //"broker.hivemq.com";  // Public test broker
 const int MQTT_PORT = 1883;
 const char* MQTT_CLIENT_ID = "LabCheckESP32";
 const char* MQTT_TOPIC = "labcheck/status";
@@ -34,6 +34,7 @@ void showMenu();
 void updateActiveComponents();
 void stopActiveComponents();
 void mqttCallback(char* topic, uint8_t* payload, unsigned int length);
+String readStringUntilMulti(const char* terminators);
 void testMQTT();
 
 void setup() {
@@ -84,12 +85,16 @@ void loop() {
                 Serial.setTimeout(10000);
                 Serial.print(F("Input SSID: "));
                 while(!Serial.available());
-                ssid = Serial.readStringUntil('\n');
+                ssid = readStringUntilMulti("\r\n\t");
+                while (Serial.available()) {Serial.read();};
+                Serial.println(F(ssid.c_str()));
                 Serial.print(F("Input password: "));
                 while(!Serial.available());
-                password = Serial.readStringUntil('\n');
+                password = readStringUntilMulti("\r\n\t");
+                while (Serial.available()) {Serial.read();};
                 wifi.setCredentials(ssid, password);
                 Serial.println(F("Setup completed."));
+                // print the exact given input, including all /t etc
                 Serial.setTimeout(1000);
                 showMenu();
                 break;
@@ -209,6 +214,19 @@ void mqttCallback(char* topic, uint8_t* payload, unsigned int length) {
     
     Serial.print(F("Message received: "));
     Serial.println(message);
+}
+
+String readStringUntilMulti(const char* terminators) {
+  String result = "";
+  while (true) {
+    while (!Serial.available()) delay(1);
+    char c = Serial.read();
+    // Prüfe, ob das Zeichen einer der Terminatoren ist
+    for (const char* t = terminators; *t; ++t) {
+      if (c == *t) return result;
+    }
+    result += c;
+  }
 }
 
 void testMQTT() {

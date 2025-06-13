@@ -1,12 +1,76 @@
 import '../../../data/models/day_prediction_dto.dart';
 import '../../../data/models/week_prediction_dto.dart';
 import '../../../data/models/lab_status_dto.dart';
+import '../../../data/services/api_service.dart';
+import 'package:logging/logging.dart';
 
 class HomeDomain {
-  Future<LabStatusDto> getLabStatus() async {
-    // TODO: load data from API
+  final _logger = Logger('HomeDomain');
+  Exception? lastException;
 
-    // Demo data
+  Future<LabStatusDto> getLabStatus() async {
+    try {
+      final url = '/lab/status';
+      final response = await ApiService().get(url);
+      _logger.info('LabStatusDto: $response');
+      return LabStatusDto.fromJson(response);
+    } catch (e) {
+      _logger.warning('Failed to fetch lab status from API: $e');
+      lastException = e as Exception;
+      // Fallback to Demo-Data if error
+      return _getFallbackLabStatus();
+    }
+  }
+
+  Future<DayPredictionDto> getDayPredictions() async {
+    try {
+      // TODO: Implementierung für echte API-Aufrufe wenn Backend verfügbar
+      final url = '/lab/day-predictions';
+      final response = await ApiService().get(url);
+      _logger.info('DayPredictionDto: $response');
+      return DayPredictionDto.fromJson(response);
+    } catch (e) {
+      _logger.warning('Failed to fetch day predictions from API: $e');
+      lastException = e as Exception;
+      // Fallback to Demo-Data if error
+      return _getFallbackDayPredictions();
+    }
+  }
+
+  Future<WeekPredictionDto> getWeekPredictions() async {
+    try {
+      // TODO: Implementierung für echte API-Aufrufe wenn Backend verfügbar
+      final url = '/lab/week-predictions';
+      final response = await ApiService().get(url);
+      _logger.info('WeekPredictionDto: $response');
+      return WeekPredictionDto.fromJson(response);
+    } catch (e) {
+      _logger.warning('Failed to fetch week predictions from API: $e');
+      lastException = e as Exception;
+      // Fallback to Demo-Data if error
+      return _getFallbackWeekPredictions();
+    }
+  }
+
+  Future<Map<String, dynamic>> refreshData() async {
+    Map<String, dynamic> result = {};
+    result['labStatus'] = await getLabStatus();
+
+    result['dayPredictions'] = await getDayPredictions();
+
+    result['weekPredictions'] = await getWeekPredictions();
+
+    // If an error occurred, add it to the results
+    if (lastException != null) {
+      result['error'] = lastException;
+      lastException = null;
+    }
+
+    return result;
+  }
+
+  // Fallback for Demo-Data if error
+  LabStatusDto _getFallbackLabStatus() {
     return LabStatusDto(
       isOpen: true,
       currentOccupancy: 1,
@@ -17,10 +81,7 @@ class HomeDomain {
     );
   }
 
-  Future<DayPredictionDto> getDayPredictions() async {
-    // TODO: load data from API
-
-    // Demo data
+  DayPredictionDto _getFallbackDayPredictions() {
     return DayPredictionDto(
       predictions: [
         Prediction(occupancy: 1, time: '8 AM', color: 'green'),
@@ -34,10 +95,7 @@ class HomeDomain {
     );
   }
 
-  Future<WeekPredictionDto> getWeekPredictions() async {
-    // TODO: load data from API
-
-    // Demo data
+  WeekPredictionDto _getFallbackWeekPredictions() {
     return WeekPredictionDto(
       predictions: [
         WeekPrediction(occupancy: 1, day: 'Mon', color: 'green'),
@@ -48,18 +106,5 @@ class HomeDomain {
       ],
       lastUpdated: DateTime.now(),
     );
-  }
-
-  Future<Map<String, dynamic>> refreshData() async {
-    // Load data for each widget
-    LabStatusDto labStatus = await getLabStatus();
-    DayPredictionDto dayPredictions = await getDayPredictions();
-    WeekPredictionDto weekPredictions = await getWeekPredictions();
-
-    return {
-      'labStatus': labStatus,
-      'dayPredictions': dayPredictions,
-      'weekPredictions': weekPredictions,
-    };
   }
 }

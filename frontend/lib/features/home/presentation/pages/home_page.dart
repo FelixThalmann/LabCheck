@@ -5,6 +5,8 @@ import '../widgets/date_widget.dart';
 import '../widgets/hours_widget.dart';
 import '../widgets/days_widget.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/utils/snackbar_utils.dart';
+import '../../../../data/services/api_service.dart';
 import '../../domain/home_domain.dart';
 
 class HomePage extends StatefulWidget {
@@ -19,6 +21,8 @@ class _HomePageState extends State<HomePage> {
   final HomeDomain _homeDomain = HomeDomain();
   final _logger = Logger('HomePage');
   Map<String, dynamic> _data = {};
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
+      GlobalKey<RefreshIndicatorState>();
 
   Future<void> _onRefresh() async {
     setState(() {
@@ -26,17 +30,49 @@ class _HomePageState extends State<HomePage> {
     });
 
     _logger.info('Refreshing...');
-    _data = await _homeDomain.refreshData();
 
-    setState(() {
-      _isLoading = false;
-    });
+    try {
+      _data = await _homeDomain.refreshData();
+
+      print('Data: $_data');
+
+      // Check if an error occurred
+      if (_data.containsKey('error') && mounted) {
+        final error = _data['error'] as Exception;
+
+        if (error is NetworkException) {
+          SnackbarUtils.showNetworkError(context, error);
+        } else if (error is ApiException) {
+          SnackbarUtils.showError(context, 'Server error: ${error.message}');
+        } else {
+          SnackbarUtils.showError(context, 'An unexpected error occurred');
+        }
+
+        // Remove the error from the data, so it is not used in the UI
+        _data.remove('error');
+      }
+    } catch (e) {
+      _logger.severe('Unexpected error during refresh: $e');
+      if (mounted) {
+        SnackbarUtils.showError(context, 'An unexpected error occurred');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
   void initState() {
     super.initState();
-    _onRefresh();
+    // Small delay, so the BuildContext is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Manually trigger the RefreshIndicator when the page is loaded
+      _refreshIndicatorKey.currentState?.show();
+    });
   }
 
   @override
@@ -58,6 +94,7 @@ class _HomePageState extends State<HomePage> {
         child: Stack(
           children: [
             RefreshIndicator(
+              key: _refreshIndicatorKey,
               onRefresh: _onRefresh,
               color: AppColors.primary,
               backgroundColor: Colors.white,

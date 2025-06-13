@@ -1,4 +1,7 @@
 #include "MainProgram.h"
+#include "MQTTConfig.h"
+
+extern MQTTConfig mqtt;
 
 MainProgram::MainProgram(){
   programmode = 0;
@@ -24,7 +27,15 @@ void MainProgram::begin(){
     Serial.println(F("Failed to connect to WiFi. Proceeding with caution..."));
     programmode = 1;
   }
-  wifi.disconnect();
+  //wifi.disconnect();
+  if (isWiFiAvailable()){
+    if (mqtt.connect("LabCheckESP32")){
+      Serial.println(F("Connected to MQTT Broker!"));
+    }
+    else {
+      Serial.println(F("Failed to connect to MQTT Broker!"));
+    }
+  }
 }
 
 void MainProgram::update(){
@@ -33,12 +44,14 @@ void MainProgram::update(){
     case 0:
       if(!magneticSensor.isActive()){
         Serial.println(F("Door opened!"));
+        mqtt.publish("labcheck/door", "1");
         prepareMode(1);
       }   
     // Main behavior loop if door sensor inactive
     case 1:
       if(magneticSensor.isActive()){
         Serial.println(F("Door closed! Idleing..."));
+        mqtt.publish("labcheck/door", "0");
         prepareMode(0);
         break;
       }
@@ -81,6 +94,7 @@ void MainProgram::update(){
         Serial.println(F(" ms to pass!"));
         speaker.playSuccess();
         peopleCounter++;
+        mqtt.publish("labcheck/entrance", "1");
         storeSensorData(1, 123);
         prepareMode(4);
       }
@@ -99,6 +113,7 @@ void MainProgram::update(){
           Serial.println(F(" ms to pass!"));
           speaker.playSuccess();
           peopleCounter--;
+          mqtt.publish("labcheck/entrance", "0");
           storeSensorData(0, 123);
           prepareMode(4);
         }
