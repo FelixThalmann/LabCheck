@@ -17,6 +17,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ApiKeyAuthGuard } from './auth/guards/api-key-auth.guard'; // Neuen Guard importieren
 import { LabStatusModule } from './lab-status/lab-status.module';
 import { PredictionsModule } from './predictions/predictions.module';
+import { OccupancyModule } from './occupancy/occupancy.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { PredictionsModule } from './predictions/predictions.module';
     EventsModule,
     LabStatusModule, // Erweitert für REST API
     PredictionsModule, // Neu für Vorhersagen
+    OccupancyModule, // Neu für Belegungsmanagement
   ],
   controllers: [AppController],
   providers: [

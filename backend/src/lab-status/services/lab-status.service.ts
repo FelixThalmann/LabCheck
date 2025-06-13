@@ -1,13 +1,16 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable prettier/prettier */
 import { Injectable, Logger, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DoorService } from '../../door/door/door.service';
-import { LabSettingsService } from '../../lab-settings/lab-settings.service';
-import { OccupancyServicePlaceholder } from '../lab-status.resolver';
 import { 
   LabStatusResponseDto, 
   LabCapacityResponseDto, 
-  LabSettingResponseDto 
 } from '../dto';
+import { PrismaService } from 'src/prisma.service';
 
 /**
  * @class LabStatusService
@@ -21,9 +24,8 @@ export class LabStatusService {
 
   constructor(
     private readonly doorService: DoorService,
-    private readonly labSettingsService: LabSettingsService,
-    private readonly occupancyService: OccupancyServicePlaceholder,
     private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
   ) {}
 
   /**
@@ -47,25 +49,35 @@ export class LabStatusService {
    * Nutzt bestehende Services zur Datensammlung
    */
   async getCombinedLabStatus(): Promise<LabStatusResponseDto> {
-    this.logger.debug('Collecting combined lab status data');
-    
+    this.logger.debug('Sammle kombinierten Laborstatus (Kapazität direkt aus Room-Tabelle)');
+
     const currentTime = new Date();
-    
+
     try {
       // Türstatus abrufen (nutzt bestehenden DoorService)
       const doorStatus = await this.doorService.getLatestDoorStatus();
       const isOpen = doorStatus?.isOpen ?? false;
-      
+
       // Belegung abrufen (nutzt bestehenden DoorService)
-      const occupancyData = await this.doorService.getCurrentOccupancy();
-      const currentOccupancy = occupancyData?.currentOccupancy ?? 0;
-      
-      // Kapazität abrufen (nutzt bestehenden LabSettingsService)
-      const maxOccupancy = await this.labSettingsService.getLabCapacity();
-      
+      const occupancyData = await this.getLabCapacity();
+      const currentOccupancy = occupancyData?.capacity ?? 0;
+
+      // Kapazität direkt aus Room-Tabelle holen (erster aktiver Raum, ältester zuerst)
+      const mainRoom = await this.prisma.room.findFirst({
+        where: { isActive: true },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (!mainRoom) {
+        this.logger.error('Kein aktiver Laborraum gefunden.');
+        throw new BadRequestException('Kein aktiver Laborraum gefunden.');
+      }
+
+      const maxOccupancy: number = mainRoom.maxCapacity;
+
       // Farbe berechnen
       const color = this.calculateColor(currentOccupancy, maxOccupancy);
-      
+
       const result: LabStatusResponseDto = {
         isOpen,
         currentOccupancy,
@@ -74,107 +86,124 @@ export class LabStatusService {
         currentDate: currentTime.toISOString(),
         lastUpdated: currentTime.toISOString(),
       };
-      
+
       this.logger.debug(`Lab status compiled: ${JSON.stringify(result)}`);
       return result;
-      
-    } catch (error) {
-      this.logger.error('Error collecting lab status data', error.stack);
-      throw error;
-    }
-  }
 
-  /**
-   * @method getCombinedLabStatusLegacy
-   * @description Liefert den kombinierten Laborstatus mit exakter Resolver-Logik
-   * Nutzt OccupancyServicePlaceholder wie der GraphQL Resolver
-   */
-  async getCombinedLabStatusLegacy(): Promise<LabStatusResponseDto> {
-    this.logger.debug('Collecting combined lab status data (legacy resolver logic)');
-    
-    const currentTime = new Date();
-    
-    try {
-      // 1. Türstatus abrufen (wie im Resolver)
-      const doorStatus = await this.doorService.getLatestDoorStatus();
-      const isOpen = doorStatus?.isOpen ?? false;
-      
-      // 2. Belegung über OccupancyPlaceholder (wie im Resolver)
-      const occupancyData = await this.occupancyService.getCurrentOccupancy();
-      const currentOccupancy = occupancyData?.currentOccupancy ?? 0;
-      
-      // 3. Kapazität
-      const maxOccupancy = await this.labSettingsService.getLabCapacity() ?? 0;
-      
-      // 4. Farbe berechnen (60%/90% Schwellwerte)
-      const color = this.calculateColor(currentOccupancy, maxOccupancy);
-      
-      const result: LabStatusResponseDto = {
-        isOpen,
-        currentOccupancy,
-        maxOccupancy,
-        color,
-        currentDate: currentTime.toISOString(),
-        lastUpdated: currentTime.toISOString(),
-      };
-      
-      this.logger.debug(`Lab status (legacy) compiled: ${JSON.stringify(result)}`);
-      return result;
-      
-    } catch (error) {
-      this.logger.error('Error collecting lab status data (legacy)', error.stack);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      this.logger.error('Fehler beim Sammeln des Laborstatus', errorStack || errorMessage);
       throw error;
     }
   }
 
   /**
    * @method getLabCapacity
-   * @description Liefert die aktuelle Laborkapazität
+   * @description Liefert die aktuelle Laborkapazität direkt aus der Room-Tabelle (maxCapacity des aktiven Raums)
    */
   async getLabCapacity(): Promise<LabCapacityResponseDto> {
-    this.logger.debug('Getting lab capacity');
-    
+    this.logger.debug('Hole aktuelle Laborkapazität direkt aus der Room-Tabelle');
+
     try {
-      const capacity = await this.labSettingsService.getLabCapacity();
-      
+      // Hole den aktiven Hauptlabor-Raum (z.B. isActive = true, ältester Raum)
+      const mainRoom = await this.prisma.room.findFirst({
+        where: { isActive: true },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (!mainRoom) {
+        this.logger.error('Kein aktiver Laborraum gefunden.');
+        throw new BadRequestException('Kein aktiver Laborraum gefunden.');
+      }
+
       return {
-        capacity,
+        capacity: mainRoom.capacity,
         lastUpdated: new Date().toISOString(),
       };
     } catch (error) {
-      this.logger.error('Error getting lab capacity', error.stack);
+      this.logger.error('Fehler beim Abrufen der Laborkapazität', error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * @method getMaxCapacity
+   * @description Gibt die maximale Kapazität (maxCapacity) des aktiven Laborraums zurück.
+   * @returns {Promise<number>} Die maximale Kapazität des aktiven Raums.
+   * @throws {BadRequestException} Wenn kein aktiver Raum gefunden wird.
+   */
+  async getMaxCapacity(): Promise<LabCapacityResponseDto> {
+    this.logger.debug('Hole maxCapacity des aktiven Laborraums aus der Room-Tabelle');
+
+    try {
+      const mainRoom = await this.prisma.room.findFirst({
+        where: { isActive: true },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (!mainRoom) {
+        this.logger.error('Kein aktiver Laborraum gefunden.');
+        throw new BadRequestException('Kein aktiver Laborraum gefunden.');
+      }
+
+      return { 
+        capacity: mainRoom.maxCapacity, 
+        lastUpdated: new Date().toISOString() 
+      };
+    } catch (error) {
+      this.logger.error('Fehler beim Abrufen der maxCapacity des Labors', error.stack);
       throw error;
     }
   }
 
   /**
    * @method setLabCapacity
-   * @description Setzt die Laborkapazität mit Passwort-Schutz
-   * Entspricht der GraphQL setLabCapacity Mutation
+   * @description Setzt die maxCapacity des aktiven Labor-Raums (Room) mit Passwort-Schutz.
+   * Gibt nur die neue Kapazität zurück.
    */
-  async setLabCapacity(capacity: number, password: string): Promise<LabSettingResponseDto> {
-    this.logger.debug(`Setting lab capacity to: ${capacity}`);
-    
+  async setLabCapacity(
+    capacity: number,
+    password: string,
+  ): Promise<number> {
+    this.logger.debug(`Setze maxCapacity des Labors (Room) auf: ${capacity}`);
+
     // Passwort-Validierung
     const adminPassword = this.configService.get<string>('ADMIN_PASSWORD', 'admin123');
     if (password !== adminPassword) {
-      this.logger.warn(`Invalid password attempt for setLabCapacity`);
+      this.logger.warn('Ungültiger Passwortversuch für setLabCapacity');
       throw new UnauthorizedException('Ungültiges Administratorpasswort');
     }
-    
+
     try {
-      const labSetting = await this.labSettingsService.setLabCapacity(capacity);
+      // Hole den aktiven Hauptlabor-Raum (z.B. isActive = true, ältester Raum)
+      const mainRoom = await this.prisma.room.findFirst({
+        where: { isActive: true }, // vll mit der einzigen ID austyyyyyyauschen
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (!mainRoom) {
+        this.logger.error('Kein aktiver Laborraum gefunden.');
+        throw new BadRequestException('Kein aktiver Laborraum gefunden.');
+      }
+
+      // Update the room capacity using the PrismaService directly
+      await this.prisma.room.update({
+        where: { id: mainRoom.id },
+        data: { maxCapacity: capacity },
+      });
+
+      this.logger.debug(`Laborkapazität erfolgreich auf ${capacity} gesetzt`);
+      return capacity;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
       
-      // Mapping wie im GraphQL Resolver
-      return {
-        key: labSetting.key,
-        value: labSetting.value,
-        notes: labSetting.notes === null ? undefined : labSetting.notes,
-        createdAt: labSetting.createdAt.toISOString(),
-        updatedAt: labSetting.updatedAt.toISOString(),
-      };
-    } catch (error) {
-      this.logger.error('Error setting lab capacity', error.stack);
+      this.logger.error(
+        'Fehler beim Setzen der Laborkapazität (Room)',
+        errorStack || errorMessage,
+      );
       throw error;
     }
   }

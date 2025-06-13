@@ -20,96 +20,23 @@ export class DoorService {
   ) {}
 
   /**
-   * Retrieves the most recent door status.
-   * @param sensorId Optional: Restricts the query to a specific sensor.
-   * @returns A Promise resolving to the latest DoorEvent as a DoorStatusModel.
-   * @throws NotFoundException if no door events are found.
+   * Holt den aktuellsten Türstatus.
+   * Gibt nur das Attribut "isOpen" zurück (alle anderen werden ausgelassen).
+   * @returns Promise<Pick<DoorStatusModel, 'isOpen'>>
+   * @throws NotFoundException, wenn kein Tür-Event gefunden wurde.
    */
-  async getLatestDoorStatus(): Promise<DoorStatusModel> {
-    this.logger.debug(
-      `Getting latest door status`,
-    );
-
-    // Prepare the where clause for the Prisma query.
-    // If a sensorId is provided, filter by it. Otherwise, the clause is empty.
-    const whereClause: Prisma.DoorEventWhereInput = {};
-
-    // Fetch the first (most recent) door event matching the criteria.
-    const latestDoorEvent = await this.prisma.doorEvent.findFirst({
-      where: whereClause,
-      orderBy: {
-        eventTimestamp: 'desc', // Order by timestamp in descending order to get the latest.
-      },
+  async getLatestDoorStatus(): Promise<Pick<DoorStatusModel, 'isOpen'>> {
+    const latest = await this.prisma.doorEvent.findFirst({
+      orderBy: { eventTimestamp: 'desc' },
     });
 
-    // If no event is found, throw an exception.
-    if (!latestDoorEvent) {
-      throw new NotFoundException('No door events found');
+    if (!latest) {
+      throw new NotFoundException('Kein Tür-Event gefunden');
     }
 
-    // Map the Prisma DoorEvent entity to the DoorStatusModel.
+    
     return {
-      id: latestDoorEvent.id.toString(),
-      isOpen: latestDoorEvent.doorIsOpen,
-      timestamp: latestDoorEvent.eventTimestamp,
-      sensorId: latestDoorEvent.sensorId,
-    };
-  }
-
-  /**
-   * Calculates the current occupancy based on PassageEvents.
-   * @param sensorId Optional: Restricts the calculation to a specific sensor.
-   * @returns A Promise resolving to an OccupancyStatusModel with current occupancy, total capacity, timestamp of the last event, and percentage full.
-   */
-  async getCurrentOccupancy(
-    sensorId?: string,
-  ): Promise<OccupancyStatusModel> {
-    this.logger.debug(
-      `Calculating current occupancy ${
-        sensorId ? `for sensor ${sensorId}` : ''
-      }`,
-    );
-
-    // Prepare the where clause for filtering passage events by sensorId if provided.
-    const whereClause: Prisma.PassageEventWhereInput = sensorId
-      ? { sensorId }
-      : {};
-
-    // Retrieve all passage events, ordered by timestamp to correctly calculate occupancy.
-    const passages = await this.prisma.passageEvent.findMany({
-      where: whereClause,
-      orderBy: {
-        eventTimestamp: 'asc', // Order by timestamp in ascending order for chronological processing.
-      },
-    });
-
-    // Calculate current occupancy by iterating through passage events.
-    let currentOccupancy = 0;
-    let lastTimestamp = new Date(0); // Initialize with a very old date; will be updated if passages exist.
-
-    for (const passage of passages) {
-      if (passage.direction === PassageDirection.IN) {
-        currentOccupancy++; // Increment for an 'IN' passage.
-      } else if (passage.direction === PassageDirection.OUT) {
-        currentOccupancy = Math.max(0, currentOccupancy - 1); // Decrement for an 'OUT' passage, ensuring it doesn't go below zero.
-      }
-      lastTimestamp = passage.eventTimestamp; // Update the timestamp to the latest event processed.
-    }
-
-    // Retrieve the maximum capacity from lab settings.
-    const totalCapacity = await this.labSettingsService.getLabCapacity();
-
-    // Calculate the percentage of occupancy.
-    const percentageFull =
-      totalCapacity > 0
-        ? Math.round((currentOccupancy / totalCapacity) * 100) // Calculate percentage if capacity is greater than 0.
-        : 0; // Default to 0% if capacity is 0 or less to avoid division by zero.
-
-    return {
-      currentOccupancy,
-      totalCapacity,
-      timestamp: lastTimestamp, // Timestamp of the last passage event considered.
-      percentageFull,
+      isOpen: latest.doorIsOpen,
     };
   }
 

@@ -89,12 +89,12 @@ enum PassageDirection {
   OUT
 }
 
+// PassageEvent: Repräsentiert die Messwerte des ToF-Sensors (Time-of-Flight) für Personenbewegungen (Ein-/Austritt)
 model PassageEvent {
   id               String           @id @default(cuid())
-  eventTimestamp   DateTime         // Zeitstempel des Ereignisses
-  direction        PassageDirection // Rein oder Raus
+  eventTimestamp   DateTime         // Zeitstempel des ToF-Sensor-Ereignisses
+  direction        PassageDirection // Rein oder Raus (vom ToF-Sensor erkannt)
   createdAt        DateTime         @default(now())
-
   sensor   Sensor @relation(fields: [sensorId], references: [id])
   sensorId String
 

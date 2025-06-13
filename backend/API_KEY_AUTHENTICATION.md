@@ -1,4 +1,4 @@
-# API-Key Authentifizierung - LabCheck Backend
+a# API-Key Authentifizierung - LabCheck Backend
 
 ## 📋 Übersicht
 
@@ -18,7 +18,7 @@ ADMIN_PASSWORD=admin123
 
 ### **2. ApiKeyAuthGuard Implementation**
 
-**Datei:** `backend/src/auth/guards/api-key-auth.guard.ts`
+**Datei:** `backend/src/auth/guards/api-key-auth.guard.ts`a
 
 ```typescript
 @Injectable()

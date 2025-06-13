@@ -11,6 +11,7 @@ import { Logger } from '@nestjs/common';
 import { DoorEvent } from '@prisma/client'; // Assuming we send these types or parts thereof. PassageEvent is currently unused.
 import { OccupancyStatusModel } from 'src/door/models';
 
+
 // WebSocket events emitted by the server
 /**
  * @constant WS_EVENT_DOOR_STATUS_UPDATE
@@ -127,11 +128,11 @@ export class EventsGateway
   /**
    * @method sendOccupancyUpdate
    * @description Broadcasts an occupancy status update to all connected clients.
-   * @param {OccupancyStatusModel} occupancyStatus - The occupancy status data to send.
+   * @param {LabCapacityResponseDto} occupancyStatus - The occupancy status data to send.
    */
-  public sendOccupancyUpdate(occupancyStatus: OccupancyStatusModel): void {
+  public sendOccupancyUpdate(occupancyStatus: OccupancyStatusModel, maxCapacity: number): void {
     this.logger.log('Sending occupancy update:', occupancyStatus);
-    this.server.emit(WS_EVENT_OCCUPANCY_UPDATE, occupancyStatus);
+    this.server.emit(WS_EVENT_OCCUPANCY_UPDATE, occupancyStatus.currentOccupancy, maxCapacity);
   }
 
   // If we also want to push MotionEvents:

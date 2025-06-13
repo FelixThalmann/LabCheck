@@ -46,26 +46,6 @@ export class LabStatusController {
   }
 
   /**
-   * @method getCombinedStatusLegacy
-   * @description Liefert den kombinierten Laborstatus mit exakter GraphQL Resolver-Logik
-   * Nutzt OccupancyServicePlaceholder wie der ursprüngliche Resolver
-   */
-  @Get('status/combined')
-  @ApiOperation({
-    summary: 'Kombinierter Laborstatus (Legacy GraphQL-Logik)',
-    description: 'Liefert den Laborstatus mit exakter Nachbildung der GraphQL Resolver-Logik',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Kombinierter Laborstatus erfolgreich abgerufen',
-    type: LabStatusResponseDto,
-  })
-  async getCombinedStatusLegacy(): Promise<LabStatusResponseDto> {
-    this.logger.debug('REST API: GET /api/lab/status/combined');
-    return this.labStatusService.getCombinedLabStatusLegacy();
-  }
-
-  /**
    * @method getLabCapacity
    * @description Liefert die aktuelle Laborkapazität
    * Entspricht der GraphQL labCapacity Query
