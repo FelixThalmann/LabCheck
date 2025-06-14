@@ -18,10 +18,8 @@ model Room {
   id          String   @id @default(cuid())
   name        String   @unique // z.B. "Laborraum A101", "Hauptlabor"
   description String?  // Optionale Beschreibung des Raums
-  building    String?  // Gebäude, z.B. "Gebäude A"
-  floor       String?  // Stockwerk, z.B. "1. OG"
   capacity    Int      @default(20) // Standardkapazität des Raums
-  isActive    Boolean  @default(true) // Ob der Raum aktiv überwacht wird
+  isOpen      Boolean  @default(true) // Ob der Raum offen ist
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   maxCapacity Int      @default(20) // Maximal zulässige Kapazität des Raums
@@ -30,8 +28,26 @@ model Room {
   settings    RoomSetting[]
   dayPredictions  DayPrediction[]
   weekPredictions WeekPrediction[]
+  occupancyHistory RoomOccupancyHistory[]
 
   @@map("rooms")
+}
+
+// Raumbelegungshistorie - verfolgt jede Kapazitätsänderung über Zeit
+model RoomOccupancyHistory {
+  id                String           @id @default(cuid())
+  roomId            String
+  occupancy         Int              // Aktuelle Belegung nach dem Event
+  previousOccupancy Int?             // Belegung vor dem Event (null für ersten Eintrag)
+  eventType         PassageDirection // IN oder OUT Event das die Änderung verursacht hat
+  eventTimestamp    DateTime         // Wann das ursprüngliche Event stattfand
+  createdAt         DateTime         @default(now()) // Wann dieser History-Eintrag erstellt wurde
+
+  // Beziehung zum Raum
+  room              Room             @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, eventTimestamp])
+  @@map("room_occupancy_history")
 }
 
 // Raumspezifische Einstellungen (erweitert das bestehende LabSetting Konzept)

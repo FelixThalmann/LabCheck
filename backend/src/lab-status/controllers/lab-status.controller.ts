@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Body, Logger } from '@nestjs/common';
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+import { Controller, Get, Post, Body, Logger, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiSecurity } from '@nestjs/swagger';
 import { LabStatusService } from '../services/lab-status.service';
 import { 
@@ -90,11 +92,38 @@ export class LabStatusController {
   })
   async setLabCapacity(
     @Body() setCapacityDto: SetLabCapacityDto,
-  ): Promise<LabSettingResponseDto> {
+  ): Promise<number> {
     this.logger.debug(`REST API: POST /api/lab/capacity - capacity: ${setCapacityDto.capacity}`);
     return this.labStatusService.setLabCapacity(
       setCapacityDto.capacity,
       setCapacityDto.password,
     );
+  }
+
+  /**
+   * @method getRoomStatus
+   * @description Prüft den Öffnungsstatus eines bestimmten Raums
+   * @param roomId - Die ID des zu prüfenden Raums
+   * @returns Promise<boolean> - true wenn der Raum offen ist, false wenn geschlossen
+   */
+  @Get('room/:roomId/status')
+  @ApiOperation({
+    summary: 'Raumstatus abrufen',
+    description: 'Prüft, ob ein bestimmter Raum geöffnet ist',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Raumstatus erfolgreich abgerufen',
+    type: Boolean,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Raum nicht gefunden',
+  })
+  async getRoomStatus(
+    @Param('roomId') roomId: string,
+  ): Promise<boolean> {
+    this.logger.debug(`REST API: GET /api/lab/room/${roomId}/status`);
+    return this.labStatusService.isRoomOpen(roomId);
   }
 }

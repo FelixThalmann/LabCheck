@@ -118,7 +118,7 @@ export class PredictionsService {
    */
   private async getDefaultRoom() {
     let room = await this.prisma.room.findFirst({
-      where: { isActive: true },
+      where: { isOpen: true },
     });
     
     if (!room) {
@@ -128,7 +128,7 @@ export class PredictionsService {
           name: 'Hauptlabor',
           description: 'Standard-Laborraum',
           capacity: 20,
-          isActive: true,
+          isOpen: true,
         },
       });
     }

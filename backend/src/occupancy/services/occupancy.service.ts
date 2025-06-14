@@ -186,6 +186,87 @@ export class OccupancyService {
   }
 
   /**
+   * @method updateRoomOpenStatus
+   * @description Setzt den Öffnungs-/Schließungsstatus eines Raums basierend auf der Sensor-ID.
+   * Verwendet die gleiche Sensor-zu-Raum-Zuordnung wie updateRoomOccupancy.
+   * Nutzt Transaktionen für atomare Operationen und verhindert Race Conditions.
+   *
+   * Technischer Ablauf:
+   * 1. Sensor mit zugehörigem Raum laden (gleiche Logik wie updateRoomOccupancy)
+   * 2. Room-Status in einer Transaktion atomisch aktualisieren
+   * 3. WebSocket-Update an alle verbundenen Clients senden
+   *
+   * @param {string} sensorId - Die Datenbank-ID des Sensors (wie in updateRoomOccupancy)
+   * @param {boolean} isOpen - Der neue Öffnungsstatus des Raums (true = offen, false = geschlossen)
+   * @returns {Promise<{ roomId: string; roomName: string; isOpen: boolean } | null>} Room-Info oder null bei Fehlern
+   */
+  async updateRoomOpenStatus(
+    sensorId: string,
+    isOpen: boolean,
+  ): Promise<{ roomId: string; roomName: string; isOpen: boolean } | null> {
+    this.logger.verbose(
+      `Updating room open status for sensor ${sensorId}, isOpen: ${isOpen}`,
+    );
+
+    try {
+      // Verwende eine Prisma-Transaktion für atomare Operationen (wie in updateRoomOccupancy)
+      const result = await this.prisma.$transaction(async (tx) => {
+        // 1. Sensor mit zugehörigem Raum laden (exakt gleiche Logik wie updateRoomOccupancy)
+        const sensor = await tx.sensor.findUnique({
+          where: { id: sensorId },
+          include: { room: true },
+        });
+
+        if (!sensor) {
+          this.logger.error(`Sensor with ID ${sensorId} not found`);
+          return null;
+        }
+
+        if (!sensor.room) {
+          this.logger.warn(
+            `Sensor ${sensorId} (ESP32: ${sensor.esp32Id}) is not assigned to any room. Cannot update room status.`,
+          );
+          return null;
+        }
+
+        // 2. Room-Status atomisch aktualisieren
+        await tx.room.update({
+          where: { id: sensor.room.id },
+          data: {
+            isOpen: isOpen,
+            updatedAt: new Date(),
+          },
+        });
+
+        this.logger.log(
+          `Successfully updated room status for room ${sensor.room.name} (ID: ${sensor.room.id}): ` +
+            `isOpen = ${isOpen} (triggered by sensor ${sensor.esp32Id})`,
+        );
+
+        return {
+          roomId: sensor.room.id,
+          roomName: sensor.room.name,
+          isOpen: isOpen,
+        };
+      });
+
+      // 3. WebSocket-Update senden (außerhalb der Transaktion, wie in updateRoomOccupancy)
+      if (result && this.eventsGateway) {
+        await this.sendRoomStatusUpdate(result.roomId, result.isOpen);
+      }
+
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Failed to update room open status for sensor ${sensorId}, isOpen: ${isOpen}. ` +
+          `Error: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      return null;
+    }
+  }
+
+  /**
    * @method resetRoomOccupancy
    * @description Setzt die Belegung eines Raums auf einen bestimmten Wert zurück.
    * Nützlich für manuelle Korrekturen oder automatische Resets (z.B. nachts).
@@ -279,6 +360,49 @@ export class OccupancyService {
     } catch (error) {
       this.logger.error(
         `Fehler beim Senden des Belegungs-Updates via WebSocket für Raum ${roomId}. ` +
+          `Fehler: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
+  }
+
+  /**
+   * @private
+   * @method sendRoomStatusUpdate
+   * @description Sendet ein WebSocket-Update über die Raum-Status-Änderung (offen/geschlossen) 
+   * an alle verbundenen Clients.
+   *
+   * @param {string} roomId - Die ID des Raums
+   * @param {boolean} isOpen - Der neue Öffnungsstatus des Raums
+   */
+  private async sendRoomStatusUpdate(
+    roomId: string,
+    isOpen: boolean,
+  ): Promise<void> {
+    try {
+      // Hole aktuelle Raumdaten
+      const room = await this.prisma.room.findUnique({
+        where: { id: roomId },
+        select: { name: true, isOpen: true },
+      });
+
+      if (room && this.eventsGateway) {
+        this.logger.verbose(
+          `Sende Raum-Status-Update via WebSocket für Raum ${roomId}: isOpen = ${isOpen}`,
+        );
+        // Sende Raum-Status-Update an das Gateway
+        // TODO: EventsGateway Methode für Room-Status implementieren
+        // this.eventsGateway.sendRoomStatusUpdate({ roomId, roomName: room.name, isOpen });
+        
+        // Fallback: Verwende occupancy update mit aktuellen Daten
+        const occupancyStatus = await this.getCurrentOccupancyStatus(roomId);
+        if (occupancyStatus) {
+          this.eventsGateway.sendOccupancyUpdate(occupancyStatus, 0); // maxCapacity wird separat geholt
+        }
+      }
+    } catch (error) {
+      this.logger.error(
+        `Fehler beim Senden des Raum-Status-Updates via WebSocket für Raum ${roomId}. ` +
           `Fehler: ${error instanceof Error ? error.message : String(error)}`,
         error instanceof Error ? error.stack : undefined,
       );

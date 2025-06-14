@@ -1,27 +1,17 @@
-<<<<<<< Updated upstream
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable prettier/prettier */
-=======
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
->>>>>>> Stashed changes
 import { Injectable, Logger, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DoorService } from '../../door/door/door.service';
 import { 
   LabStatusResponseDto, 
   LabCapacityResponseDto, 
 } from '../dto';
-<<<<<<< Updated upstream
 import { PrismaService } from 'src/prisma.service';
-=======
-import { PrismaService } from '../../prisma/prisma.service';
->>>>>>> Stashed changes
+
+
 
 /**
  * @class LabStatusService
@@ -34,7 +24,6 @@ export class LabStatusService {
   private readonly logger = new Logger(LabStatusService.name);
 
   constructor(
-    private readonly doorService: DoorService,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
   ) {}
@@ -66,7 +55,10 @@ export class LabStatusService {
 
     try {
       // Türstatus abrufen (nutzt bestehenden DoorService)
-      const doorStatus = await this.doorService.getLatestDoorStatus();
+      const doorStatus = await this.prisma.room.findFirst({
+        where: { isOpen: true },
+        orderBy: { createdAt: 'asc' },
+      });
       const isOpen = doorStatus?.isOpen ?? false;
 
       // Belegung abrufen (nutzt bestehenden DoorService)
@@ -75,7 +67,7 @@ export class LabStatusService {
 
       // Kapazität direkt aus Room-Tabelle holen (erster aktiver Raum, ältester zuerst)
       const mainRoom = await this.prisma.room.findFirst({
-        where: { isActive: true },
+        where: { isOpen: true },
         orderBy: { createdAt: 'asc' },
       });
 
@@ -120,7 +112,7 @@ export class LabStatusService {
     try {
       // Hole den aktiven Hauptlabor-Raum (z.B. isActive = true, ältester Raum)
       const mainRoom = await this.prisma.room.findFirst({
-        where: { isActive: true },
+        where: { isOpen: true },
         orderBy: { createdAt: 'asc' },
       });
 
@@ -150,7 +142,7 @@ export class LabStatusService {
 
     try {
       const mainRoom = await this.prisma.room.findFirst({
-        where: { isActive: true },
+        where: { isOpen: true },
         orderBy: { createdAt: 'asc' },
       });
 
@@ -171,26 +163,14 @@ export class LabStatusService {
 
   /**
    * @method setLabCapacity
-<<<<<<< Updated upstream
-   * @description Setzt die maxCapacity des aktiven Labor-Raums (Room) mit Passwort-Schutz.
-   * Gibt nur die neue Kapazität zurück.
-   */
-  async setLabCapacity(
-    capacity: number,
-    password: string,
-  ): Promise<number> {
-    this.logger.debug(`Setze maxCapacity des Labors (Room) auf: ${capacity}`);
-
-=======
    * @description Setzt die Laborkapazität mit Passwort-Schutz für einen spezifischen Raum
    * @param roomId - Die ID des Raums
    * @param capacity - Die neue Kapazität
    * @param password - Das Administratorpasswort
    */
-  async setLabCapacity(roomId: string, capacity: number, password: string): Promise<Room> {
-    this.logger.debug(`Setting lab capacity for room ${roomId} to: ${capacity}`);
+  async setLabCapacity(capacity: number, password: string): Promise<number> {
+    this.logger.debug(`Setting lab capacity to: ${capacity}`);
     
->>>>>>> Stashed changes
     // Passwort-Validierung
     const adminPassword = this.configService.get<string>('ADMIN_PASSWORD', 'admin123');
     if (password !== adminPassword) {
@@ -199,10 +179,9 @@ export class LabStatusService {
     }
 
     try {
-<<<<<<< Updated upstream
       // Hole den aktiven Hauptlabor-Raum (z.B. isActive = true, ältester Raum)
       const mainRoom = await this.prisma.room.findFirst({
-        where: { isActive: true }, // vll mit der einzigen ID austyyyyyyauschen
+        where: { isOpen: true }, // vll mit der einzigen ID austyyyyyyauschen
         orderBy: { createdAt: 'asc' },
       });
 
@@ -227,21 +206,55 @@ export class LabStatusService {
         'Fehler beim Setzen der Laborkapazität (Room)',
         errorStack || errorMessage,
       );
-=======
+        const mainRoom = await this.prisma.room.findFirst({
+        where: { isOpen: true }, // vll mit der einzigen ID austyyyyyyauschen
+        orderBy: { createdAt: 'asc' },
+      });
+
       const updatedRoom = await this.prisma.room.update({
-        where: { id: roomId },
+        where: { id: mainRoom!.id },
         data: { 
           maxCapacity: capacity,
           updatedAt: new Date()
         }
       });
       
-      this.logger.debug(`Successfully updated room capacity for room ${roomId}`);
-      return updatedRoom;
-    } catch (error) {
-      this.logger.error('Error setting room capacity', error.stack);
->>>>>>> Stashed changes
+      this.logger.debug(`Successfully updated room capacity for room ${mainRoom!.id}`);
+      return updatedRoom.capacity;
+    }
+  }
+  /**
+   * @method isRoomOpen
+   * @description Prüft, ob ein bestimmter Raum geöffnet ist
+   * @param roomId - Die ID des zu prüfenden Raums
+   * @returns Promise<boolean> - true wenn der Raum offen ist, false wenn geschlossen
+   */
+  async isRoomOpen(roomId: string): Promise<boolean> {
+    this.logger.debug(`Prüfe Öffnungsstatus für Raum ${roomId}`);
+
+    try {
+      const room = await this.prisma.room.findUnique({
+        where: { id: roomId },
+        select: { isOpen: true }
+      });
+
+      if (!room) {
+        this.logger.warn(`Raum mit ID ${roomId} nicht gefunden`);
+        throw new BadRequestException(`Raum mit ID ${roomId} nicht gefunden`);
+      }
+
+      this.logger.debug(`Raum ${roomId} ist ${room.isOpen ? 'geöffnet' : 'geschlossen'}`);
+      return room.isOpen;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      
+      this.logger.error(
+        `Fehler beim Prüfen des Raumstatus für Raum ${roomId}`,
+        errorStack || errorMessage
+      );
       throw error;
     }
   }
 }
+

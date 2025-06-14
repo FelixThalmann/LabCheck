@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { OccupancyService } from './services/occupancy.service';
+import { RoomManagementService } from './services/room-management.service';
 import { PrismaService } from '../prisma.service';
 import { EventsModule } from '../events/events.module';
 
@@ -11,7 +12,7 @@ import { EventsModule } from '../events/events.module';
  */
 @Module({
   imports: [EventsModule],
-  providers: [OccupancyService, PrismaService],
-  exports: [OccupancyService],
+  providers: [OccupancyService, RoomManagementService, PrismaService],
+  exports: [OccupancyService, RoomManagementService],
 })
 export class OccupancyModule {}
