@@ -20,6 +20,7 @@ class HomeDomain {
       _logger.warning('Failed to fetch lab status from API: $e');
       lastException = e as Exception;
       if (isDemoMode) {
+        _logger.info('Using demo data for lab status');
         // Fallback to Demo-Data if error
         return _getFallbackLabStatus();
       } else {
@@ -39,6 +40,7 @@ class HomeDomain {
       _logger.warning('Failed to fetch day predictions from API: $e');
       lastException = e as Exception;
       if (isDemoMode) {
+        _logger.info('Using demo data for day predictions');
         // Fallback to Demo-Data if error
         return _getFallbackDayPredictions();
       } else {
@@ -58,6 +60,7 @@ class HomeDomain {
       _logger.warning('Failed to fetch week predictions from API: $e');
       lastException = e as Exception;
       if (isDemoMode) {
+        _logger.info('Using demo data for week predictions');
         // Fallback to Demo-Data if error
         return _getFallbackWeekPredictions();
       } else {
