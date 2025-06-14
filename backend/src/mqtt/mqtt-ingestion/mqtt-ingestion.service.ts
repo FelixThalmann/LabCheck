@@ -19,7 +19,7 @@ import { RoomManagementService } from '../../occupancy/services/room-management.
 
 const JSON_BASED_EVENTS_TOPIC_PREFIX = 'labcheck/door';
 const LIGHT_BARRIER_TOPIC_PREFIX = 'labcheck/entrance';
-const LIGHT_BARRIER_TOPIC_SUFFIX = '/status';
+const LIGHT_BARRIER_TOPIC_SUFFIX = '/statuss';
 
 // 🔥 NEW: Dynamic topic patterns for ESP32 ID-based topics
 const DYNAMIC_TOPIC_PATTERNS = {
