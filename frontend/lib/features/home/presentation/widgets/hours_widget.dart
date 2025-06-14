@@ -189,6 +189,7 @@ class _HoursWidgetState extends State<HoursWidget> {
       maxX: 10,
       minY: 0,
       maxY: maxY,
+      lineTouchData: LineTouchData(enabled: false),
       lineBarsData: [
         LineChartBarData(
           spots: List.generate(
@@ -279,8 +280,6 @@ class _TextDrawingDotPainter extends FlDotPainter {
           ..color = dotColor
           ..style = PaintingStyle.fill;
     canvas.drawCircle(center, dotRadius * lerp, dotPaint);
-
-    if (lerp < 0.95) return;
 
     final textSpan = TextSpan(
       text: spot.y.toStringAsFixed(precision),
