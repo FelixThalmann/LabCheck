@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import { MqttIngestionService } from './mqtt-ingestion/mqtt-ingestion.service';
+import { PrismaService } from '../prisma.service';
 import { EventsModule } from '../events/events.module';
-import { DoorModule } from '../door/door.module';
+import { OccupancyModule } from '../occupancy/occupancy.module';
 
 @Module({
-  imports: [ConfigModule, EventsModule, DoorModule],
-  providers: [MqttIngestionService],
-  exports: [MqttIngestionService]
+  imports: [EventsModule, OccupancyModule],
+  providers: [MqttIngestionService, PrismaService],
+  exports: [MqttIngestionService],
 })
 export class MqttModule {}

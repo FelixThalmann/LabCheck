@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as passport from 'passport';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
@@ -24,6 +25,30 @@ async function bootstrap() {
   });
 
   app.use(passport.initialize());
+
+  // Swagger API-Dokumentation konfigurieren
+  const config = new DocumentBuilder()
+    .setTitle('LabCheck API')
+    .setDescription('REST API für das LabCheck System - Laborüberwachung und Vorhersagen')
+    .setVersion('1.0')
+    .addTag('Lab Status', 'Endpunkte für den aktuellen Laborstatus')
+    .addTag('Predictions', 'Endpunkte für Belegungsvorhersagen')
+    .addApiKey(
+      {
+        type: 'apiKey',
+        name: 'X-API-Key',
+        in: 'header',
+      },
+      'api-key',
+    )
+    .build();
+  
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'LabCheck API Documentation',
+    customfavIcon: '/favicon.ico',
+    customCss: '.swagger-ui .topbar { display: none }',
+  });
 
   // Globale ValidationPipe für automatische Validierung von DTOs
   app.useGlobalPipes(

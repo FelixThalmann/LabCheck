@@ -13,17 +13,79 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Sensor {
+// Raummodell für bessere Organisation und Skalierbarkeit
+model Room {
+  id          String   @id @default(cuid())
+  name        String   @unique // z.B. "Laborraum A101", "Hauptlabor"
+  description String?  // Optionale Beschreibung des Raums
+  capacity    Int      @default(20) // Standardkapazität des Raums
+  isOpen      Boolean  @default(true) // Ob der Raum offen ist
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  maxCapacity Int      @default(20) // Maximal zulässige Kapazität des Raums
+  // Beziehungen
+  sensors     Sensor[]
+  settings    RoomSetting[]
+  dayPredictions  DayPrediction[]
+  weekPredictions WeekPrediction[]
+  occupancyHistory RoomOccupancyHistory[]
+
+  @@map("rooms")
+}
+
+// Raumbelegungshistorie - verfolgt jede Kapazitätsänderung über Zeit
+model RoomOccupancyHistory {
+  id                String           @id @default(cuid())
+  roomId            String
+  occupancy         Int              // Aktuelle Belegung nach dem Event
+  previousOccupancy Int?             // Belegung vor dem Event (null für ersten Eintrag)
+  eventType         PassageDirection // IN oder OUT Event das die Änderung verursacht hat
+  eventTimestamp    DateTime         // Wann das ursprüngliche Event stattfand
+  createdAt         DateTime         @default(now()) // Wann dieser History-Eintrag erstellt wurde
+
+  // Beziehung zum Raum
+  room              Room             @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, eventTimestamp])
+  @@map("room_occupancy_history")
+}
+
+// Raumspezifische Einstellungen (erweitert das bestehende LabSetting Konzept)
+model RoomSetting {
   id        String   @id @default(cuid())
-  esp32Id   String   @unique // Eindeutige ID des ESP32-Boards
-  location  String?  // Optionaler Standort des Sensors, z.B. "Laborraum A101 Tür Nord"
+  key       String   // z.B. "capacity", "operating_hours", "alert_threshold"
+  value     String
+  notes     String?  // Optionale Notizen zur Einstellung
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  doorEvents   DoorEvent[]
-  passageEvents PassageEvent[]
-  motionEvents MotionEvent[]
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomId String
+
+  @@unique([roomId, key])
+  @@map("room_settings")
+}
+
+model Sensor {
+  id        String   @id @default(cuid())
+  esp32Id   String   @unique // Eindeutige ID des ESP32-Boards
+  location  String?  // Spezifische Position innerhalb des Raums, z.B. "Tür Nord", "Eingang Ost"
+  sensorType String  @default("multi") // "door", "motion", "passage", "light_barrier", "multi"
+  isActive  Boolean  @default(true) // Ob der Sensor aktiv ist
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Beziehung zum Raum
+  room   Room?   @relation(fields: [roomId], references: [id])
+  roomId String?
+
+  // Bestehende Event-Beziehungen
+  doorEvents         DoorEvent[]
+  passageEvents      PassageEvent[]
+  motionEvents       MotionEvent[]
   lightBarrierEvents LightBarrierEvent[]
+
+  @@map("sensors")
 }
 
 model DoorEvent {
@@ -34,6 +96,8 @@ model DoorEvent {
 
   sensor   Sensor @relation(fields: [sensorId], references: [id])
   sensorId String
+
+  @@map("door_events")
 }
 
 enum PassageDirection {
@@ -41,14 +105,16 @@ enum PassageDirection {
   OUT
 }
 
+// PassageEvent: Repräsentiert die Messwerte des ToF-Sensors (Time-of-Flight) für Personenbewegungen (Ein-/Austritt)
 model PassageEvent {
   id               String           @id @default(cuid())
-  eventTimestamp   DateTime         // Zeitstempel des Ereignisses
-  direction        PassageDirection // Rein oder Raus
+  eventTimestamp   DateTime         // Zeitstempel des ToF-Sensor-Ereignisses
+  direction        PassageDirection // Rein oder Raus (vom ToF-Sensor erkannt)
   createdAt        DateTime         @default(now())
-
   sensor   Sensor @relation(fields: [sensorId], references: [id])
   sensorId String
+
+  @@map("passage_events")
 }
 
 model MotionEvent {
@@ -59,6 +125,8 @@ model MotionEvent {
 
   sensor   Sensor @relation(fields: [sensorId], references: [id])
   sensorId String
+
+  @@map("motion_events")
 }
 
 model LightBarrierEvent {
@@ -73,12 +141,53 @@ model LightBarrierEvent {
   @@map("light_barrier_events") // Expliziter Tabellenname
 }
 
+// Globale Labor-Einstellungen (bestehend, aber erweitert)
 model LabSetting {
-  key       String   @id // z.B. "lab_total_capacity", "lab_name"
+  key       String   @id // z.B. "lab_total_capacity", "lab_name", "default_room"
   value     String
   notes     String?  // Optionale Notizen zur Einstellung
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("lab_settings")
+}
+
+// Tagesvorhersagen - jetzt raumspezifisch
+model DayPrediction {
+  id          String   @id @default(cuid())
+  time        String   // "8 AM", "10 AM", "12 PM", "2 PM", "4 PM", "6 PM"
+  occupancy   Int      @default(0)
+  color       String   // "green", "yellow", "red"
+  date        DateTime @db.Date // Datum für das die Vorhersage gilt
+  confidence  Float?   @default(0.0) // Konfidenz der Vorhersage (0.0 - 1.0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Beziehung zum Raum
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomId String
+
+  @@unique([roomId, date, time])
+  @@map("day_predictions")
+}
+
+// Wochenvorhersagen - jetzt raumspezifisch
+model WeekPrediction {
+  id          String   @id @default(cuid())
+  day         String   // "Mon", "Tue", "Wed", "Thu", "Fri"
+  occupancy   Int      @default(0)
+  color       String   // "green", "yellow", "red"
+  weekStart   DateTime @db.Date // Montag der Woche (für Eindeutigkeit)
+  confidence  Float?   @default(0.0) // Konfidenz der Vorhersage (0.0 - 1.0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Beziehung zum Raum
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomId String
+
+  @@unique([roomId, weekStart, day])
+  @@map("week_predictions")
 }
 
 model User {
@@ -86,24 +195,20 @@ model User {
   email     String   @unique
   password  String   // Wird gehasht gespeichert
   name      String?  // Optionaler Name des Benutzers
-  // Hier könnten später Rollen oder weitere benutzerspezifische Daten hinzukommen
-  // Beispiel: role Role @default(USER)
-
+  role      UserRole @default(USER)
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Optional: Beziehung zu Sensoren, falls ein Benutzer Sensoren "besitzen" oder verwalten kann
-  // sensors Sensor[]
+  @@map("users")
 }
 
-// enum Role {
-//  USER
-//  ADMIN
-// }
+enum UserRole {
+  USER
+  ADMIN
+  MANAGER
+}
 
 // Models for Phase 2 (ML Predictions) and Phase 3 (LLM) will be added later
 // model MlPrediction { ... }
 // model UniversityCalendarEvent { ... }
-
-// Model for Phase 4 (Security) will be added later if needed for user management beyond basic auth
-// model User { ... }
