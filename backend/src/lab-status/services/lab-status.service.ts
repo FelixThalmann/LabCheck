@@ -1,8 +1,15 @@
+<<<<<<< Updated upstream
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable prettier/prettier */
+=======
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+>>>>>>> Stashed changes
 import { Injectable, Logger, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DoorService } from '../../door/door/door.service';
@@ -10,7 +17,11 @@ import {
   LabStatusResponseDto, 
   LabCapacityResponseDto, 
 } from '../dto';
+<<<<<<< Updated upstream
 import { PrismaService } from 'src/prisma.service';
+=======
+import { PrismaService } from '../../prisma/prisma.service';
+>>>>>>> Stashed changes
 
 /**
  * @class LabStatusService
@@ -160,6 +171,7 @@ export class LabStatusService {
 
   /**
    * @method setLabCapacity
+<<<<<<< Updated upstream
    * @description Setzt die maxCapacity des aktiven Labor-Raums (Room) mit Passwort-Schutz.
    * Gibt nur die neue Kapazität zurück.
    */
@@ -169,6 +181,16 @@ export class LabStatusService {
   ): Promise<number> {
     this.logger.debug(`Setze maxCapacity des Labors (Room) auf: ${capacity}`);
 
+=======
+   * @description Setzt die Laborkapazität mit Passwort-Schutz für einen spezifischen Raum
+   * @param roomId - Die ID des Raums
+   * @param capacity - Die neue Kapazität
+   * @param password - Das Administratorpasswort
+   */
+  async setLabCapacity(roomId: string, capacity: number, password: string): Promise<Room> {
+    this.logger.debug(`Setting lab capacity for room ${roomId} to: ${capacity}`);
+    
+>>>>>>> Stashed changes
     // Passwort-Validierung
     const adminPassword = this.configService.get<string>('ADMIN_PASSWORD', 'admin123');
     if (password !== adminPassword) {
@@ -177,6 +199,7 @@ export class LabStatusService {
     }
 
     try {
+<<<<<<< Updated upstream
       // Hole den aktiven Hauptlabor-Raum (z.B. isActive = true, ältester Raum)
       const mainRoom = await this.prisma.room.findFirst({
         where: { isActive: true }, // vll mit der einzigen ID austyyyyyyauschen
@@ -204,6 +227,20 @@ export class LabStatusService {
         'Fehler beim Setzen der Laborkapazität (Room)',
         errorStack || errorMessage,
       );
+=======
+      const updatedRoom = await this.prisma.room.update({
+        where: { id: roomId },
+        data: { 
+          maxCapacity: capacity,
+          updatedAt: new Date()
+        }
+      });
+      
+      this.logger.debug(`Successfully updated room capacity for room ${roomId}`);
+      return updatedRoom;
+    } catch (error) {
+      this.logger.error('Error setting room capacity', error.stack);
+>>>>>>> Stashed changes
       throw error;
     }
   }
