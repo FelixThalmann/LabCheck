@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <PubSubClient.h>
 #include <WiFiClient.h>
+#include <LED.h>
 
 struct SecurePublishData {
     const char* topic;
@@ -52,6 +53,8 @@ private:
     const char* mqtt_username;
     const char* mqtt_password;
     bool credentialsSet;
+
+    LED led;  // LED for signaling connection status
     
     // Variables for secure publish
     static bool ackReceived;

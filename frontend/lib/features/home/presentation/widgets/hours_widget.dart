@@ -6,8 +6,13 @@ import '../../../../data/models/day_prediction_dto.dart';
 
 class HoursWidget extends StatefulWidget {
   final List<Prediction> predictions;
+  final bool noData;
 
-  const HoursWidget({super.key, required this.predictions});
+  const HoursWidget({
+    super.key,
+    required this.predictions,
+    required this.noData,
+  });
 
   @override
   State<HoursWidget> createState() => _HoursWidgetState();
@@ -49,7 +54,7 @@ class _HoursWidgetState extends State<HoursWidget> {
     return Container(
       width: containerWidth,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: widget.noData ? Colors.grey[300] : Colors.white,
         borderRadius: BorderRadius.circular(17.0),
         boxShadow: const [
           BoxShadow(
@@ -72,7 +77,7 @@ class _HoursWidgetState extends State<HoursWidget> {
                 child: Text(
                   'Day prediction',
                   style: TextStyle(
-                    color: Colors.black,
+                    color: widget.noData ? Colors.grey[600] : Colors.black,
                     fontSize: 12,
                     fontFamily: 'Inter',
                     fontWeight: FontWeight.w700,
@@ -90,7 +95,19 @@ class _HoursWidgetState extends State<HoursWidget> {
                   top: 24,
                   bottom: 12,
                 ),
-                child: LineChart(mainData()),
+                child:
+                    widget.noData
+                        ? Center(
+                          child: Text(
+                            'No Data Available',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        )
+                        : LineChart(mainData()),
               ),
             ),
           ],
@@ -130,6 +147,16 @@ class _HoursWidgetState extends State<HoursWidget> {
   }
 
   LineChartData mainData() {
+    // Finde the max value in the predictions
+    final maxValue = dayPredictions.fold<int>(
+      0,
+      (max, prediction) =>
+          prediction['value'] > max ? prediction['value'] : max,
+    );
+
+    // Calculate the upper limit of the Y-axis (rounded up to the next multiple of 5)
+    final maxY = (maxValue * 1.2);
+
     return LineChartData(
       gridData: FlGridData(show: false),
       titlesData: FlTitlesData(
@@ -161,7 +188,8 @@ class _HoursWidgetState extends State<HoursWidget> {
       minX: 0,
       maxX: 10,
       minY: 0,
-      maxY: 6,
+      maxY: maxY,
+      lineTouchData: LineTouchData(enabled: false),
       lineBarsData: [
         LineChartBarData(
           spots: List.generate(
@@ -252,8 +280,6 @@ class _TextDrawingDotPainter extends FlDotPainter {
           ..color = dotColor
           ..style = PaintingStyle.fill;
     canvas.drawCircle(center, dotRadius * lerp, dotPaint);
-
-    if (lerp < 0.95) return;
 
     final textSpan = TextSpan(
       text: spot.y.toStringAsFixed(precision),

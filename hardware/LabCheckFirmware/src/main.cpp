@@ -1,41 +1,27 @@
-#include <Arduino.h>
-#include "PinConfig.h"
-#include "LED.h"
-#include "Button.h"
-#include "MagneticSensor.h"
-#include "Speaker.h"
-#include "WiFiConfig.h"
-#include "MQTTConfig.h"
-#include "MainProgram.h"
+#include "main.h"
 
 // Create instances of our components
 LED leds;
 Button buttons;
 MagneticSensor magneticSensor;
+PIRSensor pirSensor;
 Speaker speaker;
 WiFiConfig wifi;
 MQTTConfig mqtt;
 MainProgram mainProgram;
 
 // Active component tracking
-bool isSensorActive = false;
+bool isMagneticActive = false; // If magnetic sensor tracking is active
+bool isPIRActive = false;  // If PIR sensor tracking is active
 bool isSongPlaying = false;
 bool isButtonTestActive = false;
 bool isMainProgramActive = false;
 
 // MQTT Configuration
-const char* MQTT_BROKER = "192.168.137.1"; //"broker.hivemq.com";  // Public test broker
+const char* MQTT_BROKER = "192.168.137.1";
 const int MQTT_PORT = 1883;
 const char* MQTT_CLIENT_ID = "LabCheckESP32";
 const char* MQTT_TOPIC = "labcheck/status";
-
-void setupComponents();
-void showMenu();
-void updateActiveComponents();
-void stopActiveComponents();
-void mqttCallback(char* topic, uint8_t* payload, unsigned int length);
-String readStringUntilMulti(const char* terminators);
-void testMQTT();
 
 void setup() {
     Serial.begin(115200);
@@ -61,7 +47,7 @@ void loop() {
         switch(option) {
             case '1':
                 Serial.println(F("Testing 'Magnetic door sensor set'."));
-                isSensorActive = true;
+                isMagneticActive = true;
                 break;
                 
             case '2':
@@ -94,7 +80,6 @@ void loop() {
                 while (Serial.available()) {Serial.read();};
                 wifi.setCredentials(ssid, password);
                 Serial.println(F("Setup completed."));
-                // print the exact given input, including all /t etc
                 Serial.setTimeout(1000);
                 showMenu();
                 break;
@@ -117,6 +102,11 @@ void loop() {
                 break;
 
             case '8':
+                Serial.println(F("PIR Sensor Test"));
+                isPIRActive = true;
+                break;
+
+            case '9':
                 Serial.println(F("Start Main Program"));
                 isMainProgramActive = true;
                 mainProgram.begin();
@@ -137,6 +127,7 @@ void setupComponents() {
     leds.begin();
     buttons.begin();
     magneticSensor.begin();
+    pirSensor.begin();
     speaker.begin();
     wifi.begin();
     mqtt.begin(MQTT_BROKER, MQTT_PORT);
@@ -150,6 +141,17 @@ void setupComponents() {
     magneticSensor.onMagnetRemoved([]() {
         speaker.stop();
         mqtt.publish(MQTT_TOPIC, "Door closed");
+    });
+
+    // Setup PIR sensor callbacks
+    pirSensor.onMotionDetected([]() {
+        speaker.playAlert();
+        mqtt.publish(MQTT_TOPIC, "Motion detected");
+    });
+
+    pirSensor.onMotionStopped([]() {
+        speaker.stop();
+        mqtt.publish(MQTT_TOPIC, "Motion stopped");
     });
     
     // Setup button callbacks
@@ -179,14 +181,18 @@ void showMenu() {
     Serial.println(F("(5) Test LEDs"));
     Serial.println(F("(6) Test Buttons"));
     Serial.println(F("(7) Test MQTT Connection"));
-    Serial.println(F("(8) Start Main Program"));
+    Serial.println(F("(8) Test PIR Sensor"));
+    Serial.println(F("(9) Start Main Program"));
     Serial.println(F("(menu) send something else or press the board reset button\n"));
     Serial.print(F("Input option: "));
 }
 
 void updateActiveComponents() {
-    if (isSensorActive) {
+    if (isMagneticActive) {
         magneticSensor.update();
+    }
+    if (isPIRActive) {
+        pirSensor.update();
     }
     if (isSongPlaying) {
         speaker.update();
@@ -200,7 +206,8 @@ void updateActiveComponents() {
 }
 
 void stopActiveComponents() {
-    isSensorActive = false;
+    isMagneticActive = false;
+    isPIRActive = false;
     isSongPlaying = false;
     isButtonTestActive = false;
     isMainProgramActive = false;

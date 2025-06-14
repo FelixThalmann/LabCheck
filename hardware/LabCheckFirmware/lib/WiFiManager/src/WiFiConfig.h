@@ -28,6 +28,9 @@ public:
     
     // Get current IP address (empty if not connected)
     String getIPAddress() const;
+
+    // Get mac address of the WiFi interface
+    String getMacAddress() const;
     
 private:
     Preferences prefs;

@@ -38,13 +38,17 @@ ENVIRONMENT=development
     return dotenv.env['ENVIRONMENT'] ?? 'development';
   }
 
+  static bool get isDemoMode {
+    return dotenv.env['DEMO_MODE'] == 'true';
+  }
+
   /// Alle verfügbaren Umgebungsvariablen ausgeben (nur im Debug-Modus)
   static void printAllVariables() {
     if (!kDebugMode) return;
 
     _logger.info('🔧 Current environment configuration:');
-    _logger.info('  Environment: ${environment}');
-    _logger.info('  API Base URL: ${apiBaseUrl}');
+    _logger.info('  Environment: $environment');
+    _logger.info('  API Base URL: $apiBaseUrl');
 
     if (dotenv.env.isNotEmpty) {
       _logger.info('📝 All available variables:');
