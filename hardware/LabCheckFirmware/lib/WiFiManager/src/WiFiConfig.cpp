@@ -23,7 +23,7 @@ bool WiFiConfig::connect() {
     while (WiFi.status() != WL_CONNECTED && attempts < 10) {
         delay(1000);
         Serial.print(F("."));
-        led.blinkLED(SIGNALLED, 2, 100);
+        led.blinkLED(SIGNALLED, 1, 100);
         attempts++;
     }
     
@@ -56,6 +56,13 @@ String WiFiConfig::getSSID() const {
 String WiFiConfig::getIPAddress() const {
     if (WiFi.status() == WL_CONNECTED) {
         return WiFi.localIP().toString();
+    }
+    return "";
+}
+
+String WiFiConfig::getMacAddress() const {
+    if (WiFi.status() == WL_CONNECTED) {
+        return WiFi.macAddress();
     }
     return "";
 }
