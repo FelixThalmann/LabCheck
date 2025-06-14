@@ -48,6 +48,7 @@ bool MQTTConfig::connect(const char* clientId) {
         }
         attempts++;
         Serial.print(F("."));
+        led.blinkLED(SIGNALLED, 2, 100); // Blink LED to indicate connection attempt
         delay(1000);
     }
     Serial.println(F("MQTT connection failed!"));

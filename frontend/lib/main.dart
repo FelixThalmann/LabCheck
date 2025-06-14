@@ -36,6 +36,7 @@ class MyApp extends StatelessWidget {
         '/settings': (context) => const SettingsPage(),
         '/about': (context) => const AboutPage(),
       },
+      debugShowCheckedModeBanner: false,
     );
   }
 }

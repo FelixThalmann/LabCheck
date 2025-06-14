@@ -4,6 +4,7 @@ import 'package:labcheck/shared/widgets/header_widget.dart';
 import 'package:labcheck/features/setting/presentation/widgets/password_input_widget.dart';
 import 'package:labcheck/features/setting/presentation/widgets/seats_input_widget.dart';
 import 'package:labcheck/features/setting/domain/settings_domain.dart';
+import 'package:labcheck/shared/utils/snackbar_utils.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -34,32 +35,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _saveSeats() {
     if (_settingsDomain.validateAndSaveSeats(_seatsController.text)) {
-      // Save seats
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Number of seats has been saved',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: MediaQuery.of(context).size.width * 0.035,
-            ),
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
+      SnackbarUtils.showSuccess(context, 'Number of seats has been saved');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Please enter a valid number',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: MediaQuery.of(context).size.width * 0.035,
-            ),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+      SnackbarUtils.showError(context, 'Please enter a valid number');
     }
   }
 

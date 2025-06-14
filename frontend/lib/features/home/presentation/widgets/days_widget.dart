@@ -5,11 +5,35 @@ import '../../../../data/models/week_prediction_dto.dart';
 
 class _BarChart extends StatelessWidget {
   final List<Map<String, dynamic>> predictions;
+  final bool noData;
 
-  const _BarChart({required this.predictions});
+  const _BarChart({required this.predictions, required this.noData});
 
   @override
   Widget build(BuildContext context) {
+    if (noData) {
+      return Center(
+        child: Text(
+          'No Data Available',
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+    }
+
+    // Finde the max value in the predictions
+    final maxValue = predictions.fold<int>(
+      0,
+      (max, prediction) =>
+          prediction['value'] > max ? prediction['value'] : max,
+    );
+
+    // Calculate the upper limit of the Y-axis with 20% buffer
+    final maxY = (maxValue * 1.2);
+
     return BarChart(
       BarChartData(
         barTouchData: barTouchData,
@@ -18,7 +42,7 @@ class _BarChart extends StatelessWidget {
         barGroups: barGroups,
         gridData: const FlGridData(show: false),
         alignment: BarChartAlignment.spaceAround,
-        maxY: 6, // TODO: need to changed by the user later
+        maxY: maxY,
       ),
     );
   }
@@ -115,8 +139,13 @@ class _BarChart extends StatelessWidget {
 
 class DaysWidget extends StatefulWidget {
   final List<WeekPrediction> predictions;
+  final bool noData;
 
-  const DaysWidget({super.key, required this.predictions});
+  const DaysWidget({
+    super.key,
+    required this.predictions,
+    required this.noData,
+  });
 
   @override
   State<DaysWidget> createState() => _DaysWidgetState();
@@ -156,7 +185,7 @@ class _DaysWidgetState extends State<DaysWidget> {
     return Container(
       width: containerWidth,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: widget.noData ? Colors.grey[300] : Colors.white,
         borderRadius: BorderRadius.circular(17.0),
         boxShadow: const [
           BoxShadow(
@@ -179,7 +208,7 @@ class _DaysWidgetState extends State<DaysWidget> {
                 child: Text(
                   'Week prediction',
                   style: TextStyle(
-                    color: Colors.black,
+                    color: widget.noData ? Colors.grey[600] : Colors.black,
                     fontSize: 12,
                     fontFamily: 'Inter',
                     fontWeight: FontWeight.w700,
@@ -197,7 +226,10 @@ class _DaysWidgetState extends State<DaysWidget> {
                   top: 24,
                   bottom: 12,
                 ),
-                child: _BarChart(predictions: daysPredictions),
+                child: _BarChart(
+                  predictions: daysPredictions,
+                  noData: widget.noData,
+                ),
               ),
             ),
           ],

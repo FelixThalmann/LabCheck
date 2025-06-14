@@ -12,6 +12,7 @@ import { MqttDoorDataDto, MqttPassageDataDto, MqttMotionDataDto } from '../dto';
 import { plainToClass } from 'class-transformer';
 import { validate, ValidationError } from 'class-validator';
 import { EventsGateway } from '../../events/events/events.gateway';
+
 import { Sensor } from '@prisma/client';
 import { OccupancyService } from '../../occupancy/services/occupancy.service';
 import { RoomManagementService } from '../../occupancy/services/room-management.service';
@@ -20,6 +21,7 @@ import { RoomManagementService } from '../../occupancy/services/room-management.
 const JSON_BASED_EVENTS_TOPIC_PREFIX = 'labcheck/door';
 const LIGHT_BARRIER_TOPIC_PREFIX = 'labcheck/entrance';
 const LIGHT_BARRIER_TOPIC_SUFFIX = '/statuss';
+
 
 // 🔥 NEW: Dynamic topic patterns for ESP32 ID-based topics
 const DYNAMIC_TOPIC_PATTERNS = {
@@ -114,6 +116,7 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
         { name: DYNAMIC_TOPIC_PATTERNS.DOOR, description: 'Door sensor events with ESP32 ID' },
         { name: DYNAMIC_TOPIC_PATTERNS.ENTRANCE, description: 'Entrance sensor events with ESP32 ID' },
         //{ name: DYNAMIC_TOPIC_PATTERNS.STATUS, description: 'General status events with ESP32 ID' }
+
       ];
 
       // Abonniere alle Topics aus obiger Liste
@@ -133,6 +136,7 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
     this.client.on('message', async (topic: string, payload: Buffer) => {
       const messageContent = payload.toString();
       this.logger.debug(`Received raw message on topic '${topic}': "${messageContent}"`);
+
 
       // 🔥 NEW: Check for dynamic ESP32 ID-based topics first (labcheck/{esp32Id}/{eventType})
       const topicParts = topic.split('/');
@@ -174,7 +178,7 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
           this.logger.verbose(`Extracted ESP32 ID '${esp32IdFromTopic}' from light barrier topic '${topic}' (legacy format).`);
           await this.handleLightBarrierEvent(esp32IdFromTopic, messageContent);
         } else {
-          this.logger.warn(`Malformed topic for light barrier: '${topic}'. Expected format '${LIGHT_BARRIER_TOPIC_PREFIX}{sensorId}${LIGHT_BARRIER_TOPIC_SUFFIX}'. Extracted ID part: '${esp32IdFromTopic}'. Message ignored.`);
+          this.logger.warn(`Malformed topic for light barrier: '${topic}'. Expected format '${LIGHT_BARRIER_TOPIC_PREFIX}{sensorId}'. Extracted ID part: '${esp32IdFromTopic}'. Message ignored.`);
         }
       } 
       // Prüfe, ob es sich um ein JSON-basiertes Event-Topic handelt

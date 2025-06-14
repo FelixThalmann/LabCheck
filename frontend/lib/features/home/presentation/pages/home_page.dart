@@ -34,7 +34,11 @@ class _HomePageState extends State<HomePage> {
     try {
       _data = await _homeDomain.refreshData();
 
-      print('Data: $_data');
+      setState(() {
+        _isLoading = false;
+      });
+
+      _logger.info('Data: $_data');
 
       // Check if an error occurred
       if (_data.containsKey('error') && mounted) {
@@ -62,6 +66,8 @@ class _HomePageState extends State<HomePage> {
           _isLoading = false;
         });
       }
+
+      _logger.info('Refreshing... done');
     }
   }
 
@@ -102,42 +108,49 @@ class _HomePageState extends State<HomePage> {
               displacement: 50.0, // Position of the refresh indicator
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(
-                        top: screenHeight * 0.07,
-                        left: screenWidth * 0.1,
-                        right: screenWidth * 0.1,
+                child: SizedBox(
+                  height: screenHeight,
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: screenHeight * 0.07,
+                          left: screenWidth * 0.1,
+                          right: screenWidth * 0.1,
+                        ),
+                        child: const HeaderWidget(),
                       ),
-                      child: const HeaderWidget(),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: screenHeight * 0.01),
-                      child: DateWidget(
-                        isOpen: _data['labStatus']?.isOpen ?? false,
-                        currentOccupancy:
-                            _data['labStatus']?.currentOccupancy ?? 0,
-                        maxOccupancy: _data['labStatus']?.maxOccupancy ?? 0,
-                        color: _data['labStatus']?.color ?? 'red',
-                        currentDate:
-                            _data['labStatus']?.currentDate ?? DateTime.now(),
+                      Padding(
+                        padding: EdgeInsets.only(top: screenHeight * 0.01),
+                        child: DateWidget(
+                          isOpen: _data['labStatus']?.isOpen ?? false,
+                          currentOccupancy:
+                              _data['labStatus']?.currentOccupancy ?? 0,
+                          maxOccupancy: _data['labStatus']?.maxOccupancy ?? 0,
+                          color: _data['labStatus']?.color ?? 'red',
+                          currentDate:
+                              _data['labStatus']?.currentDate ?? DateTime.now(),
+                          noData: _data['noData'] ?? false,
+                        ),
                       ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: screenHeight * 0.04),
-                      child: HoursWidget(
-                        predictions: _data['dayPredictions']?.predictions ?? [],
+                      Padding(
+                        padding: EdgeInsets.only(top: screenHeight * 0.04),
+                        child: HoursWidget(
+                          predictions:
+                              _data['dayPredictions']?.predictions ?? [],
+                          noData: _data['noData'] ?? false,
+                        ),
                       ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: screenHeight * 0.04),
-                      child: DaysWidget(
-                        predictions:
-                            _data['weekPredictions']?.predictions ?? [],
+                      Padding(
+                        padding: EdgeInsets.only(top: screenHeight * 0.04),
+                        child: DaysWidget(
+                          predictions:
+                              _data['weekPredictions']?.predictions ?? [],
+                          noData: _data['noData'] ?? false,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
