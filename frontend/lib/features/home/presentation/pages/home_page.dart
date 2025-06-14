@@ -66,6 +66,8 @@ class _HomePageState extends State<HomePage> {
           _isLoading = false;
         });
       }
+
+      _logger.info('Refreshing... done');
     }
   }
 
@@ -106,7 +108,7 @@ class _HomePageState extends State<HomePage> {
               displacement: 50.0, // Position of the refresh indicator
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                child: Container(
+                child: SizedBox(
                   height: screenHeight,
                   child: Column(
                     children: [

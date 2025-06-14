@@ -30,6 +30,14 @@ iOS:
 flutter build ios
 ```
 
+### Install the app on device (iOS)
+
+```bash
+flutter build ipa --release --export-method=development
+```
+
+Open the `ios/Runner.xcworkspace` in Xcode. Open "Window" -> "Devices and Simulators" and select the device. Drag the ".ipa" file into "Installed Apps"
+
 ## Backend - Node.js and PostgreSQL
 
 ### Database
