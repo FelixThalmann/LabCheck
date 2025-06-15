@@ -39,6 +39,7 @@ class _HomePageState extends State<HomePage> {
       });
 
       _logger.info('Data: $_data');
+      _logger.info('labStatus: ${_data['labStatus']}');
 
       // Check if an error occurred
       if (_data.containsKey('error') && mounted) {
@@ -130,7 +131,7 @@ class _HomePageState extends State<HomePage> {
                           color: _data['labStatus']?.color ?? 'red',
                           currentDate:
                               _data['labStatus']?.currentDate ?? DateTime.now(),
-                          noData: _data['noData'] ?? false,
+                          noData: _data['noDataLabStatus'] ?? false,
                         ),
                       ),
                       Padding(
@@ -138,7 +139,7 @@ class _HomePageState extends State<HomePage> {
                         child: HoursWidget(
                           predictions:
                               _data['dayPredictions']?.predictions ?? [],
-                          noData: _data['noData'] ?? false,
+                          noData: _data['noDataDayPredictions'] ?? false,
                         ),
                       ),
                       Padding(
@@ -146,7 +147,7 @@ class _HomePageState extends State<HomePage> {
                         child: DaysWidget(
                           predictions:
                               _data['weekPredictions']?.predictions ?? [],
-                          noData: _data['noData'] ?? false,
+                          noData: _data['noDataWeekPredictions'] ?? false,
                         ),
                       ),
                     ],

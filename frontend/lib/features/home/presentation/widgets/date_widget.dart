@@ -71,7 +71,9 @@ class DateWidget extends StatelessWidget {
             left: containerWidth * 0.1, // 10% from left edge
             top: containerHeight * 0.2, // 20% from top
             child: SvgPicture.asset(
-              'assets/images/door-open-solid.svg',
+              isOpen
+                  ? 'assets/images/door-open-solid.svg'
+                  : 'assets/images/door-closed-solid.svg',
               width: containerWidth * 0.18, // 18% of container width
               height: containerWidth * 0.18,
               colorFilter: ColorFilter.mode(

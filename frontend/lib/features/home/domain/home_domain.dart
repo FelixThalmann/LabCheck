@@ -12,7 +12,7 @@ class HomeDomain {
 
   Future<LabStatusDto?> getLabStatus() async {
     try {
-      final url = '/lab/status';
+      final url = '/api/lab/status';
       final response = await ApiService().get(url);
       _logger.info('LabStatusDto: $response');
       return LabStatusDto.fromJson(response);
@@ -30,9 +30,18 @@ class HomeDomain {
   }
 
   Future<DayPredictionDto?> getDayPredictions() async {
+    if (isDemoMode) {
+      _logger.info('Using demo data for day predictions');
+      // Fallback to Demo-Data if error
+      return _getFallbackDayPredictions();
+    } else {
+      return null;
+    }
+
+    /*
     try {
       // TODO: Implementierung für echte API-Aufrufe wenn Backend verfügbar
-      final url = '/lab/day-predictions';
+      final url = '/api/lab/day-predictions';
       final response = await ApiService().get(url);
       _logger.info('DayPredictionDto: $response');
       return DayPredictionDto.fromJson(response);
@@ -47,12 +56,22 @@ class HomeDomain {
         return null;
       }
     }
+    */
   }
 
   Future<WeekPredictionDto?> getWeekPredictions() async {
+    if (isDemoMode) {
+      _logger.info('Using demo data for week predictions');
+      // Fallback to Demo-Data if error
+      return _getFallbackWeekPredictions();
+    } else {
+      return null;
+    }
+
+    /*
     try {
       // TODO: Implementierung für echte API-Aufrufe wenn Backend verfügbar
-      final url = '/lab/week-predictions';
+      final url = '/api/lab/week-predictions';
       final response = await ApiService().get(url);
       _logger.info('WeekPredictionDto: $response');
       return WeekPredictionDto.fromJson(response);
@@ -67,6 +86,7 @@ class HomeDomain {
         return null;
       }
     }
+    */
   }
 
   Future<Map<String, dynamic>> refreshData() async {
@@ -83,10 +103,9 @@ class HomeDomain {
       lastException = null;
     }
 
-    result['noData'] =
-        result['labStatus'] == null ||
-        result['dayPredictions'] == null ||
-        result['weekPredictions'] == null;
+    result['noDatalabStatus'] = result['labStatus'] == null;
+    result['noDataDayPredictions'] = result['dayPredictions'] == null;
+    result['noDataWeekPredictions'] = result['weekPredictions'] == null;
 
     return result;
   }
