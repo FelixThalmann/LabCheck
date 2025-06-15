@@ -1,22 +1,5 @@
 #include "main.h"
 
-// Create instances of our components
-LED leds;
-Button buttons;
-MagneticSensor magneticSensor;
-PIRSensor pirSensor;
-Speaker speaker;
-WiFiConfig wifi;
-MQTTConfig mqtt;
-MainProgram mainProgram;
-
-// Active component tracking
-bool isMagneticActive = false; // If magnetic sensor tracking is active
-bool isPIRActive = false;  // If PIR sensor tracking is active
-bool isSongPlaying = false;
-bool isButtonTestActive = false;
-bool isMainProgramActive = false;
-
 // MQTT Configuration
 const char* MQTT_BROKER = "192.168.137.1";
 const int MQTT_PORT = 1883;
@@ -28,7 +11,23 @@ void setup() {
     while(!Serial);
     
     setupComponents();
-    showMenu();
+    
+    Serial.println(F("\nPress any key within 10 seconds to enter test mode..."));
+    unsigned long startTime = millis();
+    
+    // Check for input for 10 seconds
+    while (millis() - startTime < 10000) {
+        if (Serial.available()) {
+            while(Serial.available()) Serial.read();  // Clear input buffer
+            showMenu();  // Enter test mode immediately
+            return;
+        }
+    }
+    
+    // No input received within 10 seconds
+    Serial.println(F("\nStarting Main Program..."));
+    isMainProgramActive = true;
+    mainProgram.begin();
 }
 
 void loop() {

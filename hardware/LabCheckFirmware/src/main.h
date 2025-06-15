@@ -13,21 +13,21 @@
 #include "PIRSensor.h"
 
 // Global component instances
-extern LED leds;
-extern Button buttons;
-extern MagneticSensor magneticSensor;
-extern PIRSensor pirSensor;
-extern Speaker speaker;
-extern WiFiConfig wifi;
-extern MQTTConfig mqtt;
-extern MainProgram mainProgram;
+LED leds;
+Button buttons;
+MagneticSensor magneticSensor;
+PIRSensor pirSensor;
+Speaker speaker;
+WiFiConfig wifi;
+MQTTConfig mqtt;
+MainProgram mainProgram;
 
 // Active component tracking
-extern bool isMagneticActive;
-extern bool isPIRActive;
-extern bool isSongPlaying;
-extern bool isButtonTestActive;
-extern bool isMainProgramActive;
+bool isMagneticActive = false; // If magnetic sensor tracking is active
+bool isPIRActive = false;  // If PIR sensor tracking is active
+bool isSongPlaying = false;
+bool isButtonTestActive = false;
+bool isMainProgramActive = false;
 
 // MQTT Configuration
 extern const char* MQTT_BROKER;
