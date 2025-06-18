@@ -104,7 +104,7 @@ lgbm.fit(
 
 # --- 5. Save Model ---
 
-model_path = '/app/models/occupancy_model.pkl'
+model_path = 'models/occupancy_model.pkl'
 # Ensure the directory exists
 os.makedirs(os.path.dirname(model_path), exist_ok=True)
 joblib.dump(lgbm, model_path)

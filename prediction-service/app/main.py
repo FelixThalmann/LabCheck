@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, text
 
 # --- Configuration ---
 # Path to model file, as expected in Docker container
-MODEL_PATH = "/app/models/occupancy_model.pkl"
+MODEL_PATH = "models/occupancy_model.pkl"
 
 # Database connection from environment variables (set by Docker Compose)
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://labcheck:labcheck@postgres:5432/labcheck_db")
