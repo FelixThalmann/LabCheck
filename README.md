@@ -42,14 +42,19 @@ Open the `ios/Runner.xcworkspace` in Xcode. Open "Window" -> "Devices and Simula
 
 This project uses PostgreSQL as the database and MQTT as the message broker.
 
-#### Run as production
+### Run/Stop as production
 
 ```bash
 docker-compose up -d
 ```
 
-#### Stop
-
 ```bash
 docker-compose down
+```
+
+### Show data in database
+
+```bash
+cd backend
+npx prisma studio
 ```
