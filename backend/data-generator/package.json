@@ -1,0 +1,25 @@
+{
+  "name": "labcheck-data-generator",
+  "version": "1.0.0",
+  "description": "Synthetic data generator for LSTM training",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "ts-node main.ts",
+    "generate": "ts-node main.ts",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.4.0",
+    "rimraf": "^5.0.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.14.0",
+    "date-fns": "^3.6.0",
+    "date-fns-tz": "^3.1.0",
+    "cuid": "^3.0.0"
+  }
+}

@@ -1,5 +1,4 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
-import { GraphQLDateTime } from 'graphql-scalars'; // Für korrekte DateTime-Repräsentation
 
 @ObjectType()
 export class CombinedLabStatus {

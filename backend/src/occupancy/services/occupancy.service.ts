@@ -7,7 +7,7 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { PassageDirection } from '@prisma/client';
 import { EventsGateway } from '../../events/events/events.gateway';
-import { OccupancyStatusModel } from '../../door/models/occupancy-status.model';
+import { OccupancyStatusDto } from '../../door/models/occupancy-status.dto';
 
 /**
  * @class OccupancyService
@@ -40,7 +40,7 @@ export class OccupancyService {
    * @param {Date} eventTimestamp - Zeitstempel des Events für Logging
    * @returns {Promise<{ newOccupancy: number; roomId: string } | null>} Neue Belegung und Raum-ID oder null bei Fehlern
    */
-  async     updateRoomOccupancy(
+  async updateRoomOccupancy(
     sensorId: string,
     direction: PassageDirection,
   ): Promise<{ newOccupancy: number; roomId: string } | null> {
@@ -143,14 +143,14 @@ export class OccupancyService {
 
   /**
    * @method getCurrentOccupancyStatus
-   * @description Holt den aktuellen Belegungsstatus für einen Raum und formatiert ihn als OccupancyStatusModel.
+   * @description Holt den aktuellen Belegungsstatus für einen Raum und formatiert ihn als OccupancyStatusDto.
    *
    * @param {string} roomId - Die ID des Raums
-   * @returns {Promise<OccupancyStatusModel | null>} Aktueller Belegungsstatus oder null bei Fehlern
+   * @returns {Promise<OccupancyStatusDto | null>} Aktueller Belegungsstatus oder null bei Fehlern
    */
   async getCurrentOccupancyStatus(
     roomId: string,
-  ): Promise<OccupancyStatusModel | null> {
+  ): Promise<OccupancyStatusDto | null> {
     try {
       const room = await this.prisma.room.findUnique({
         where: { id: roomId },
@@ -167,7 +167,7 @@ export class OccupancyService {
           ? Math.round((room.capacity / room.maxCapacity) * 100)
           : 0;
 
-      const occupancyStatus: OccupancyStatusModel = {
+      const occupancyStatus: OccupancyStatusDto = {
         currentOccupancy: room.capacity,
         totalCapacity: room.maxCapacity,
         timestamp: new Date(),
@@ -267,67 +267,6 @@ export class OccupancyService {
   }
 
   /**
-   * @method resetRoomOccupancy
-   * @description Setzt die Belegung eines Raums auf einen bestimmten Wert zurück.
-   * Nützlich für manuelle Korrekturen oder automatische Resets (z.B. nachts).
-   *
-   * @param {string} roomId - Die ID des Raums
-   * @param {number} newOccupancy - Die neue Belegung (default: 0)
-   * @returns {Promise<boolean>} True bei Erfolg, false bei Fehlern
-   */
-  async resetRoomOccupancy(
-    roomId: string,
-    newOccupancy: number = 0,
-  ): Promise<boolean> {
-    this.logger.log(
-      `Resetting occupancy for room ${roomId} to ${newOccupancy}`,
-    );
-
-    try {
-      const room = await this.prisma.room.findUnique({
-        where: { id: roomId },
-      });
-
-      if (!room) {
-        throw new BadRequestException(`Room with ID ${roomId} not found`);
-      }
-
-      // Validierung der neuen Belegung
-      if (newOccupancy < 0 || newOccupancy > room.maxCapacity) {
-        throw new BadRequestException(
-          `Invalid occupancy value ${newOccupancy}. Must be between 0 and ${room.maxCapacity}`,
-        );
-      }
-
-      await this.prisma.room.update({
-        where: { id: roomId },
-        data: {
-          capacity: newOccupancy,
-          updatedAt: new Date(),
-        },
-      });
-
-      this.logger.log(
-        `Successfully reset occupancy for room ${room.name} to ${newOccupancy}`,
-      );
-
-      // WebSocket-Update senden
-      if (this.eventsGateway) {
-        await this.sendOccupancyUpdate(roomId, newOccupancy);
-      }
-
-      return true;
-    } catch (error) {
-      this.logger.error(
-        `Failed to reset occupancy for room ${roomId} to ${newOccupancy}. ` +
-          `Error: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
-      return false;
-    }
-  }
-
-  /**
    * @private
    * @method sendOccupancyUpdate
    * @description Sendet ein WebSocket-Update über die Belegungsänderung an alle verbundenen Clients,
@@ -409,76 +348,4 @@ export class OccupancyService {
     }
   }
 
-  /**
-   * @method getOccupancyStatistics
-   * @description Liefert Statistiken über die Raumbelegung für Analytics/Monitoring.
-   *
-   * @param {string} roomId - Die ID des Raums
-   * @param {Date} from - Startdatum für Statistiken
-   * @param {Date} to - Enddatum für Statistiken
-   * @returns {Promise<any>} Belegungsstatistiken
-   */
-  async getOccupancyStatistics(
-    roomId: string,
-    from: Date,
-    to: Date,
-  ): Promise<{
-    averageOccupancy: number;
-    maxOccupancy: number;
-    totalPassageEvents: number;
-    inEvents: number;
-    outEvents: number;
-  } | null> {
-    try {
-      // Hole alle Passage-Events für den Zeitraum der Sensoren des Raums
-      const passageEvents = await this.prisma.passageEvent.findMany({
-        where: {
-          sensor: {
-            roomId: roomId,
-          },
-          eventTimestamp: {
-            gte: from,
-            lte: to,
-          },
-        },
-        orderBy: {
-          eventTimestamp: 'asc',
-        },
-      });
-
-      const totalPassageEvents = passageEvents.length;
-      const inEvents = passageEvents.filter(
-        (e) => e.direction === PassageDirection.IN,
-      ).length;
-      const outEvents = passageEvents.filter(
-        (e) => e.direction === PassageDirection.OUT,
-      ).length;
-
-      // Hole aktuelle Raumdaten
-      const room = await this.prisma.room.findUnique({
-        where: { id: roomId },
-      });
-
-      if (!room) return null;
-
-      // Berechne Durchschnittsbelegung (vereinfacht)
-      const currentOccupancy = room.capacity;
-      const maxCapacity = room.maxCapacity;
-
-      return {
-        averageOccupancy: currentOccupancy, // Vereinfacht - könnte komplexer berechnet werden
-        maxOccupancy: maxCapacity,
-        totalPassageEvents,
-        inEvents,
-        outEvents,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to get occupancy statistics for room ${roomId}. ` +
-          `Error: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
-      return null;
-    }
-  }
 }
