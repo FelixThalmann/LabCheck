@@ -38,14 +38,18 @@ flutter build ipa --release --export-method=development
 
 Open the `ios/Runner.xcworkspace` in Xcode. Open "Window" -> "Devices and Simulators" and select the device. Drag the ".ipa" file into "Installed Apps"
 
-## Backend - Node.js and PostgreSQL
+## Backend - Node.js, PostgreSQL, MQTT
 
-### Database
-This project uses PostgreSQL as the database.
+This project uses PostgreSQL as the database and MQTT as the message broker.
 
-#### Run Database
+#### Run as production
 
 ```bash
 docker-compose up -d
 ```
 
+#### Stop
+
+```bash
+docker-compose down
+```
