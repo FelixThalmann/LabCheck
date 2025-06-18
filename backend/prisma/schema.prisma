@@ -212,3 +212,11 @@ enum UserRole {
 // Models for Phase 2 (ML Predictions) and Phase 3 (LLM) will be added later
 // model MlPrediction { ... }
 // model UniversityCalendarEvent { ... }
+
+// For ML Prediction Model
+model OccupancyEvent {
+  id          Int      @id @default(autoincrement())
+  timestamp   DateTime @default(now())
+  personCount Int
+  isDoorOpen  Boolean
+}
