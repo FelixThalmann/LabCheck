@@ -596,7 +596,7 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
       this.logger.error(`Error storing MotionEvent for sensor '${sensor.esp32Id}'. Data: ${JSON.stringify(validatedData)}. Error: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error.stack : undefined);
     }
   }
-
+ 
   /**
    * @private
    * @async

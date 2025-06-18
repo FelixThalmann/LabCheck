@@ -39,7 +39,7 @@ export class LabStatusService {
     const percentage = (currentOccupancy / maxOccupancy) * 100;
     
     if (percentage >= 90) return 'red';
-    if (percentage >= 60) return 'yellow';
+    if (percentage >= 50) return 'yellow';
     return 'green';
   }
 
@@ -56,8 +56,7 @@ export class LabStatusService {
     try {
       // Türstatus abrufen (nutzt bestehenden DoorService)
       const doorStatus = await this.prisma.room.findFirst({
-        where: { isOpen: true },
-        orderBy: { createdAt: 'asc' },
+        select: { isOpen: true }
       });
       const isOpen = doorStatus?.isOpen ?? false;
 
@@ -65,21 +64,20 @@ export class LabStatusService {
       const occupancyData = await this.getLabCapacity();
       const currentOccupancy = occupancyData?.capacity ?? 0;
 
-      // Kapazität direkt aus Room-Tabelle holen (erster aktiver Raum, ältester zuerst)
+      // Kapazität direkt aus Room-Tabelle holen (erster Raum, ältester zuerst)
       const mainRoom = await this.prisma.room.findFirst({
-        where: { isOpen: true },
         orderBy: { createdAt: 'asc' },
       });
 
       if (!mainRoom) {
-        this.logger.error('Kein aktiver Laborraum gefunden.');
-        throw new BadRequestException('Kein aktiver Laborraum gefunden.');
+        this.logger.error('Kein Laborraum gefunden.');
+        throw new BadRequestException('Kein Laborraum gefunden.');
       }
 
       const maxOccupancy: number = mainRoom.maxCapacity;
 
-      // Farbe berechnen
-      const color = this.calculateColor(currentOccupancy, maxOccupancy);
+      // Farbe berechnen - ROT wenn Tür geschlossen, sonst Belegungslogik
+      const color = !isOpen ? 'red' : this.calculateColor(currentOccupancy, maxOccupancy);
 
       const result: LabStatusResponseDto = {
         isOpen,
@@ -110,15 +108,14 @@ export class LabStatusService {
     this.logger.debug('Hole aktuelle Laborkapazität direkt aus der Room-Tabelle');
 
     try {
-      // Hole den aktiven Hauptlabor-Raum (z.B. isActive = true, ältester Raum)
+      // Hole den ersten Laborraum (ältester zuerst)
       const mainRoom = await this.prisma.room.findFirst({
-        where: { isOpen: true },
         orderBy: { createdAt: 'asc' },
       });
 
       if (!mainRoom) {
-        this.logger.error('Kein aktiver Laborraum gefunden.');
-        throw new BadRequestException('Kein aktiver Laborraum gefunden.');
+        this.logger.error('Kein Laborraum gefunden.');
+        throw new BadRequestException('Kein Laborraum gefunden.');
       }
 
       return {
@@ -138,17 +135,16 @@ export class LabStatusService {
    * @throws {BadRequestException} Wenn kein aktiver Raum gefunden wird.
    */
   async getMaxCapacity(): Promise<LabCapacityResponseDto> {
-    this.logger.debug('Hole maxCapacity des aktiven Laborraums aus der Room-Tabelle');
+    this.logger.debug('Hole maxCapacity des Laborraums aus der Room-Tabelle');
 
     try {
       const mainRoom = await this.prisma.room.findFirst({
-        where: { isOpen: true },
         orderBy: { createdAt: 'asc' },
       });
 
       if (!mainRoom) {
-        this.logger.error('Kein aktiver Laborraum gefunden.');
-        throw new BadRequestException('Kein aktiver Laborraum gefunden.');
+        this.logger.error('Kein Laborraum gefunden.');
+        throw new BadRequestException('Kein Laborraum gefunden.');
       }
 
       return { 
@@ -179,15 +175,14 @@ export class LabStatusService {
     }
 
     try {
-      // Hole den aktiven Hauptlabor-Raum (z.B. isActive = true, ältester Raum)
+      // Hole den ersten Laborraum (ältester zuerst)
       const mainRoom = await this.prisma.room.findFirst({
-        where: { isOpen: true }, // vll mit der einzigen ID austyyyyyyauschen
         orderBy: { createdAt: 'asc' },
       });
 
       if (!mainRoom) {
-        this.logger.error('Kein aktiver Laborraum gefunden.');
-        throw new BadRequestException('Kein aktiver Laborraum gefunden.');
+        this.logger.error('Kein Laborraum gefunden.');
+        throw new BadRequestException('Kein Laborraum gefunden.');
       }
 
       // Update the room capacity using the PrismaService directly
@@ -206,55 +201,8 @@ export class LabStatusService {
         'Fehler beim Setzen der Laborkapazität (Room)',
         errorStack || errorMessage,
       );
-        const mainRoom = await this.prisma.room.findFirst({
-        where: { isOpen: true }, // vll mit der einzigen ID austyyyyyyauschen
-        orderBy: { createdAt: 'asc' },
-      });
-
-      const updatedRoom = await this.prisma.room.update({
-        where: { id: mainRoom!.id },
-        data: { 
-          maxCapacity: capacity,
-          updatedAt: new Date()
-        }
-      });
-      
-      this.logger.debug(`Successfully updated room capacity for room ${mainRoom!.id}`);
-      return updatedRoom.capacity;
-    }
-  }
-  /**
-   * @method isRoomOpen
-   * @description Prüft, ob ein bestimmter Raum geöffnet ist
-   * @param roomId - Die ID des zu prüfenden Raums
-   * @returns Promise<boolean> - true wenn der Raum offen ist, false wenn geschlossen
-   */
-  async isRoomOpen(roomId: string): Promise<boolean> {
-    this.logger.debug(`Prüfe Öffnungsstatus für Raum ${roomId}`);
-
-    try {
-      const room = await this.prisma.room.findUnique({
-        where: { id: roomId },
-        select: { isOpen: true }
-      });
-
-      if (!room) {
-        this.logger.warn(`Raum mit ID ${roomId} nicht gefunden`);
-        throw new BadRequestException(`Raum mit ID ${roomId} nicht gefunden`);
-      }
-
-      this.logger.debug(`Raum ${roomId} ist ${room.isOpen ? 'geöffnet' : 'geschlossen'}`);
-      return room.isOpen;
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorStack = error instanceof Error ? error.stack : undefined;
-      
-      this.logger.error(
-        `Fehler beim Prüfen des Raumstatus für Raum ${roomId}`,
-        errorStack || errorMessage
-      );
       throw error;
     }
   }
-}
 
+}

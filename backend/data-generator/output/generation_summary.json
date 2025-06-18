@@ -1,0 +1,2522 @@
+{
+  "generationMetadata": {
+    "generatedAt": "2025-06-18T14:38:19.112Z",
+    "dateRange": {
+      "start": "2022-12-31T23:00:00.000Z",
+      "end": "2025-12-30T23:00:00.000Z"
+    },
+    "totalDays": 1095,
+    "roomsProcessed": 2,
+    "sensorsProcessed": 2,
+    "holidaysConsidered": 492
+  },
+  "overallStatistics": {
+    "totalDoorEvents": 41638,
+    "totalPassageEvents": 38268,
+    "totalOccupancyRecords": 38268,
+    "dateRange": {
+      "start": "2022-12-31T23:00:00.000Z",
+      "end": "2025-12-30T23:00:00.000Z"
+    },
+    "roomStats": [
+      {
+        "roomId": "gj81ey7uuhstcw36o3orjujq",
+        "roomName": "Laborraum A101",
+        "averageOccupancy": 0,
+        "maxOccupancy": 10,
+        "totalEvents": 59222
+      },
+      {
+        "roomId": "e09pq3r7ztioltnn1bckfxcz",
+        "roomName": "Laborraum B205",
+        "averageOccupancy": 0,
+        "maxOccupancy": 10,
+        "totalEvents": 58952
+      }
+    ]
+  },
+  "recommendations": {
+    "lstmTraining": [
+      "Use lstm_training_data.csv files for time series prediction",
+      "Consider sequence lengths of 24-48 hours for daily pattern learning",
+      "Use 7-14 day sequences for weekly pattern learning",
+      "Include holiday flags and day-of-week features for better predictions",
+      "Split data into 70% training, 15% validation, 15% testing"
+    ],
+    "dataQuality": [
+      "Review validation_errors.json files if present",
+      "Check daily_stats.json for unrealistic occupancy patterns",
+      "Verify that most days end with zero occupancy",
+      "Ensure peak occupancy doesn't consistently exceed room capacity"
+    ],
+    "nextSteps": [
+      "Load CSV data into your preferred ML framework (TensorFlow, PyTorch, etc.)",
+      "Normalize occupancy values by room capacity",
+      "Consider feature engineering: rolling averages, lag features, etc.",
+      "Experiment with different LSTM architectures (single vs. multi-layer)",
+      "Implement proper validation using time-based splits (not random)"
+    ]
+  },
+  "holidaysUsed": [
+    {
+      "date": "2023-01-01",
+      "name": "Neujahr",
+      "type": "national"
+    },
+    {
+      "date": "2023-01-06",
+      "name": "Heilige Drei Könige",
+      "type": "national"
+    },
+    {
+      "date": "2023-05-01",
+      "name": "Tag der Arbeit",
+      "type": "national"
+    },
+    {
+      "date": "2023-10-03",
+      "name": "Tag der Deutschen Einheit",
+      "type": "national"
+    },
+    {
+      "date": "2023-12-25",
+      "name": "Weihnachten",
+      "type": "national"
+    },
+    {
+      "date": "2023-12-26",
+      "name": "2. Weihnachtsfeiertag",
+      "type": "national"
+    },
+    {
+      "date": "2023-04-07",
+      "name": "Karfreitag",
+      "type": "national"
+    },
+    {
+      "date": "2023-04-09",
+      "name": "Ostersonntag",
+      "type": "national"
+    },
+    {
+      "date": "2023-04-10",
+      "name": "Ostermontag",
+      "type": "national"
+    },
+    {
+      "date": "2023-05-18",
+      "name": "Christi Himmelfahrt",
+      "type": "national"
+    },
+    {
+      "date": "2023-05-28",
+      "name": "Pfingstsonntag",
+      "type": "national"
+    },
+    {
+      "date": "2023-05-29",
+      "name": "Pfingstmontag",
+      "type": "national"
+    },
+    {
+      "date": "2023-02-15",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-02-16",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-02-17",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-02-18",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-02-19",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-02-20",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-02-21",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-02-22",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-02-23",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-02-24",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-02-25",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-02-26",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-02-27",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-02-28",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-01",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-02",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-03",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-04",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-05",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-06",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-07",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-08",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-09",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-10",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-11",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-12",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-13",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-14",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-15",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-16",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-17",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-18",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-19",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-20",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-21",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-22",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-23",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-24",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-25",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-26",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-27",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-28",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-29",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-30",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-03-31",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-04-01",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-04-02",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-04-03",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-04-04",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-04-05",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-15",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-16",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-17",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-18",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-19",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-20",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-21",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-22",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-23",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-24",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-25",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-26",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-27",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-28",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-29",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-30",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-07-31",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-01",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-02",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-03",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-04",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-05",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-06",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-07",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-08",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-09",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-10",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-11",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-12",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-13",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-14",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-15",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-16",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-17",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-18",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-19",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-20",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-21",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-22",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-23",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-24",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-25",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-26",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-27",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-28",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-29",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-30",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-08-31",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-01",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-02",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-03",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-04",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-05",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-06",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-07",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-08",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-09",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-10",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-11",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-12",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-13",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-14",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-15",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-16",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-17",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-18",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-19",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-20",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-21",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-22",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-23",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-24",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-25",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-26",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-27",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-28",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-29",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-09-30",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-10-01",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-10-02",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-10-03",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-10-04",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-10-05",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-12-20",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-12-21",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-12-22",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-12-23",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-12-24",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-12-25",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-12-26",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-12-27",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-12-28",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-12-29",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-12-30",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2023-12-31",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-01-01",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-01-02",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-01-03",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-01-04",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-01-05",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-01-06",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-01-07",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-01-08",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-01-09",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-01-10",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-01-01",
+      "name": "Neujahr",
+      "type": "national"
+    },
+    {
+      "date": "2024-01-06",
+      "name": "Heilige Drei Könige",
+      "type": "national"
+    },
+    {
+      "date": "2024-05-01",
+      "name": "Tag der Arbeit",
+      "type": "national"
+    },
+    {
+      "date": "2024-10-03",
+      "name": "Tag der Deutschen Einheit",
+      "type": "national"
+    },
+    {
+      "date": "2024-12-25",
+      "name": "Weihnachten",
+      "type": "national"
+    },
+    {
+      "date": "2024-12-26",
+      "name": "2. Weihnachtsfeiertag",
+      "type": "national"
+    },
+    {
+      "date": "2024-03-29",
+      "name": "Karfreitag",
+      "type": "national"
+    },
+    {
+      "date": "2024-03-31",
+      "name": "Ostersonntag",
+      "type": "national"
+    },
+    {
+      "date": "2024-04-01",
+      "name": "Ostermontag",
+      "type": "national"
+    },
+    {
+      "date": "2024-05-09",
+      "name": "Christi Himmelfahrt",
+      "type": "national"
+    },
+    {
+      "date": "2024-05-19",
+      "name": "Pfingstsonntag",
+      "type": "national"
+    },
+    {
+      "date": "2024-05-20",
+      "name": "Pfingstmontag",
+      "type": "national"
+    },
+    {
+      "date": "2024-02-15",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-02-16",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-02-17",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-02-18",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-02-19",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-02-20",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-02-21",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-02-22",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-02-23",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-02-24",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-02-25",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-02-26",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-02-27",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-02-28",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-02-29",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-01",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-02",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-03",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-04",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-05",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-06",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-07",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-08",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-09",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-10",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-11",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-12",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-13",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-14",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-15",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-16",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-17",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-18",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-19",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-20",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-21",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-22",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-23",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-24",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-25",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-26",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-27",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-28",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-29",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-30",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-03-31",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-04-01",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-04-02",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-04-03",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-04-04",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-04-05",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-15",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-16",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-17",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-18",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-19",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-20",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-21",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-22",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-23",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-24",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-25",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-26",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-27",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-28",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-29",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-30",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-07-31",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-01",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-02",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-03",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-04",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-05",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-06",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-07",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-08",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-09",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-10",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-11",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-12",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-13",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-14",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-15",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-16",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-17",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-18",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-19",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-20",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-21",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-22",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-23",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-24",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-25",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-26",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-27",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-28",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-29",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-30",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-08-31",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-01",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-02",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-03",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-04",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-05",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-06",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-07",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-08",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-09",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-10",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-11",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-12",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-13",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-14",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-15",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-16",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-17",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-18",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-19",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-20",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-21",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-22",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-23",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-24",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-25",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-26",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-27",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-28",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-29",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-09-30",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-10-01",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-10-02",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-10-03",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-10-04",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-10-05",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-12-20",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-12-21",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-12-22",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-12-23",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-12-24",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-12-25",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-12-26",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-12-27",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-12-28",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-12-29",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-12-30",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2024-12-31",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-01-01",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-01-02",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-01-03",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-01-04",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-01-05",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-01-06",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-01-07",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-01-08",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-01-09",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-01-10",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-01-01",
+      "name": "Neujahr",
+      "type": "national"
+    },
+    {
+      "date": "2025-01-06",
+      "name": "Heilige Drei Könige",
+      "type": "national"
+    },
+    {
+      "date": "2025-05-01",
+      "name": "Tag der Arbeit",
+      "type": "national"
+    },
+    {
+      "date": "2025-10-03",
+      "name": "Tag der Deutschen Einheit",
+      "type": "national"
+    },
+    {
+      "date": "2025-12-25",
+      "name": "Weihnachten",
+      "type": "national"
+    },
+    {
+      "date": "2025-12-26",
+      "name": "2. Weihnachtsfeiertag",
+      "type": "national"
+    },
+    {
+      "date": "2025-04-18",
+      "name": "Karfreitag",
+      "type": "national"
+    },
+    {
+      "date": "2025-04-20",
+      "name": "Ostersonntag",
+      "type": "national"
+    },
+    {
+      "date": "2025-04-21",
+      "name": "Ostermontag",
+      "type": "national"
+    },
+    {
+      "date": "2025-05-29",
+      "name": "Christi Himmelfahrt",
+      "type": "national"
+    },
+    {
+      "date": "2025-06-08",
+      "name": "Pfingstsonntag",
+      "type": "national"
+    },
+    {
+      "date": "2025-06-09",
+      "name": "Pfingstmontag",
+      "type": "national"
+    },
+    {
+      "date": "2025-02-15",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-02-16",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-02-17",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-02-18",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-02-19",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-02-20",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-02-21",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-02-22",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-02-23",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-02-24",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-02-25",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-02-26",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-02-27",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-02-28",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-01",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-02",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-03",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-04",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-05",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-06",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-07",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-08",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-09",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-10",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-11",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-12",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-13",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-14",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-15",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-16",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-17",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-18",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-19",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-20",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-21",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-22",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-23",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-24",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-25",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-26",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-27",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-28",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-29",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-30",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-03-31",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-04-01",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-04-02",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-04-03",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-04-04",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-04-05",
+      "name": "Semesterferien (Winter)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-15",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-16",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-17",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-18",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-19",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-20",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-21",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-22",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-23",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-24",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-25",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-26",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-27",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-28",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-29",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-30",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-07-31",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-01",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-02",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-03",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-04",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-05",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-06",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-07",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-08",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-09",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-10",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-11",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-12",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-13",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-14",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-15",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-16",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-17",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-18",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-19",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-20",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-21",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-22",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-23",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-24",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-25",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-26",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-27",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-28",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-29",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-30",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-08-31",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-01",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-02",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-03",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-04",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-05",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-06",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-07",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-08",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-09",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-10",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-11",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-12",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-13",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-14",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-15",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-16",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-17",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-18",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-19",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-20",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-21",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-22",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-23",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-24",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-25",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-26",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-27",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-28",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-29",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-09-30",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-10-01",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-10-02",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-10-03",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-10-04",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-10-05",
+      "name": "Semesterferien (Sommer)",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-12-20",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-12-21",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-12-22",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-12-23",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-12-24",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-12-25",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-12-26",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-12-27",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-12-28",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-12-29",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-12-30",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    },
+    {
+      "date": "2025-12-31",
+      "name": "Weihnachtsferien",
+      "type": "semester_break"
+    }
+  ]
+}

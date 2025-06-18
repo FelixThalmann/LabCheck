@@ -9,7 +9,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { DoorEvent } from '@prisma/client'; // Assuming we send these types or parts thereof. PassageEvent is currently unused.
-import { OccupancyStatusModel } from 'src/door/models';
+import { OccupancyStatusDto } from 'src/door/models';
 
 
 // WebSocket events emitted by the server
@@ -130,7 +130,7 @@ export class EventsGateway
    * @description Broadcasts an occupancy status update to all connected clients.
    * @param {LabCapacityResponseDto} occupancyStatus - The occupancy status data to send.
    */
-  public sendOccupancyUpdate(occupancyStatus: OccupancyStatusModel, maxCapacity: number): void {
+  public sendOccupancyUpdate(occupancyStatus: OccupancyStatusDto, maxCapacity: number): void {
     this.logger.log('Sending occupancy update:', occupancyStatus);
     this.server.emit(WS_EVENT_OCCUPANCY_UPDATE, occupancyStatus.currentOccupancy, maxCapacity);
   }

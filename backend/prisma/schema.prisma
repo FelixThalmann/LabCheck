@@ -29,6 +29,7 @@ model Room {
   dayPredictions  DayPrediction[]
   weekPredictions WeekPrediction[]
   occupancyHistory RoomOccupancyHistory[]
+  trainingData    OccupancyTrainingData[]
 
   @@map("rooms")
 }
@@ -207,6 +208,28 @@ enum UserRole {
   USER
   ADMIN
   MANAGER
+}
+
+// Training data model for ML/LSTM purposes
+// Stores processed occupancy data with additional features from CSV import
+model OccupancyTrainingData {
+  id               String   @id @default(cuid())
+  timestamp        DateTime // Original timestamp from CSV
+  occupancy        Int      // Current occupancy count
+  occupancyChange  Int      // Change in occupancy from previous measurement
+  hourOfDay        Int      // Hour of day (0-23)
+  dayOfWeek        Int      // Day of week (0-6, where 0 = Sunday)
+  isHoliday        Boolean  // Whether this date is a holiday
+  doorIsOpen       Boolean  // Whether the door is open at this time
+  createdAt        DateTime @default(now())
+
+  // Optional: Link to specific room for multi-room scenarios
+  room   Room?   @relation(fields: [roomId], references: [id])
+  roomId String?
+
+  @@index([timestamp])
+  @@index([roomId, timestamp])
+  @@map("occupancy_training_data")
 }
 
 // Models for Phase 2 (ML Predictions) and Phase 3 (LLM) will be added later
