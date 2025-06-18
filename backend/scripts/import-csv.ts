@@ -25,6 +25,12 @@ interface CsvRowData {
   door_is_open: number; // 0 or 1 in CSV
 }
 
+interface OccupancyEvent {
+  timestamp: Date;
+  personCount: number;
+  isDoorOpen: boolean;
+}
+
 /**
  * Parses CSV content and returns array of structured data
  */
@@ -152,16 +158,7 @@ async function importCsvTrainingData(
 
   for (let i = 0; i < csvData.length; i += batchSize) {
     const batch = csvData.slice(i, i + batchSize);
-    const batchData: Array<{
-      timestamp: Date;
-      occupancy: number;
-      occupancyChange: number;
-      hourOfDay: number;
-      dayOfWeek: number;
-      isHoliday: boolean;
-      doorIsOpen: boolean;
-      roomId: string;
-    }> = [];
+    const batchData: OccupancyEvent[] = [];
 
     for (const row of batch) {
       try {
@@ -188,13 +185,8 @@ async function importCsvTrainingData(
 
         batchData.push({
           timestamp,
-          occupancy: row.occupancy,
-          occupancyChange: row.occupancy_change,
-          hourOfDay: row.hour_of_day,
-          dayOfWeek: row.day_of_week,
-          isHoliday: row.is_holiday === 1,
-          doorIsOpen: row.door_is_open === 1,
-          roomId: targetRoom.id,
+          personCount: row.occupancy,
+          isDoorOpen: row.door_is_open === 1,
         });
       } catch (error) {
         console.warn(`⚠️  Error processing row:`, row, error);
@@ -205,7 +197,7 @@ async function importCsvTrainingData(
     // Insert batch
     if (batchData.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      await prisma.occupancyTrainingData.createMany({
+      await prisma.occupancyEvent.createMany({
         data: batchData,
         skipDuplicates: true,
       });
@@ -227,8 +219,7 @@ async function importCsvTrainingData(
 
   // Show sample imported data
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  const sampleData = await prisma.occupancyTrainingData.findMany({
-    where: { roomId: targetRoom.id },
+  const sampleData = await prisma.occupancyEvent.findMany({
     orderBy: { timestamp: 'asc' },
     take: 3,
   });
@@ -239,7 +230,7 @@ async function importCsvTrainingData(
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     console.log(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      `   ${index + 1}. ${entry.timestamp.toISOString()} | Occupancy: ${entry.occupancy} (${entry.occupancyChange >= 0 ? '+' : ''}${entry.occupancyChange}) | Hour: ${entry.hourOfDay} | Day: ${entry.dayOfWeek} | Holiday: ${entry.isHoliday} | Door: ${entry.doorIsOpen ? 'Open' : 'Closed'}`,
+      `   ${index + 1}. ${entry.timestamp.toISOString()} | Occupancy: ${entry.personCount} | Door: ${entry.isDoorOpen ? 'Open' : 'Closed'}`,
     );
   });
 }

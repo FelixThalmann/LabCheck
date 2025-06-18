@@ -35,6 +35,18 @@ services:
     networks:
       - labcheck_network
 
+  prediction-service:
+    build: ./prediction-service
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - labcheck_network
+
   backend:
     build:
       context: ./backend
