@@ -444,7 +444,16 @@ async function importCsvTrainingData(csvFilePath: string, roomId?: string): Prom
 
   for (let i = 0; i < csvData.length; i += batchSize) {
     const batch = csvData.slice(i, i + batchSize);
-    const batchData = [];
+    const batchData: {
+      timestamp: Date;
+      occupancy: number;
+      occupancyChange: number;
+      hourOfDay: number;
+      dayOfWeek: number;
+      isHoliday: boolean;
+      doorIsOpen: boolean;
+      roomId: string;
+    }[] = [];
 
     for (const row of batch) {
       try {

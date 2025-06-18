@@ -8,13 +8,13 @@ import { createId } from '@paralleldrive/cuid2';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-// Import types
 import { 
   Room, 
   Sensor, 
   GenerationConfig, 
   GenerationStats,
-  HolidayInfo 
+  HolidayInfo,
+  PassageEvent
 } from './types';
 
 // Import configuration and utilities
@@ -108,8 +108,8 @@ class LabDataGenerator {
 
     // Generate passage events for all dates
     console.log('🚶 Generating passage events...');
-    const allPassageEvents = [];
-    const allOccupancyCurves = [];
+    const allPassageEvents: PassageEvent[] = [];
+    const allOccupancyCurves: { timestamp: Date; occupancy: number }[] = [];
 
     for (const date of dates) {
       const { passageEvents, occupancyCurve } = passageGenerator.generateDayPassageEvents(date, this.holidays);
