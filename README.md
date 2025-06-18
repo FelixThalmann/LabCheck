@@ -58,3 +58,10 @@ docker-compose down
 cd backend
 npx prisma studio
 ```
+
+### Add demo data to database
+
+```bash
+cd backend
+npx ts-node scripts/import-csv.ts data-generator/output/room_d4c6ogy1g0i6v8mv74fd1zwj/lstm_training_data.csv
+```
