@@ -1,48 +1,71 @@
-# Stage 1: Build die Anwendung
-FROM node:20-alpine AS builder
+# Multi-stage build für optimierte Produktions-Image
+FROM node:18-alpine AS builder
 
+# Setze Arbeitsverzeichnis
 WORKDIR /usr/src/app
 
-# Kopiere package.json und package-lock.json (oder yarn.lock)
+# Kopiere package.json und package-lock.json zuerst für besseres Caching
 COPY package*.json ./
 
-# Installiere Abhängigkeiten
-# In einer Produktivumgebung eher 'npm ci' verwenden, wenn package-lock.json vorhanden ist
-RUN npm install
+# Installiere alle Dependencies (inkl. devDependencies für Build)
+RUN npm ci
 
-# Kopiere den Rest des Anwendungscodes
+# Kopiere Prisma Schema und Migrationen
+COPY prisma ./prisma/
+
+# Generiere Prisma Client
+RUN npx prisma generate
+
+# Kopiere Source Code
 COPY . .
 
-# Prisma Client generieren (optional hier, besser nach dem Build des Codes)
-# RUN npx prisma generate
-
-# Baue die Anwendung
+# Build der Anwendung
 RUN npm run build
 
-# Stage 2: Erstelle das finale Image für die Produktion
-FROM node:20-alpine
+# Debug: Zeige den Inhalt des dist Verzeichnisses
+RUN ls -la dist/
 
+# Produktions-Image
+FROM node:18-alpine AS production
+
+# Installiere dumb-init für bessere Signal-Behandlung
+RUN apk add --no-cache dumb-init
+
+# Erstelle non-root User für Sicherheit
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nestjs -u 1001
+
+# Setze Arbeitsverzeichnis
 WORKDIR /usr/src/app
 
-# Kopiere nur die notwendigen Artefakte aus dem Builder-Stage
-COPY --from=builder /usr/src/app/node_modules ./node_modules
-COPY --from=builder /usr/src/app/dist ./dist
-COPY --from=builder /usr/src/app/package*.json ./
+# Kopiere package.json und package-lock.json
+COPY package*.json ./
 
-# Kopiere das Prisma-Schema für die Generierung zur Laufzeit, falls erforderlich,
-# oder besser: generiere den Client im Builder-Stage und kopiere ihn.
-# Für TimescaleDB und potenzielle manuelle Migrationen nach dem Deployment
-# ist es oft besser, prisma generate nicht zur Laufzeit auszuführen, sondern den generierten Client mitzuliefern.
-COPY --from=builder /usr/src/app/prisma ./prisma
+# Installiere nur Produktions-Dependencies
+RUN npm ci --only=production && npm cache clean --force
 
-# Stelle sicher, dass der Prisma Client im Produktionsimage vorhanden ist (bereits durch node_modules Kopie, aber doppelt hält besser für Klarheit)
-# Wenn der Client nicht Teil der node_modules ist (z.B. anderer output path in schema.prisma)
-# RUN npm install @prisma/client # oder npx prisma generate, falls schema kopiert wurde
+# Kopiere Prisma Schema und Migrationen
+COPY prisma ./prisma/
 
-# Die Anwendung hört standardmäßig auf Port 3000 (oder was in .env steht)
-# Dieser Port muss über Umgebungsvariable PORT gesetzt werden können
+# Generiere Prisma Client im Produktions-Image
+RUN npx prisma generate
+
+# Kopiere gebaute Anwendung vom Builder-Stage
+COPY --from=builder --chown=nestjs:nodejs /usr/src/app/dist ./dist
+
+# Debug: Zeige den Inhalt des dist Verzeichnisses im Produktions-Image
+RUN ls -la dist/
+
+# Wechsle zu non-root User
+USER nestjs
+
+# Exponiere Port
 EXPOSE 3000
 
-# Kommando zum Starten der Anwendung
-# Node direkt aufzurufen ist oft effizienter als 'npm start' in Produktion
-CMD [ "node", "dist/main.js" ] 
+# Health Check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
+
+# Starte Anwendung mit dumb-init
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "dist/src/main"] 

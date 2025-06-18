@@ -1,11 +1,25 @@
+# ---- Backend Configuration ----
+# Database Configuration
+DATABASE_URL=
+
 POSTGRES_USER=
 POSTGRES_PASSWORD=
 POSTGRES_DB=
 
 DEV_API_BASE_URL=
 
+# MQTT Configuration
+MQTT_BROKER_URL=
+
+# Backend Configuration
+PORT=
+
+ADMIN_PASSWORD=
+JWT_SECRET=
+JWT_ACCESS_TOKEN_EXPIRATION_TIME=
+STATIC_API_KEY=
+
+# ---- Frontend Configuration ----
 ENVIRONMENT=development
 # Use demo data in the app
 DEMO_MODE=true
-
-ACCESS_TOCKEN=""
