@@ -26,6 +26,7 @@ class PredictionRequest(BaseModel):
 
 class PredictionResponse(BaseModel):
     predicted_occupancy: float
+    prediction_isDoorOpen: bool
     prediction_for_timestamp: datetime
     model_last_trained: datetime | None # When was the model trained?
 
@@ -37,20 +38,20 @@ app = FastAPI(
 
 # Global namespace for storing model and metadata
 model_cache = {
-    "model": None,
+    "model": None, # Dictionary with two keys: {'regressor': ..., 'classifier': ...}
     "model_timestamp": None
 }
 
 # --- Load model on application startup ---
 @app.on_event("startup")
 def load_model():
-    """Loads the model from the .pkl file into memory."""
+    """Loads the model(s) from the .pkl file into memory."""
     try:
         if os.path.exists(MODEL_PATH):
             model_cache["model"] = joblib.load(MODEL_PATH)
             # Store when the model file was last modified
             model_cache["model_timestamp"] = datetime.fromtimestamp(os.path.getmtime(MODEL_PATH))
-            print("Model loaded successfully.")
+            print("Model dictionary loaded successfully.")
         else:
             print("WARNING: Model file not found. The /predict endpoint will not work.")
     except Exception as e:
@@ -71,9 +72,6 @@ def get_latest_occupancy_data():
         with engine.connect() as connection:
             result = connection.execute(text(query)).fetchone()
             if result:
-                # Here we assume that the last known occupancy is a good
-                # estimate for all lag/rolling features.
-                # In a more complex version, more logic could be built in here.
                 return {
                     "lag_15m": result[0],
                     "lag_1h": result[0],
@@ -122,11 +120,12 @@ def train():
 @app.post("/predict", response_model=PredictionResponse, summary="Predict room occupancy")
 def predict(request: PredictionRequest, latest_data: dict = Depends(get_latest_occupancy_data)):
     """
-    Predicts occupancy for a specific future time point.
+    Predicts occupancy and door status for a specific future time point.
     Example for a request body (JSON): {"timestamp": "2025-06-19T14:30:00"}
     """
-    if model_cache["model"] is None:
-        raise HTTPException(status_code=503, detail="Model is not loaded. Please try again later.")
+    model_dict = model_cache.get("model")
+    if model_dict is None or 'regressor' not in model_dict or 'classifier' not in model_dict:
+        raise HTTPException(status_code=503, detail="Model is not loaded correctly. Please (re)train.")
     
     if latest_data is None:
         raise HTTPException(status_code=404, detail="No data found in database to create lag features.")
@@ -146,19 +145,26 @@ def predict(request: PredictionRequest, latest_data: dict = Depends(get_latest_o
     # 2. Add the approximated lag/rolling features
     features.update(latest_data)
 
-    # 3. Convert features to a pandas DataFrame in the correct order
+    # 3. Convert features to a pandas DataFrame (used for both models) in the correct order
     # IMPORTANT: The column order must exactly match that used during training!
     feature_order = ['hour', 'day_of_week', 'day_of_month', 'month', 'is_weekend', 'lag_15m', 'lag_1h', 'rolling_mean_1h']
     df_predict = pd.DataFrame([features], columns=feature_order)
 
-    # 4. Make the prediction
-    prediction = model_cache["model"].predict(df_predict)
-    
-    # The result is an array, we want the first (and only) value
-    predicted_value = round(prediction[0], 2)
+    # 4. Make predictions with BOTH models
+    # Predict occupancy
+    regressor = model_dict['regressor']
+    occupancy_prediction = regressor.predict(df_predict)
+    predicted_occupancy = round(occupancy_prediction[0], 2)
 
+    # Predict door status
+    classifier = model_dict['classifier']
+    door_prediction = classifier.predict(df_predict)
+    predicted_door_open = bool(door_prediction[0])
+    
+    # 5. Return the combined results
     return {
-        "predicted_occupancy": predicted_value if predicted_value > 0 else 0.0, # Avoid negative predictions
+        "predicted_occupancy": predicted_occupancy if predicted_occupancy > 0 else 0.0, # Avoid negative values
+        "prediction_isDoorOpen": predicted_door_open,
         "prediction_for_timestamp": prediction_date,
         "model_last_trained": model_cache["model_timestamp"]
     }

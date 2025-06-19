@@ -22,7 +22,7 @@ except Exception as e:
 # --- 2. Load Data from Database ---
 
 # SQL query to fetch all relevant data
-query = 'SELECT "timestamp", "personCount" FROM "OccupancyEvent" ORDER BY "timestamp" ASC'
+query = 'SELECT "timestamp", "personCount", "isDoorOpen" FROM "OccupancyEvent" ORDER BY "timestamp" ASC'
 
 print("Loading data from database...")
 print(f"DATABASE_URL: {DATABASE_URL}")
@@ -73,40 +73,64 @@ if df.empty:
 
 # --- 4. Model Training ---
 
-print("Starting model training...")
+print("Starting combined model training...")
 
-# Target variable (what we want to predict)
-y = df['personCount']
-# Features (what we use to predict)
+# Target variable 1: Regression (occupancy)
+y_occupancy = df['personCount']
+
+# Target variable 2: Classification (door status)
+# Convert Boolean (True/False) to Integer (1/0)
+y_door = df['isDoorOpen'].astype(int)
+
+# Features (what we use to predict) (for both models identical)
 X = df[['hour', 'day_of_week', 'day_of_month', 'month', 'is_weekend', 'lag_15m', 'lag_1h', 'rolling_mean_1h']]
 
-# Split data (shuffle=False is important for time series!)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
+# Split data (shuffle=False is important for time series!) (same splits for both models)
+X_train, X_test, y_occ_train, y_occ_test, y_door_train, y_door_test = train_test_split(
+    X, y_occupancy, y_door, test_size=0.2, shuffle=False
+)
 
+# --- Model 1: Regression for occupancy ---
+print("Train Regressions model for occupancy...")
 # Initialize model
-lgbm = lgb.LGBMRegressor(
-    objective='regression_l1',
-    n_estimators=1000,
-    learning_rate=0.05,
-    num_leaves=20,
-    max_depth=5,
-    n_jobs=-1,
-    random_state=42
+# lgbm = lgb.LGBMRegressor(
+#     objective='regression_l1',
+#     n_estimators=1000,
+#     learning_rate=0.05,
+#     num_leaves=20,
+#     max_depth=5,
+#     n_jobs=-1,
+#     random_state=42
+# )
+
+# Initialize model with reduced parameters
+lgbm_reg = lgb.LGBMRegressor(objective='regression_l1', random_state=42)
+lgbm_reg.fit(
+    X_train, y_occ_train, 
+    eval_set=[(X_test, y_occ_test)], 
+    callbacks=[lgb.early_stopping(50, verbose=False)] # verbose=False for less log output in cronjob
 )
 
-# Train model with Early Stopping
-lgbm.fit(
-    X_train, y_train,
-    eval_set=[(X_test, y_test)],
-    eval_metric='l1',
-    callbacks=[lgb.early_stopping(100, verbose=False)] # verbose=False for less log output in cronjob
+# --- Model 2: Classification for door status ---    
+print("Train Classification model for door status...")
+lgbm_clf = lgb.LGBMClassifier(objective='binary', random_state=42) # objective='binary' for Yes/No
+lgbm_clf.fit(
+    X_train, y_door_train, 
+    eval_set=[(X_test, y_door_test)], 
+    callbacks=[lgb.early_stopping(50, verbose=False)] # verbose=False for less log output in cronjob
 )
 
-# --- 5. Save Model ---
+# --- 5. Save both models together ---
+
+# We save both models in a dictionary, so they can be loaded easier.
+models = {
+    'regressor': lgbm_reg,
+    'classifier': lgbm_clf
+}
 
 model_path = 'models/occupancy_model.pkl'
 # Ensure the directory exists
 os.makedirs(os.path.dirname(model_path), exist_ok=True)
-joblib.dump(lgbm, model_path)
+joblib.dump(models, model_path)
 
-print(f"Model successfully trained and saved under {model_path}.")
+print(f"Both models successfully trained and saved together under {model_path}.")
