@@ -120,7 +120,7 @@ def train():
     return {"message": "Training started."}
 
 @app.post("/predict", response_model=PredictionResponse, summary="Predict room occupancy")
-def predict(request: PredictionRequest, latest_data: dict = Depends(get_latest_occupancy_data)):
+def predict(request: PredictionRequest):
     """
     Predicts occupancy and door status for a specific future time point.
     Example for a request body (JSON): {"timestamp": "2025-06-19T14:30:00"}
@@ -128,31 +128,27 @@ def predict(request: PredictionRequest, latest_data: dict = Depends(get_latest_o
     model_dict = model_cache.get("model")
     if model_dict is None or 'regressor' not in model_dict or 'classifier' not in model_dict:
         raise HTTPException(status_code=503, detail="Model is not loaded correctly. Please (re)train.")
-    
-    if latest_data is None:
-        raise HTTPException(status_code=404, detail="No data found in database to create lag features.")
 
-    # convert timestamp to datetime
-    prediction_date = datetime.fromisoformat(request.timestamp)
+    # Convert timestamp to datetime
+    try:
+        prediction_date = datetime.fromisoformat(request.timestamp)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid timestamp format. Please use ISO format (YYYY-MM-DDTHH:MM:SS).")
 
-    # 1. Create time-based features from the target date
+    # 1. Create time-based features from the target date (only time features)
     features = {
         'hour': prediction_date.hour,
+        'minute': prediction_date.minute,
         'day_of_week': prediction_date.weekday(),
-        'day_of_month': prediction_date.day,
-        'month': prediction_date.month,
-        'is_weekend': (prediction_date.weekday() >= 5),
+        'is_weekend': int(prediction_date.weekday() >= 5),
     }
 
-    # 2. Add the approximated lag/rolling features
-    features.update(latest_data)
-
-    # 3. Convert features to a pandas DataFrame (used for both models) in the correct order
+    # 2. Convert features to a pandas DataFrame (used for both models)
     # IMPORTANT: The column order must exactly match that used during training!
-    feature_order = ['hour', 'day_of_week', 'day_of_month', 'month', 'is_weekend', 'lag_15m', 'lag_1h', 'rolling_mean_1h']
+    feature_order = ['hour', 'minute', 'day_of_week', 'is_weekend']
     df_predict = pd.DataFrame([features], columns=feature_order)
 
-    # 4. Make predictions with BOTH models
+    # 3. Make predictions with BOTH models
     # Predict occupancy
     regressor = model_dict['regressor']
     occupancy_prediction = regressor.predict(df_predict)
@@ -163,7 +159,7 @@ def predict(request: PredictionRequest, latest_data: dict = Depends(get_latest_o
     door_prediction = classifier.predict(df_predict)
     predicted_door_open = bool(door_prediction[0])
     
-    # 5. Return the combined results
+    # 4. Return the combined results
     return {
         "predicted_occupancy": predicted_occupancy if predicted_occupancy > 0 else 0.0, # Avoid negative values
         "prediction_isDoorOpen": predicted_door_open,

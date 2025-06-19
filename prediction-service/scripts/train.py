@@ -50,27 +50,15 @@ print(f"{len(df)} records successfully loaded.")
 df.set_index('timestamp', inplace=True)
 
 # 3.1. Time-based Features
+# Only use time-based features for ML
+# hour: hour of the day (0-23)
 df['hour'] = df.index.hour
-df['day_of_week'] = df.index.dayofweek  # Monday=0, Sunday=6
-df['day_of_month'] = df.index.day
-df['month'] = df.index.month
+# minute: minute of the hour (0, 15, 30, 45)
+df['minute'] = df.index.minute
+# day_of_week: Monday=0, Sunday=6
+df['day_of_week'] = df.index.dayofweek
+# is_weekend: 1 if Saturday or Sunday, else 0
 df['is_weekend'] = (df.index.dayofweek >= 5).astype(int)
-
-# 3.2. Lag and Rolling Window Features
-# First, bring data to a fixed frequency to fill gaps
-# and have consistent intervals for lag/rolling operations.
-df_resampled = df['personCount'].resample('15T').mean().ffill()
-
-df['lag_15m'] = df_resampled.shift(1)
-df['lag_1h'] = df_resampled.shift(4)  # 4 * 15 minutes
-df['rolling_mean_1h'] = df_resampled.rolling(window=4).mean()
-
-# Remove rows with NaN values that arise from lag/rolling operations at the beginning
-df.dropna(inplace=True)
-
-if df.empty:
-    print("Not enough data for lag/rolling features. Training will be skipped.")
-    exit(0)
 
 # --- 3.1. Data lockup ---
 
@@ -91,8 +79,8 @@ y_occupancy = df['personCount']
 # Convert Boolean (True/False) to Integer (1/0)
 y_door = df['isDoorOpen'].astype(int)
 
-# Features (what we use to predict) (for both models identical)
-X = df[['hour', 'day_of_week', 'day_of_month', 'month', 'is_weekend', 'lag_15m', 'lag_1h', 'rolling_mean_1h']]
+# Features (for both models identical)
+X = df[['hour', 'minute', 'day_of_week', 'is_weekend']]
 
 # Split data (shuffle=False is important for time series!) (same splits for both models)
 X_train, X_test, y_occ_train, y_occ_test, y_door_train, y_door_test = train_test_split(
@@ -100,24 +88,8 @@ X_train, X_test, y_occ_train, y_occ_test, y_door_train, y_door_test = train_test
 )
 
 # --- Model 1: Regression for occupancy ---
-print("Train Regressions model for occupancy...")
-# Initialize model
-# lgbm = lgb.LGBMRegressor(
-#     objective='regression_l1',
-#     n_estimators=1000,
-#     learning_rate=0.05,
-#     num_leaves=20,
-#     max_depth=5,
-#     n_jobs=-1,
-#     random_state=42
-# )
-
-# Initialize model with reduced parameters
-lgbm_reg = lgb.LGBMRegressor(
-    objective='regression_l1', 
-    random_state=42
-)
-
+print("Train Regression model for occupancy...")
+lgbm_reg = lgb.LGBMRegressor(objective='regression_l1', random_state=42)
 lgbm_reg.fit(
     X_train, y_occ_train, 
     eval_set=[(X_test, y_occ_test)], 
