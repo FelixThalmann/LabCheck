@@ -7,7 +7,8 @@ import {
   LabStatusResponseDto, 
   LabCapacityResponseDto, 
   LabSettingResponseDto,
-  SetLabCapacityDto 
+  SetLabCapacityDto,
+  LoginDto,
 } from '../dto';
 
 /**
@@ -100,4 +101,20 @@ export class LabStatusController {
     );
   }
 
+  /**
+   * @method login
+   * @description Login
+   */
+  @Post('login')
+  @ApiOperation({
+    summary: 'Login',
+    description: 'Login',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Login erfolgreich',
+  })
+  async login(@Body() loginDto: LoginDto): Promise<{ success: boolean; message: string }> {
+    return this.labStatusService.login(loginDto.password);
+  }
 }

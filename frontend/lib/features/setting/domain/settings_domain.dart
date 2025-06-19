@@ -1,7 +1,12 @@
+import 'package:labcheck/data/services/api_service.dart';
+
 class SettingsDomain {
-  bool authenticate(String password) {
-    // TODO: Implement actual password verification (check with backend)
-    return password == 'admin123';
+  Future<bool> authenticate(String password) async {
+    final response = await ApiService().post('/api/lab/login', {
+      'password': password,
+    });
+
+    return response['success'] ?? false;
   }
 
   bool validateAndSaveSeats(String seatsText) {

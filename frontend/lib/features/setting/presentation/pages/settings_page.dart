@@ -20,8 +20,11 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _isAuthenticated = false;
   String _errorMessage = '';
 
-  void _authenticate() {
-    if (_settingsDomain.authenticate(_passwordController.text)) {
+  void _authenticate() async {
+    final isAuthenticated = await _settingsDomain.authenticate(
+      _passwordController.text,
+    );
+    if (isAuthenticated) {
       setState(() {
         _isAuthenticated = true;
         _errorMessage = '';

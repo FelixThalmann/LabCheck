@@ -205,4 +205,26 @@ export class LabStatusService {
     }
   }
 
+  /**
+   * @method login
+   * @description Login
+   * @param password - Das Administratorpasswort
+   * @returns {Promise<{ success: boolean; message: string }>} Ob der Login erfolgreich war und eine Nachricht
+   */
+  async login(password: string): Promise<{ success: boolean; message: string }> {
+    this.logger.debug(`Login attempt with password`);
+
+    const adminPassword = this.configService.get<string>('ADMIN_PASSWORD', 'admin123');
+    if (password !== adminPassword) {
+      this.logger.warn('Ungültiger Passwortversuch für login');
+      throw new UnauthorizedException('Ungültiges Administratorpasswort');
+    }
+
+    this.logger.debug(`Login successfull`);
+
+    return {
+      success: true,
+      message: 'Login successfull',
+    };
+  }
 }
