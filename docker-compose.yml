@@ -42,6 +42,7 @@ services:
       - "${PORT_PREDICTION}:${PORT_PREDICTION}"
     environment:
       - DATABASE_URL=${DATABASE_URL}
+      - DEBUG_PREDICTION=${DEBUG_PREDICTION}
     depends_on:
       - postgres
     restart: unless-stopped
