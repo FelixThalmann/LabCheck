@@ -19,6 +19,9 @@ except Exception as e:
     print(f"Error creating DB engine: {e}")
     exit(1)
 
+# Load debug flag from environment variables
+DEBUG_PREDICTION = os.getenv("DEBUG_PREDICTION", "false").lower() == "true"
+
 # --- 2. Load Data from Database ---
 
 # SQL query to fetch all relevant data
@@ -41,8 +44,7 @@ if df.empty:
 
 print(f"{len(df)} records successfully loaded.")
 
-
-# --- 3. Feature Engineering (This part starts now) ---
+# --- 3. Feature Engineering ---
 
 # Set the timestamp as the DataFrame index, which is common for time series analysis
 df.set_index('timestamp', inplace=True)
@@ -70,6 +72,13 @@ if df.empty:
     print("Not enough data for lag/rolling features. Training will be skipped.")
     exit(0)
 
+# --- 3.1. Data lockup ---
+
+if DEBUG_PREDICTION:
+    print(df.head(20))
+    print(df['personCount'].value_counts())
+    print(df['isDoorOpen'].value_counts())
+    print(df.describe())
 
 # --- 4. Model Training ---
 
@@ -104,7 +113,11 @@ print("Train Regressions model for occupancy...")
 # )
 
 # Initialize model with reduced parameters
-lgbm_reg = lgb.LGBMRegressor(objective='regression_l1', random_state=42)
+lgbm_reg = lgb.LGBMRegressor(
+    objective='regression_l1', 
+    random_state=42
+)
+
 lgbm_reg.fit(
     X_train, y_occ_train, 
     eval_set=[(X_test, y_occ_test)], 
@@ -113,12 +126,25 @@ lgbm_reg.fit(
 
 # --- Model 2: Classification for door status ---    
 print("Train Classification model for door status...")
-lgbm_clf = lgb.LGBMClassifier(objective='binary', random_state=42) # objective='binary' for Yes/No
+lgbm_clf = lgb.LGBMClassifier(
+    objective='binary', # objective='binary' for Yes/No
+    random_state=42, 
+    class_weight='balanced' # to also consider less frequent classes (door closed is less frequent than door open)
+)
+
 lgbm_clf.fit(
     X_train, y_door_train, 
     eval_set=[(X_test, y_door_test)], 
     callbacks=[lgb.early_stopping(50, verbose=False)] # verbose=False for less log output in cronjob
 )
+
+# --- 4.2. Check predictions ---
+
+if DEBUG_PREDICTION:
+    preds_reg = lgbm_reg.predict(X_test)
+    preds_clf = lgbm_clf.predict(X_test)
+    print(list(zip(preds_reg, y_occ_test)))
+    print(list(zip(preds_clf, y_door_test)))
 
 # --- 5. Save both models together ---
 
