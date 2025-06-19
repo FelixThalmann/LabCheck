@@ -39,7 +39,7 @@ services:
     build: ./prediction-service
     container_name: labcheck_prediction_service
     ports:
-      - "8080:8080"
+      - "${PORT_PREDICTION}:${PORT_PREDICTION}"
     environment:
       - DATABASE_URL=${DATABASE_URL}
     depends_on:
@@ -59,9 +59,9 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - MQTT_BROKER_URL=${MQTT_BROKER_URL}
-      - PORT=${PORT}
+      - PORT=${PORT_BACKEND}
     ports:
-      - "${PORT}:${PORT}"
+      - "${PORT_BACKEND}:${PORT_BACKEND}"
     depends_on:
       postgres:
         condition: service_healthy

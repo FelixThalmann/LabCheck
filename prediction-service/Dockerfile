@@ -27,9 +27,9 @@ RUN chmod 0644 /etc/cron.d/training-cron
 RUN crontab /etc/cron.d/training-cron
 
 # 8. Expose port on which the API will listen
-EXPOSE 8080
+EXPOSE ${PORT_PREDICTION}
 
 # 9. Start command for the container
 # Start the cron service in the background AND the FastAPI application in the foreground.
 # This way both periodic training and the API run.
-CMD sh -c "cron && uvicorn app.main:app --host 0.0.0.0 --port 8080"
+CMD sh -c "cron && uvicorn app.main:app --host 0.0.0.0 --port ${PORT_PREDICTION:-3100}"

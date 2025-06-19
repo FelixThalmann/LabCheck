@@ -10,8 +10,10 @@ from sqlalchemy import create_engine, text
 # Path to model file, as expected in Docker container
 MODEL_PATH = "models/occupancy_model.pkl"
 
-# Database connection from environment variables (set by Docker Compose)
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://labcheck:labcheck@postgres:5432/labcheck_db")
+# Load the database URL from environment variables (set by Docker Compose)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable not set!")
 
 # --- Database connection ---
 try:
