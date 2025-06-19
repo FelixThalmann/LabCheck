@@ -28,10 +28,28 @@ docker-compose build prediction-service
 curl http://localhost:3100/health
 ```
 
+output:
+
+```json
+{
+    "status": "ok",
+    "model_status": "loaded",
+    "model_last_trained": "2025-06-19T13:05:02.476633"
+}
+```
+
 ### Train the model
 
 ```bash
 curl -X PUT http://localhost:3100/train
+```
+
+output:
+
+```json
+{
+    "message": "Training started."
+}
 ```
 
 ### Predict the occupancy for a specific timestamp
@@ -40,4 +58,15 @@ The timestamp must be in ISO format (YYYY-MM-DDTHH:MM:SS).
 
 ```bash
 curl -X POST http://localhost:3100/predict -H "Content-Type: application/json" -d '{"timestamp": "2025-06-19T14:30:00"}'
+```
+
+output:
+
+```json
+{
+    "predicted_occupancy": 1.0,
+    "prediction_isDoorOpen": false,
+    "prediction_for_timestamp": "2025-08-31T14:30:00",
+    "model_last_trained": "2025-06-19T13:05:02.476633"
+}
 ```
