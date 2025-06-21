@@ -93,7 +93,7 @@ export class LabStatusController {
   })
   async setLabCapacity(
     @Body() setCapacityDto: SetLabCapacityDto,
-  ): Promise<number> {
+  ): Promise<{ success: boolean; message: string }> {
     this.logger.debug(`REST API: POST /api/lab/capacity - capacity: ${setCapacityDto.capacity}`);
     return this.labStatusService.setLabCapacity(
       setCapacityDto.capacity,

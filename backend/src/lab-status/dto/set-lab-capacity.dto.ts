@@ -20,10 +20,7 @@ export class SetLabCapacityDto {
 
   @ApiProperty({
     description: 'Administratorpasswort für die Kapazitätsänderung',
-    example: 'admin123',
-    minLength: 6,
   })
   @IsString()
-  @MinLength(6)
   password: string;
 }

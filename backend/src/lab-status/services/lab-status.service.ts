@@ -164,7 +164,7 @@ export class LabStatusService {
    * @param capacity - Die neue Kapazität
    * @param password - Das Administratorpasswort
    */
-  async setLabCapacity(capacity: number, password: string): Promise<number> {
+  async setLabCapacity(capacity: number, password: string): Promise<{ success: boolean; message: string }> {
     this.logger.debug(`Setting lab capacity to: ${capacity}`);
     
     // Passwort-Validierung
@@ -192,7 +192,10 @@ export class LabStatusService {
       });
 
       this.logger.debug(`Laborkapazität erfolgreich auf ${capacity} gesetzt`);
-      return capacity;
+      return {
+        success: true,
+        message: `Laborkapazität erfolgreich auf ${capacity} gesetzt`,
+      };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;

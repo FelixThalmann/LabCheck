@@ -5,6 +5,7 @@ import 'package:labcheck/features/setting/presentation/widgets/password_input_wi
 import 'package:labcheck/features/setting/presentation/widgets/seats_input_widget.dart';
 import 'package:labcheck/features/setting/domain/settings_domain.dart';
 import 'package:labcheck/shared/utils/snackbar_utils.dart';
+import 'package:labcheck/data/services/api_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -21,10 +22,27 @@ class _SettingsPageState extends State<SettingsPage> {
   String _errorMessage = '';
 
   void _authenticate() async {
-    final isAuthenticated = await _settingsDomain.authenticate(
-      _passwordController.text,
-    );
-    if (isAuthenticated) {
+    final result = await _settingsDomain.authenticate(_passwordController.text);
+
+    if (result.containsKey('error')) {
+      final error = result['error'] as Exception;
+
+      if (error is NetworkException) {
+        SnackbarUtils.showNetworkError(context, error);
+      } else if (error is ApiException) {
+        if (error.type == ApiExceptionType.unauthorized) {
+          SnackbarUtils.showAuthenticationError(context, error.message);
+        } else {
+          SnackbarUtils.showError(context, 'Server error: ${error.message}');
+        }
+      } else {
+        SnackbarUtils.showError(context, 'An unexpected error occurred');
+      }
+
+      return;
+    }
+
+    if (result['success'] ?? false) {
       setState(() {
         _isAuthenticated = true;
         _errorMessage = '';
@@ -36,11 +54,57 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  void _saveSeats() {
-    if (_settingsDomain.validateAndSaveSeats(_seatsController.text)) {
-      SnackbarUtils.showSuccess(context, 'Number of seats has been saved');
+  void _saveSeats() async {
+    final result = await _settingsDomain.authenticate(_passwordController.text);
+
+    if (result.containsKey('error')) {
+      final error = result['error'] as Exception;
+
+      if (error is NetworkException) {
+        SnackbarUtils.showNetworkError(context, error);
+      } else if (error is ApiException) {
+        if (error.type == ApiExceptionType.unauthorized) {
+          SnackbarUtils.showAuthenticationError(context, error.message);
+        } else {
+          SnackbarUtils.showError(context, 'Server error: ${error.message}');
+        }
+      } else {
+        SnackbarUtils.showError(context, 'An unexpected error occurred');
+      }
+      return;
+    }
+
+    if (result['success'] ?? false) {
+      final result = await _settingsDomain.validateAndSaveSeats(
+        _seatsController.text,
+        _passwordController.text,
+      );
+
+      if (result.containsKey('error')) {
+        final error = result['error'] as Exception;
+
+        if (error is NetworkException) {
+          SnackbarUtils.showNetworkError(context, error);
+        } else if (error is ApiException) {
+          if (error.type == ApiExceptionType.client) {
+            SnackbarUtils.showError(context, error.message);
+          } else {
+            SnackbarUtils.showError(context, 'Server error: ${error.message}');
+          }
+        } else {
+          SnackbarUtils.showError(context, 'An unexpected error occurred');
+        }
+        return;
+      }
+
+      if (result['success'] ?? false) {
+        SnackbarUtils.showSuccess(context, 'Number of seats has been saved');
+      }
     } else {
-      SnackbarUtils.showError(context, 'Please enter a valid number');
+      SnackbarUtils.showError(context, 'Wrong password');
+      setState(() {
+        _errorMessage = 'Wrong password';
+      });
     }
   }
 

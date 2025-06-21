@@ -78,6 +78,24 @@ class ApiService {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.isEmpty) return null;
       return json.decode(response.body);
+    } else if (response.statusCode == 401) {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: 'Wrong password. Please try again.',
+        type: ApiExceptionType.unauthorized,
+      );
+    } else if (response.statusCode == 400) {
+      final responseData = json.decode(response.body);
+      final messageArray = responseData['message'];
+      final errorMessage =
+          messageArray is List && messageArray.isNotEmpty
+              ? messageArray[0]
+              : 'Invalid request. Please check your input.';
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: errorMessage,
+        type: ApiExceptionType.client,
+      );
     } else {
       throw ApiException(
         statusCode: response.statusCode,
@@ -134,7 +152,7 @@ class ApiService {
 }
 
 // Exception Types
-enum ApiExceptionType { server, client, unknown }
+enum ApiExceptionType { server, client, unauthorized, unknown }
 
 enum NetworkExceptionType {
   unreachable,
