@@ -41,6 +41,7 @@ dependencies:
   http: ^1.1.0
   logging: ^1.2.0
   flutter_dotenv: ^5.1.0  # For environment variables
+  socket_io_client: ^2.0.3+1  # Add this line
 
 dev_dependencies:
   flutter_test:

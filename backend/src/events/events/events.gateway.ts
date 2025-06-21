@@ -120,8 +120,11 @@ export class EventsGateway
     this.logger.log('Sending door status update:', doorEvent);
     this.server.emit(WS_EVENT_DOOR_STATUS_UPDATE, {
       isOpen: doorEvent.doorIsOpen,
-      timestamp: doorEvent.eventTimestamp, // or createdAt for backend time
-      sensorId: doorEvent.sensorId,
+      currentOccupancy: 0, // TODO: Implement
+      maxOccupancy: 0, // TODO: Implement
+      color: 'red', // TODO: Implement
+      currentDate: doorEvent.eventTimestamp, // or createdAt for backend time
+      lastUpdated: doorEvent.eventTimestamp, // TODO: Implement (last time the status was sent by the hardware)
     });
   }
 

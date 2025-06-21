@@ -192,6 +192,8 @@ export class LabStatusService {
       });
 
       this.logger.debug(`Laborkapazität erfolgreich auf ${capacity} gesetzt`);
+      // TODO: Sende Türstatus-Update via WebSocket an Frontend
+
       return {
         success: true,
         message: `Laborkapazität erfolgreich auf ${capacity} gesetzt`,

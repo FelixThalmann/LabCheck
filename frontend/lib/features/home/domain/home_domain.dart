@@ -4,11 +4,45 @@ import '../../../data/models/lab_status_dto.dart';
 import '../../../data/services/api_service.dart';
 import 'package:logging/logging.dart';
 import '../../../core/config/environment_config.dart';
+import '../../../data/services/websocket_service.dart';
 
 class HomeDomain {
   final _logger = Logger('HomeDomain');
+  final WebSocketService _webSocketService = WebSocketService();
   Exception? lastException;
   bool isDemoMode = EnvironmentConfig.isDemoMode;
+
+  // Callback for WebSocket updates
+  Function(LabStatusDto)? _onLabStatusUpdate;
+
+  /// Initialize WebSocket connection and setup listeners
+  void initializeWebSocket(Function(LabStatusDto) onLabStatusUpdate) {
+    _onLabStatusUpdate = onLabStatusUpdate;
+
+    _webSocketService.initialize();
+    _webSocketService.onLabStatusUpdate((data) {
+      _logger.info('Received WebSocket lab status update: $data');
+
+      try {
+        // Convert WebSocket data to LabStatusDto
+        final labStatus = LabStatusDto.fromJson(data);
+        _onLabStatusUpdate?.call(labStatus);
+      } catch (e) {
+        _logger.warning('Failed to parse WebSocket lab status data: $e');
+      }
+    });
+
+    _webSocketService.onConnectionStatusChanged(() {
+      _logger.info(
+        'WebSocket connection status changed: ${_webSocketService.isConnected}',
+      );
+    });
+  }
+
+  /// Cleanup WebSocket connection
+  void dispose() {
+    _webSocketService.disconnect();
+  }
 
   Future<LabStatusDto?> getLabStatus() async {
     try {

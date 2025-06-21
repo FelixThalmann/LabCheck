@@ -7,6 +7,8 @@ import '../widgets/days_widget.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/utils/snackbar_utils.dart';
 import '../../../../data/services/api_service.dart';
+import '../../../../data/services/websocket_service.dart';
+import '../../../../data/models/lab_status_dto.dart';
 import '../../domain/home_domain.dart';
 
 class HomePage extends StatefulWidget {
@@ -24,12 +26,45 @@ class _HomePageState extends State<HomePage> {
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       GlobalKey<RefreshIndicatorState>();
 
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize WebSocket connection
+    _homeDomain.initializeWebSocket(_handleWebSocketUpdate);
+
+    // Small delay, so the BuildContext is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Manually trigger the RefreshIndicator when the page is loaded
+      _refreshIndicatorKey.currentState?.show();
+    });
+  }
+
+  @override
+  void dispose() {
+    _homeDomain.dispose();
+    super.dispose();
+  }
+
+  /// Handle real-time updates from WebSocket
+  void _handleWebSocketUpdate(LabStatusDto labStatus) {
+    if (mounted) {
+      setState(() {
+        _data['labStatus'] = labStatus;
+        _data['noDataLabStatus'] = false;
+      });
+
+      _logger.info('Updated lab status via WebSocket: ${labStatus.isOpen}');
+    }
+  }
+
+  /// Manual refresh (pull-to-refresh)
   Future<void> _onRefresh() async {
     setState(() {
       _isLoading = true;
     });
 
-    _logger.info('Refreshing...');
+    _logger.info('Manual refresh triggered...');
 
     try {
       _data = await _homeDomain.refreshData();
@@ -70,16 +105,6 @@ class _HomePageState extends State<HomePage> {
 
       _logger.info('Refreshing... done');
     }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // Small delay, so the BuildContext is available
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Manually trigger the RefreshIndicator when the page is loaded
-      _refreshIndicatorKey.currentState?.show();
-    });
   }
 
   @override
