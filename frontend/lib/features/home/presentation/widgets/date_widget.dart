@@ -86,7 +86,11 @@ class DateWidget extends StatelessWidget {
             left: containerWidth * 0.35, // 35% from left edge
             top: containerHeight * 0.45, // 45% from top
             child: Text(
-              noData ? 'No Data' : '$currentOccupancy of $maxOccupancy',
+              noData
+                  ? 'No Data'
+                  : (!isOpen
+                      ? 'Door closed'
+                      : '$currentOccupancy of $maxOccupancy'),
               style: TextStyle(
                 color: noData ? Colors.grey[600] : Colors.black,
                 fontSize: containerWidth * 0.05, // 5% of container width
