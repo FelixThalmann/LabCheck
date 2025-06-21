@@ -1,10 +1,14 @@
 # LabCheck
 
+## Setup
+
+Copy the `.env` file to the different directories (backend, frontend, prediction-service).
+
+```bash
+./sync-env.sh
+```
+
 ## Frontend - Flutter
-
-### Setup
-
-Add the `.env` file to the `frontend/assets/` directory.
 
 ### Install dependencies
 
