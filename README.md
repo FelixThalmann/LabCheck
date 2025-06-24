@@ -1,50 +1,15 @@
 # LabCheck
 
-## Setup
+## Setup (linux based systems)
 
+Locate the `.env` file in the root directory.
 Copy the `.env` file to the different directories (backend, frontend, prediction-service).
 
 ```bash
 ./sync-env.sh
 ```
 
-## Frontend - Flutter
-
-### Install dependencies
-
-```bash
-flutter pub get
-```
-
-### Run the app on simulator
-
-```bash
-flutter run
-```
-
-### Build the app
-
-Android:
-```bash
-flutter build apk
-```
-
-iOS:
-```bash
-flutter build ios
-```
-
-### Install the app on device (iOS)
-
-```bash
-flutter build ipa --release --export-method=development
-```
-
-Open the `ios/Runner.xcworkspace` in Xcode. Open "Window" -> "Devices and Simulators" and select the device. Drag the ".ipa" file into "Installed Apps"
-
-## Backend - Node.js, PostgreSQL, MQTT
-
-This project uses PostgreSQL as the database and MQTT as the message broker.
+## How to run the project
 
 ### Run/Stop as production
 
@@ -55,6 +20,28 @@ docker-compose up -d
 ```bash
 docker-compose down
 ```
+
+### Remove all containers and volumes
+
+```bash
+docker-compose down -v
+```
+
+### Remove images
+
+```bash
+docker image prune -f
+```
+
+### Rebuild the containers
+
+```bash
+docker-compose up -d --build
+```
+
+## Database
+
+To interact with the database from the outside, modify the `.env` file and update the `DATABASE_URL` variable for the localhost.
 
 ### Show data in database
 
@@ -67,5 +54,28 @@ npx prisma studio
 
 ```bash
 cd backend
+npm run db:seed 
+```
+
+or
+
+```bash
+cd backend
 npx ts-node scripts/import-csv.ts data-generator/output/room_d4c6ogy1g0i6v8mv74fd1zwj/lstm_training_data.csv
 ```
+
+## Frontend - Flutter
+
+[Frontend README](frontend/README.md)
+
+## Backend - NestJS, PostgreSQL, MQTT
+
+[Backend README](backend/README.md)
+
+## Prediction Service - Python
+
+[Prediction Service README](prediction-service/README.md)
+
+## Hardware
+
+[Hardware README](hardware/README.md)
