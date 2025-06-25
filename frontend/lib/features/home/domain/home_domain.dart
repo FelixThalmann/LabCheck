@@ -131,7 +131,7 @@ class HomeDomain {
       lastException = null;
     }
 
-    result['noDatalabStatus'] = result['labStatus'] == null;
+    result['noDataLabStatus'] = result['labStatus'] == null;
     result['noDataDayPredictions'] = result['dayPredictions'] == null;
     result['noDataWeekPredictions'] = result['weekPredictions'] == null;
 

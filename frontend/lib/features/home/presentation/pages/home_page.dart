@@ -70,9 +70,10 @@ class _HomePageState extends State<HomePage> {
     _logger.info('Manual refresh triggered...');
 
     try {
-      _data = await _homeDomain.refreshAllData();
+      final newData = await _homeDomain.refreshAllData();
 
       setState(() {
+        _data = newData;
         _isLoading = false;
       });
 
@@ -110,14 +111,12 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> refreshLabStatus() async {
+  Future<void> _onRefreshLabStatus() async {
     final labStatus = await _homeDomain.getLabStatus();
-    if (labStatus != null) {
-      setState(() {
-        _data['labStatus'] = labStatus;
-        _data['noDataLabStatus'] = false;
-      });
-    }
+    setState(() {
+      _data['labStatus'] = labStatus;
+      _data['noDataLabStatus'] = labStatus == null;
+    });
   }
 
   @override
@@ -198,8 +197,15 @@ class _HomePageState extends State<HomePage> {
               right: 20,
               child: IconButton(
                 icon: const Icon(Icons.settings, color: Colors.black, size: 24),
-                onPressed: () {
-                  Navigator.pushNamed(context, '/settings');
+                onPressed: () async {
+                  final result = await Navigator.pushNamed(
+                    context,
+                    '/settings',
+                  );
+                  // If settings page returned true, it means seats were saved and we should refresh
+                  if (result == true) {
+                    await _onRefreshLabStatus();
+                  }
                 },
               ),
             ),

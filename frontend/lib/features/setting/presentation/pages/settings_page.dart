@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:labcheck/core/theme/app_colors.dart';
-import 'package:labcheck/features/home/domain/home_domain.dart';
 import 'package:labcheck/shared/widgets/header_widget.dart';
 import 'package:labcheck/features/setting/presentation/widgets/password_input_widget.dart';
 import 'package:labcheck/features/setting/presentation/widgets/seats_input_widget.dart';
@@ -18,7 +17,6 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _seatsController = TextEditingController();
-  final HomeDomain _homeDomain = HomeDomain();
   final SettingsDomain _settingsDomain = SettingsDomain();
   bool _isAuthenticated = false;
   String _errorMessage = '';
@@ -102,8 +100,11 @@ class _SettingsPageState extends State<SettingsPage> {
       if (result['success'] ?? false) {
         SnackbarUtils.showSuccess(context, 'Number of seats has been saved');
 
-        // Update the lab status in home page
-        await _homeDomain.refreshLabStatus();
+        // Navigate back to home page and trigger refresh
+        Navigator.pop(
+          context,
+          true,
+        ); // true indicates that data should be refreshed
       }
     } else {
       SnackbarUtils.showError(context, 'Wrong password');
