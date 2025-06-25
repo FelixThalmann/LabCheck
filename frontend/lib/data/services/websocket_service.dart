@@ -1,4 +1,4 @@
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:logging/logging.dart';
 import '../../core/config/environment_config.dart';
 
@@ -9,7 +9,7 @@ class WebSocketService {
   WebSocketService._internal();
 
   final _logger = Logger('WebSocketService');
-  IO.Socket? _socket;
+  io.Socket? _socket;
   bool _isConnected = false;
 
   // Callbacks for real-time updates
@@ -23,7 +23,7 @@ class WebSocketService {
     final baseUrl = EnvironmentConfig.apiBaseUrl.replaceAll('/api', '');
     _logger.info('Initializing WebSocket connection to: $baseUrl');
 
-    _socket = IO.io(baseUrl, <String, dynamic>{
+    _socket = io.io(baseUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': true,
       'reconnection': true,

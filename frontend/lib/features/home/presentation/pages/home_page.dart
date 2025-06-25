@@ -7,7 +7,6 @@ import '../widgets/days_widget.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/utils/snackbar_utils.dart';
 import '../../../../data/services/api_service.dart';
-import '../../../../data/services/websocket_service.dart';
 import '../../../../data/models/lab_status_dto.dart';
 import '../../domain/home_domain.dart';
 
@@ -19,7 +18,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  bool _isLoading = false;
   final HomeDomain _homeDomain = HomeDomain();
   final _logger = Logger('HomePage');
   Map<String, dynamic> _data = {};
@@ -63,9 +61,7 @@ class _HomePageState extends State<HomePage> {
 
   /// Manual refresh (pull-to-refresh)
   Future<void> _onRefresh() async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() {});
 
     _logger.info('Manual refresh triggered...');
 
@@ -74,7 +70,6 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         _data = newData;
-        _isLoading = false;
       });
 
       _logger.info('Data: $_data');
@@ -102,9 +97,7 @@ class _HomePageState extends State<HomePage> {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() {});
       }
 
       _logger.info('Refreshing... done');

@@ -24,6 +24,10 @@ class _SettingsPageState extends State<SettingsPage> {
   void _authenticate() async {
     final result = await _settingsDomain.authenticate(_passwordController.text);
 
+    if (!mounted) {
+      return; // check if the widget is still mounted (widget exists), to use the context
+    }
+
     if (result.containsKey('error')) {
       final error = result['error'] as Exception;
 
@@ -57,6 +61,10 @@ class _SettingsPageState extends State<SettingsPage> {
   void _saveSeats() async {
     final result = await _settingsDomain.authenticate(_passwordController.text);
 
+    if (!mounted) {
+      return; // check if the widget is still mounted (widget exists), to use the context
+    }
+
     if (result.containsKey('error')) {
       final error = result['error'] as Exception;
 
@@ -79,6 +87,10 @@ class _SettingsPageState extends State<SettingsPage> {
         _seatsController.text,
         _passwordController.text,
       );
+
+      if (!mounted) {
+        return; // check if the widget is still mounted (widget exists), to use the context
+      }
 
       if (result.containsKey('error')) {
         final error = result['error'] as Exception;
