@@ -109,7 +109,15 @@ class HomeDomain {
     }
   }
 
-  Future<Map<String, dynamic>> refreshData() async {
+  Future<LabStatusDto?> refreshLabStatus() async {
+    final labStatus = await getLabStatus();
+    if (labStatus != null) {
+      _onLabStatusUpdate?.call(labStatus);
+    }
+    return labStatus;
+  }
+
+  Future<Map<String, dynamic>> refreshAllData() async {
     Map<String, dynamic> result = {};
     result['labStatus'] = await getLabStatus();
 

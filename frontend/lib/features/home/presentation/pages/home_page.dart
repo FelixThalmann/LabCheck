@@ -92,7 +92,7 @@ class _HomePageState extends State<HomePage> {
     _logger.info('Manual refresh triggered...');
 
     try {
-      _data = await _homeDomain.refreshData();
+      _data = await _homeDomain.refreshAllData();
 
       setState(() {
         _isLoading = false;
@@ -129,6 +129,16 @@ class _HomePageState extends State<HomePage> {
       }
 
       _logger.info('Refreshing... done');
+    }
+  }
+
+  Future<void> refreshLabStatus() async {
+    final labStatus = await _homeDomain.getLabStatus();
+    if (labStatus != null) {
+      setState(() {
+        _data['labStatus'] = labStatus;
+        _data['noDataLabStatus'] = false;
+      });
     }
   }
 
