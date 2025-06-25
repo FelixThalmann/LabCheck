@@ -21,22 +21,30 @@ docker-compose up -d
 docker-compose down
 ```
 
-### Remove all containers and volumes
-
+### Docker helper commands
+Logs for all services (follow the logs):
 ```bash
-docker-compose down -v
+docker-compose logs -f
 ```
 
-### Remove images
+Logs for one service (follow the logs):
+```bash
+docker-compose logs -f <service-name>
+```
 
+Rebuild the containers
+```bash
+docker-compose up -d --build
+```
+
+Remove images
 ```bash
 docker image prune -f
 ```
 
-### Rebuild the containers
-
+Remove all containers and volumes
 ```bash
-docker-compose up -d --build
+docker-compose down -v
 ```
 
 ## Database
