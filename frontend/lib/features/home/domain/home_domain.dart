@@ -12,7 +12,7 @@ class HomeDomain {
   Exception? lastException;
   bool isDemoMode = EnvironmentConfig.isDemoMode;
 
-  // Callback for WebSocket updates
+  // Single callback for all lab status updates
   Function(LabStatusDto)? _onLabStatusUpdate;
 
   /// Initialize WebSocket connection and setup listeners
@@ -20,23 +20,31 @@ class HomeDomain {
     _onLabStatusUpdate = onLabStatusUpdate;
 
     _webSocketService.initialize();
+
+    // Listen for lab status updates
     _webSocketService.onLabStatusUpdate((data) {
       _logger.info('Received WebSocket lab status update: $data');
 
       try {
         // Convert WebSocket data to LabStatusDto
         final labStatus = LabStatusDto.fromJson(data);
+        _logger.info('Successfully parsed LabStatusDto');
         _onLabStatusUpdate?.call(labStatus);
       } catch (e) {
         _logger.warning('Failed to parse WebSocket lab status data: $e');
+        _logger.warning('Raw data was: $data');
       }
     });
 
+    // Listen for connection status changes
     _webSocketService.onConnectionStatusChanged(() {
       _logger.info(
         'WebSocket connection status changed: ${_webSocketService.isConnected}',
       );
     });
+
+    // Request initial status after connection is established
+    _webSocketService.requestInitialStatus();
   }
 
   /// Cleanup WebSocket connection

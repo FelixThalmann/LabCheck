@@ -15,19 +15,22 @@ class WebSocketService {
   // Callbacks for real-time updates
   Function(Map<String, dynamic>)? _onDoorStatusUpdate;
   Function()? _onConnectionStatusChanged;
-  // Add new callback for lab status updates
+  // Callback for all lab status updates
   Function(Map<String, dynamic>)? _onLabStatusUpdate;
 
   /// Initialize WebSocket connection
   void initialize() {
     final baseUrl = EnvironmentConfig.apiBaseUrl.replaceAll('/api', '');
+    _logger.info('Initializing WebSocket connection to: $baseUrl');
 
     _socket = IO.io(baseUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': true,
       'reconnection': true,
       'reconnectionDelay': 1000,
-      'reconnectionAttempts': 5,
+      'reconnectionAttempts': 10,
+      'timeout': 20000,
+      'forceNew': true,
     });
 
     _setupEventListeners();
@@ -59,9 +62,53 @@ class WebSocketService {
       if (_onDoorStatusUpdate != null) {
         _onDoorStatusUpdate!(data);
       }
-      // Also trigger lab status update since door status contains full lab info
+      // Trigger lab status update
       if (_onLabStatusUpdate != null) {
         _onLabStatusUpdate!(data);
+      }
+    });
+
+    // Listen for occupancy updates
+    _socket?.on('occupancyUpdate', (data) {
+      // Handle JSON format:
+      // {currentOccupancy: 15, maxOccupancy: 20, isOpen: true, color: green, currentDate: 2025-06-25T16:18:31.756Z, lastUpdated: 2025-06-25T16:18:31.756Z}
+      if (data is Map<String, dynamic>) {
+        _logger.info('Starting extracting occupancy data...');
+
+        final currentOccupancy = data['currentOccupancy'] as int? ?? 0;
+        final maxOccupancy = data['maxOccupancy'] as int? ?? 0;
+        final color = data['color'] as String? ?? 'red';
+        final isOpen = data['isOpen'] as bool? ?? false;
+
+        // Parse DateTime strings properly
+        DateTime currentDate;
+        DateTime lastUpdated;
+        try {
+          currentDate = DateTime.parse(
+            data['currentDate'] as String? ?? DateTime.now().toIso8601String(),
+          );
+          lastUpdated = DateTime.parse(
+            data['lastUpdated'] as String? ?? DateTime.now().toIso8601String(),
+          );
+        } catch (e) {
+          _logger.warning('Failed to parse date strings: $e');
+          currentDate = DateTime.now();
+          lastUpdated = DateTime.now();
+        }
+
+        if (_onLabStatusUpdate != null) {
+          final labStatusData = {
+            'currentOccupancy': currentOccupancy,
+            'maxOccupancy': maxOccupancy,
+            'isOpen': isOpen,
+            'color': color,
+            'currentDate': currentDate.toIso8601String(),
+            'lastUpdated': lastUpdated.toIso8601String(),
+          };
+
+          _logger.info('...Forwarding occupancy data to lab status update');
+          _onLabStatusUpdate!(labStatusData);
+        }
       }
     });
   }

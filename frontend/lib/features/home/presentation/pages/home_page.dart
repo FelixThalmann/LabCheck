@@ -30,7 +30,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
-    // Initialize WebSocket connection
+    // Initialize WebSocket connection with single lab status update callback
     _homeDomain.initializeWebSocket(_handleWebSocketUpdate);
 
     // Small delay, so the BuildContext is available
@@ -54,7 +54,32 @@ class _HomePageState extends State<HomePage> {
         _data['noDataLabStatus'] = false;
       });
 
-      _logger.info('Updated lab status via WebSocket: ${labStatus.isOpen}');
+      _logger.info('Updated lab status via WebSocket: ${labStatus.toJson()}');
+
+      // Show a subtle notification for real-time updates
+      _showUpdateNotification('Lab status updated');
+    }
+  }
+
+  /// Show a subtle notification for real-time updates
+  void _showUpdateNotification(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.wifi, color: Colors.white, size: 16),
+              SizedBox(width: 8),
+              Text('Live: $message'),
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
     }
   }
 
