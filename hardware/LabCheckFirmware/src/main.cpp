@@ -1,8 +1,6 @@
 #include "main.h"
 
 // MQTT Configuration
-const char* MQTT_BROKER = "192.168.137.1";
-const int MQTT_PORT = 1883;
 const char* MQTT_CLIENT_ID = "LabCheckESP32";
 const char* MQTT_TOPIC = "labcheck/status";
 
@@ -110,6 +108,32 @@ void loop() {
                 isMainProgramActive = true;
                 mainProgram.begin();
                 break;
+
+            case 'm':
+                Serial.println(F("MQTT Setup"));
+                Serial.setTimeout(10000);
+                Serial.print(F("Input Broker IP: "));
+                while(!Serial.available());
+                {
+                    String broker = readStringUntilMulti("\r\n\t");
+                    while (Serial.available()) {Serial.read();};
+                    Serial.println(broker.c_str());
+                    Serial.print(F("Input Port (Enter for 1883): "));
+                    String portStr = readStringUntilMulti("\r\n\t");
+                    while (Serial.available()) {Serial.read();};
+                    uint16_t port = 1883;
+                    if (portStr.length() > 0) {
+                        port = portStr.toInt();
+                        Serial.println(portStr.c_str());
+                    } else {
+                        Serial.println(F("1883 (default)"));
+                    }
+                    mqtt.setServer(broker.c_str(), port);
+                }
+                Serial.println(F("MQTT Setup completed."));
+                Serial.setTimeout(1000);
+                showMenu();
+                break;
                 
             default:
                 Serial.println(F("Ungueltiger Input!"));
@@ -129,7 +153,7 @@ void setupComponents() {
     pirSensor.begin();
     speaker.begin();
     wifi.begin();
-    mqtt.begin(MQTT_BROKER, MQTT_PORT);
+    mqtt.begin();
     
     // Setup magnetic sensor callbacks
     magneticSensor.onMagnetDetected([]() {
@@ -177,6 +201,7 @@ void showMenu() {
     Serial.println(F("(2) Secret Song"));
     Serial.println(F("(3) WiFi Test: Connect and print IP address"));
     Serial.println(F("(4) WiFi Setup: Set SSID and Password"));
+    Serial.println(F("(m) MQTT Setup: Set Broker and Port"));
     Serial.println(F("(5) Test LEDs"));
     Serial.println(F("(6) Test Buttons"));
     Serial.println(F("(7) Test MQTT Connection"));

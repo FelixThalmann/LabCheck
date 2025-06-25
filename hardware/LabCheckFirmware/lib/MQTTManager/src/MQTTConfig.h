@@ -5,6 +5,7 @@
 #include <PubSubClient.h>
 #include <WiFiClient.h>
 #include <LED.h>
+#include <Preferences.h>
 
 struct SecurePublishData {
     const char* topic;
@@ -21,10 +22,13 @@ public:
     MQTTConfig();
     
     // Initialize MQTT client
-    void begin(const char* broker, uint16_t port = 1883);
+    void begin();
     
     // Set MQTT credentials if needed
     void setCredentials(const char* username, const char* password);
+
+    // Set new broker and port
+    void setServer(const char* broker, uint16_t port = 1883);
     
     // Connect to MQTT broker
     bool connect(const char* clientId);
@@ -46,13 +50,20 @@ public:
     
     // Disconnect from broker
     void disconnect();
+
+    void saveCredentials();
+    void loadCredentials();
+    void saveBroker();
+    void loadBroker();
     
 private:
     WiFiClient wifiClient;
     PubSubClient mqttClient;
-    const char* mqtt_username;
-    const char* mqtt_password;
     bool credentialsSet;
+    static const String DEF_BROKER;
+    static const String DEF_PORT;
+    static const String DEF_USERNAME;
+    static const String DEF_PASSWORD;
 
     LED led;  // LED for signaling connection status
     
@@ -61,6 +72,12 @@ private:
     static void ackCallback(char* topic, byte* payload, unsigned int length);
     SecurePublishData pendingPublish;
     
+    Preferences prefs;
+    String broker;
+    uint16_t port;
+    String username;
+    String password;
+
     // Reconnect to broker if connection lost
     void reconnect(const char* clientId);
     

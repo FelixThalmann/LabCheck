@@ -30,8 +30,6 @@ bool isButtonTestActive = false;
 bool isMainProgramActive = false;
 
 // MQTT Configuration
-extern const char* MQTT_BROKER;
-extern const int MQTT_PORT;
 extern const char* MQTT_CLIENT_ID;
 extern const char* MQTT_TOPIC;
 
