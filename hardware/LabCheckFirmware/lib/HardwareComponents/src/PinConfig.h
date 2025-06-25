@@ -2,14 +2,20 @@
 #define PIN_CONFIG_H
 
 // Pin definitions for various hardware components
-#define MAGNETIC 15    // Magnetic door sensor
-#define SIGNALLED 2    // Signal output
-#define LEDGREEN 17    // Green LED
-#define LEDYELLOW 18   // Yellow LED
-#define LEDRED 19      // Red LED
-#define SPEAKER 13     // Speaker output
-#define PUSHONE 4      // First push button
-#define PUSHTWO 16     // Second push button
-#define PIR_SENSOR 5   // PIR sensor input
+#define MAGNETIC 22    // Magnetic door sensor
+
+#define SIGNALLED 18    // Signal output
+#define LEDGREEN 23    // Green LED
+
+#define SPEAKER 16     // Speaker output
+
+#define PIR_SENSOR 19   // PIR sensor input
+
+#define TOF1_SCL 2  // TOF sensor I2C SCL pin
+#define TOF1_SDA 15  // TOF sensor I2C SDA pin
+#define TOF1_XSHUT 5  // TOF sensor XSHUT pin
+#define TOF2_SCL 4  // Second TOF sensor I2C SCL pin
+#define TOF2_SDA 0  // Second TOF sensor I2C SDA pin
+#define TOF2_XSHUT 17  // Second TOF sensor XSHUT pin
 
 #endif // PIN_CONFIG_H

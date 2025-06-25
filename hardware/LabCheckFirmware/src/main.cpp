@@ -134,6 +134,12 @@ void loop() {
                 Serial.setTimeout(1000);
                 showMenu();
                 break;
+
+            case 't':
+                Serial.println(F("Testing ToF Sensors"));
+                testToFSensors();
+                showMenu();
+                break;
                 
             default:
                 Serial.println(F("Ungueltiger Input!"));
@@ -148,12 +154,13 @@ void loop() {
 
 void setupComponents() {
     leds.begin();
-    buttons.begin();
     magneticSensor.begin();
     pirSensor.begin();
     speaker.begin();
     wifi.begin();
     mqtt.begin();
+    //tof1.begin();
+    //tof2.begin();
     
     // Setup magnetic sensor callbacks
     magneticSensor.onMagnetDetected([]() {
@@ -176,23 +183,6 @@ void setupComponents() {
         speaker.stop();
         mqtt.publish(MQTT_TOPIC, "Motion stopped");
     });
-    
-    // Setup button callbacks
-    buttons.onButton1Pressed([]() {
-        leds.setGreen(true);
-    });
-    
-    buttons.onButton1Released([]() {
-        leds.setGreen(false);
-    });
-    
-    buttons.onButton2Pressed([]() {
-        leds.setYellow(true);
-    });
-    
-    buttons.onButton2Released([]() {
-        leds.setYellow(false);
-    });
 }
 
 void showMenu() {
@@ -206,6 +196,7 @@ void showMenu() {
     Serial.println(F("(6) Test Buttons"));
     Serial.println(F("(7) Test MQTT Connection"));
     Serial.println(F("(8) Test PIR Sensor"));
+    Serial.println(F("(t) Test ToF Sensors"));
     Serial.println(F("(9) Start Main Program"));
     Serial.println(F("(menu) send something else or press the board reset button\n"));
     Serial.print(F("Input option: "));
@@ -220,9 +211,6 @@ void updateActiveComponents() {
     }
     if (isSongPlaying) {
         speaker.update();
-    }
-    if (isButtonTestActive) {
-        buttons.update();
     }
     if (isMainProgramActive) {
         mainProgram.update();
@@ -276,5 +264,23 @@ void testMQTT() {
         mqtt.publish(MQTT_TOPIC, "Hello from LabCheck!");
     } else {
         Serial.println(F("MQTT connection failed"));
+    }
+}
+
+void testToFSensors() {
+    Serial.println(F("Testing ToF Sensors..."));
+    
+    if (!tof1.begin()) {
+        Serial.println(F("ToF Sensor 1 initialization failed!"));
+    } else {
+        Serial.print(F("ToF Sensor 1 distance: "));
+        Serial.println(tof1.readDistance());
+    }
+    
+    if (!tof2.begin()) {
+        Serial.println(F("ToF Sensor 2 initialization failed!"));
+    } else {
+        Serial.print(F("ToF Sensor 2 distance: "));
+        Serial.println(tof2.readDistance());
     }
 }

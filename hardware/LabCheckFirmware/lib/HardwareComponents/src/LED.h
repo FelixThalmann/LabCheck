@@ -12,13 +12,13 @@ public:
     void begin();
     
     // Control individual LEDs
+    void setSignal(bool state);
     void setGreen(bool state);
-    void setYellow(bool state);
-    void setRed(bool state);
     
     // Test sequence for all LEDs
     void testSequence();
 
+    // Blink an LED a specified number of times
     void blinkLED(uint8_t pin, int times = 3, int duration = 200);
 };
 

@@ -3,7 +3,7 @@
 
 extern MQTTConfig mqtt;
 
-MainProgram::MainProgram(){
+MainProgram::MainProgram() : tofSensor1{TOF1_XSHUT, TOF1_SDA, TOF1_SCL}, tofSensor2{TOF2_XSHUT, TOF2_SDA, TOF2_SCL} {
   programmode = 0;
   peopleCounter = 0;
   sensorStorageIndex = 0;
@@ -29,6 +29,7 @@ void MainProgram::begin(){
   }
   //wifi.disconnect();
   if (isWiFiAvailable()){
+    mqtt.setCredentials("user", "password");
     if (mqtt.connect("LabCheckESP32")){
       Serial.println(F("Connected to MQTT Broker!"));
     }
@@ -36,9 +37,35 @@ void MainProgram::begin(){
       Serial.println(F("Failed to connect to MQTT Broker!"));
     }
   }
+  // Initialize toF sensors
+  if (!tofSensor1.begin()) {
+    Serial.println(F("ToF Sensor 1 initialization failed!"));
+  } else {
+    Serial.println(F("ToF Sensor 1 initialized successfully."));
+  }
+  if (!tofSensor2.begin()) {
+    Serial.println(F("ToF Sensor 2 initialization failed!"));
+  } else {
+    Serial.println(F("ToF Sensor 2 initialized successfully."));
+  }
+  
+  Serial.println(F("ToF sensors initialized with separate I2C buses."));
+  
 }
 
 void MainProgram::update(){
+  // Sequential ToF sensor reading to avoid I2C address conflicts
+  // Read sensor 1
+  uint16_t distance1 = tofSensor1.readDistance();
+  // Read sensor 2
+  uint16_t distance2 = tofSensor2.readDistance();
+  
+  /* Serial.print(F("Distance 1: "));
+  Serial.print(distance1);
+  Serial.print(F(" mm, Distance 2: "));
+  Serial.print(distance2);
+  Serial.println(F(" mm")); */
+
   switch(programmode){
     // idle if door sensor active
     case 0:
@@ -46,7 +73,8 @@ void MainProgram::update(){
         Serial.println(F("Door opened!"));
         mqtt.publish("labcheck/esp32/door", "1");
         prepareMode(1);
-      }   
+      }
+      break;
     // Main behavior loop if door sensor inactive
     case 1:
       if(magneticSensor.isActive()){
@@ -56,39 +84,46 @@ void MainProgram::update(){
         break;
       }
 
-      if (peopleCounter == 10){
+      /* if (peopleCounter == 10){
         activeLed = 3;
       } else if (peopleCounter >= 5){
         activeLed = 2;
       } else {
         activeLed = 1;
-      }
+      } */
 
-      if(buttons.isButton1Pressed()){
+
+
+
+      if(distance1 < 1000){
         Serial.print(F("Possible entrance detected..."));
-        if (peopleCounter >= 10){
+        /* if (peopleCounter >= 10){
           Serial.println(F("But the room is full!"));
           prepareMode(4);
         } else {
           prepareMode(2);
-        }
+        } */
+        prepareMode(2);
+        break;
       }
 
-      if(buttons.isButton2Pressed()){
+      if(distance2 < 1000){
         Serial.print(F("Possible exit detected..."));
-        if (peopleCounter <= 0){
+        /* if (peopleCounter <= 0){
           Serial.println(F("But this can't be possible, the room should be empty!"));
           prepareMode(4);
         } else {
           prepareMode(3);
-        }
+        } */
+        prepareMode(3);
+        break;
       }
       break;
 
     // Person entering detection mode
     case 2:
       sensorTimer += delayTime;
-      if(buttons.isButton2Pressed()){
+      if(distance2 < 1000){
         Serial.print(F("Person entered! Took "));
         Serial.print(sensorTimer);	
         Serial.println(F(" ms to pass!"));
@@ -97,17 +132,19 @@ void MainProgram::update(){
         mqtt.publish("labcheck/esp32/entrance", "1");
         storeSensorData(1, 123);
         prepareMode(4);
+        break;
       }
       if (sensorTimer >= 3000){
         Serial.println(F("Timeout!"));
         prepareMode(4);
+        break;
       }
       break;
 
     // Persion exiting detection mode 
     case 3:
       sensorTimer += delayTime;
-      if(buttons.isButton1Pressed()){
+      if(distance1 < 1000){
           Serial.print(F("Person exited! Took "));
           Serial.print(sensorTimer);	
           Serial.println(F(" ms to pass!"));
@@ -116,22 +153,25 @@ void MainProgram::update(){
           mqtt.publish("labcheck/esp32/entrance", "0");
           storeSensorData(0, 123);
           prepareMode(4);
+          break;
         }
       if (sensorTimer >= 3000){
         Serial.println(F("Timeout!"));
         prepareMode(4);
+        break;
       }
       break;
 
     // Awaiting default sensor data mode
-    case 4:
-      if (!buttons.isButton1Pressed() && !buttons.isButton2Pressed()){
+    case 4:      
+      if (distance1>1000 && distance2>1000){
         prepareMode(1);
+        break;
       }
       Serial.print(F("."));
       break;
 
-
+ 
     default:
       Serial.println(F("Idle mode."));
       break;
@@ -190,7 +230,5 @@ void MainProgram::prepareMode(int mode){
 void MainProgram::updateLed(){
   if (activeLed != 0){
     leds.setGreen(activeLed == 1 ? true : false);
-    leds.setYellow(activeLed == 2 ? true : false);
-    leds.setRed(activeLed == 3 ? true : false);
   }
 }

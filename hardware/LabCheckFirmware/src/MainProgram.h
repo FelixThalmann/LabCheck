@@ -4,10 +4,11 @@
 #include <Arduino.h>
 #include "PinConfig.h"
 #include "LED.h"
-#include "Button.h"
+//#include "Button.h"
 #include "MagneticSensor.h"
 #include "Speaker.h"
 #include "WiFiConfig.h"
+#include "ToFSensor.h"
 
 class MainProgram{
 public:
@@ -23,10 +24,12 @@ public:
 
 private:
   LED leds;
-  Button buttons;
   MagneticSensor magneticSensor;
   Speaker speaker;
   WiFiConfig wifi;
+  ToFSensor tofSensor1;
+  ToFSensor tofSensor2;
+  
 
   int programmode;
   int sensorStorage[128][2];
@@ -48,4 +51,3 @@ private:
 };
 
 #endif // MAINPROGRAM_H
-
