@@ -72,18 +72,8 @@ class HomeDomain {
   }
 
   Future<DayPredictionDto?> getDayPredictions() async {
-    if (isDemoMode) {
-      _logger.info('Using demo data for day predictions');
-      // Fallback to Demo-Data if error
-      return _getFallbackDayPredictions();
-    } else {
-      return null;
-    }
-
-    /*
     try {
-      // TODO: Implementierung für echte API-Aufrufe wenn Backend verfügbar
-      final url = '/api/lab/day-predictions';
+      final url = '/api/predictions/day';
       final response = await ApiService().get(url);
       _logger.info('DayPredictionDto: $response');
       return DayPredictionDto.fromJson(response);
@@ -98,22 +88,11 @@ class HomeDomain {
         return null;
       }
     }
-    */
   }
 
   Future<WeekPredictionDto?> getWeekPredictions() async {
-    if (isDemoMode) {
-      _logger.info('Using demo data for week predictions');
-      // Fallback to Demo-Data if error
-      return _getFallbackWeekPredictions();
-    } else {
-      return null;
-    }
-
-    /*
     try {
-      // TODO: Implementierung für echte API-Aufrufe wenn Backend verfügbar
-      final url = '/api/lab/week-predictions';
+      final url = '/api/predictions/week';
       final response = await ApiService().get(url);
       _logger.info('WeekPredictionDto: $response');
       return WeekPredictionDto.fromJson(response);
@@ -128,7 +107,6 @@ class HomeDomain {
         return null;
       }
     }
-    */
   }
 
   Future<Map<String, dynamic>> refreshData() async {
