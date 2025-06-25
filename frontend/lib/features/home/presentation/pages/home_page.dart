@@ -57,29 +57,7 @@ class _HomePageState extends State<HomePage> {
       _logger.info('Updated lab status via WebSocket: ${labStatus.toJson()}');
 
       // Show a subtle notification for real-time updates
-      _showUpdateNotification('Lab status updated');
-    }
-  }
-
-  /// Show a subtle notification for real-time updates
-  void _showUpdateNotification(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.wifi, color: Colors.white, size: 16),
-              SizedBox(width: 8),
-              Text('Live: $message'),
-            ],
-          ),
-          backgroundColor: AppColors.primary,
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
+      SnackbarUtils.showUpdateNotification(context, 'Lab status updated');
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:labcheck/core/theme/app_colors.dart';
 import '../../data/services/api_service.dart';
 
 class SnackbarUtils {
@@ -211,6 +212,27 @@ class SnackbarUtils {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
           },
         ),
+      ),
+    );
+  }
+
+  /// Show a subtle notification for real-time updates (WebSocket)
+  static void showUpdateNotification(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.wifi, color: Colors.white, size: 16),
+            SizedBox(width: 8),
+            Text('Live: $message'),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
