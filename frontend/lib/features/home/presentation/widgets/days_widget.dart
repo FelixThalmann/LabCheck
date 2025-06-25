@@ -32,7 +32,7 @@ class _BarChart extends StatelessWidget {
     );
 
     // Calculate the upper limit of the Y-axis with 20% buffer
-    final maxY = (maxValue * 1.2);
+    final maxY = (maxValue * 1.4);
 
     return BarChart(
       BarChartData(
