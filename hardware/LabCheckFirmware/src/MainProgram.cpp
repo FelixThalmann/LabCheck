@@ -74,6 +74,12 @@ void MainProgram::begin(){
   // Initialize speaker
   speaker.begin();
 
+  // Set entrance/exit inversion state from preferences
+  prefs.begin("lcmain", true);
+  invertEntranceExit = prefs.getBool("invertEntranceExit", false);
+  prefs.end();
+  
+
   programmode = ProgramMode::IDLE;
   
 }
@@ -126,7 +132,7 @@ void MainProgram::update(){
         break;
       } */
       if (!pirSensor.motionDetected()){
-        Serial.println(F("No motion! Awaiting motion..."));
+        Serial.print(F("."));
         prepareMode(ProgramMode::AWAITING_MOTION);
         break;
       }
@@ -153,8 +159,7 @@ void MainProgram::update(){
         Serial.println(F(" ms to pass!"));
         speaker.playSuccess();
         peopleCounter++;
-        publishMQTT("labcheck/esp32/entrance", "1");
-        storeSensorData(1, 123);
+        publishMQTT("labcheck/esp32/entrance", invertEntranceExit ? "0" : "1");
         prepareMode(4);
         break;
       }
@@ -174,8 +179,7 @@ void MainProgram::update(){
           Serial.println(F(" ms to pass!"));
           speaker.playSuccess();
           peopleCounter--;
-          publishMQTT("labcheck/esp32/entrance", "0");
-          storeSensorData(0, 123);
+          publishMQTT("labcheck/esp32/entrance", invertEntranceExit ? "1" : "0");
           prepareMode(4);
           break;
         }
@@ -206,7 +210,7 @@ void MainProgram::update(){
   delay(delayTime);
 }
 
-void MainProgram::storeSensorData(int timestamp, int sensorValue){
+/* void MainProgram::storeSensorData(int timestamp, int sensorValue){
   if(sensorStorageIndex < 128){
     sensorStorage[sensorStorageIndex][0] = timestamp;
     sensorStorage[sensorStorageIndex][1] = sensorValue;
@@ -214,7 +218,7 @@ void MainProgram::storeSensorData(int timestamp, int sensorValue){
   } else {
     Serial.println(F("Sensor storage full!"));
   }
-}
+} */
 
 bool MainProgram::isWiFiAvailable(){
   return wifi.getIPAddress().length() > 0;
@@ -228,7 +232,7 @@ void MainProgram::prepareMode(int mode){
       break;
     case 5: // awaiting motion
       activeLed = 0;
-      delayTime = 1000;
+      delayTime = 200;
       programmode = 5;
       break;
     case 1: // awaiting detection
@@ -271,4 +275,13 @@ void MainProgram::publishMQTT(const char* topic, const char* payload) {
     Serial.print(F("MQTT not connected, failed to publish to: "));
     Serial.println(topic);
   }
+}
+
+void MainProgram::setInvertEntranceExit(bool invert) {
+  invertEntranceExit = invert;
+  prefs.begin("lcmain", false);
+  prefs.putBool("invertEntranceExit", invert);
+  prefs.end();
+  Serial.print(F("Entrance/Exit inversion set to: "));
+  Serial.println(invert ? "true" : "false");
 }

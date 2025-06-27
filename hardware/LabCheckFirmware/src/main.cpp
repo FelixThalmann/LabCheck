@@ -139,6 +139,22 @@ void loop() {
                 testToFSensors();
                 showMenu();
                 break;
+
+            case 's':
+                Serial.println(F("By default, going from blue to green led is considered as entrance, going from green to blue is considered as exit."));
+                Serial.println(F("Invert Entrance/Exit? (y/n)"));
+                while (!Serial.available());
+                char invertChoice = Serial.read();
+                while (Serial.available()) {Serial.read();};
+                if (invertChoice == 'y') {
+                    mainProgram.setInvertEntranceExit(true);
+                    Serial.println(F("Entrance/Exit inverted."));
+                } else {
+                    mainProgram.setInvertEntranceExit(false);
+                    Serial.println(F("Entrance/Exit not inverted."));
+                }
+                showMenu();
+                break;
                 
             default:
                 Serial.println(F("Ungueltiger Input!"));
@@ -196,6 +212,7 @@ void showMenu() {
     Serial.println(F("(7) Test MQTT Connection"));
     Serial.println(F("(8) Test PIR Sensor"));
     Serial.println(F("(t) Test ToF Sensors"));
+    Serial.println(F("(s) Set Entrance/Exit Inversion"));
     Serial.println(F("(9) Start Main Program"));
     Serial.println(F("(menu) send something else or press the board reset button\n"));
     Serial.print(F("Input option: "));
