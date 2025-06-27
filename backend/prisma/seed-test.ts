@@ -20,7 +20,27 @@ function generateOccupancyEvents(startDate: Date, days: number, intervalHours: n
       } else {
         // Door is mostly open, but sometimes closed (lightly randomised)
         isDoorOpen = Math.random() < 0.9; // 90% Chance, that the door is open
-        personCount = isDoorOpen ? Math.floor(Math.random() * 11) : 0; // 0-10 people, if the door is open
+        
+        // Different occupancy based on weekday
+        const weekday = currentDate.getDay();
+        let maxOccupancy: number;
+        
+        switch (weekday) {
+          case 1: // Monday - less people
+            maxOccupancy = 4;
+            break;
+          case 3: // Wednesday - more people
+            maxOccupancy = 10;
+            break;
+          case 5: // Friday - less people
+            maxOccupancy = 3;
+            break;
+          default: // Tuesday, Thursday - random occupancy
+            maxOccupancy = Math.floor(Math.random() * 11); // 0-10 zufällig
+            break;
+        }
+        
+        personCount = isDoorOpen ? Math.floor(Math.random() * (maxOccupancy + 1)) : 0; // 0 bis maxOccupancy Leute
       }
 
       events.push({
@@ -62,8 +82,8 @@ async function main() {
   });
 
   // Trainingsdata for 3 weeks (Startdate z.B. today)
-  const startDate = new Date('2025-06-02T00:00:00Z');
-  const occupancyEvents = generateOccupancyEvents(startDate, 21, 2); // 3 Weeks = 21 Days, every 2 hours
+  const startDate = new Date('2025-04-01T00:00:00Z');
+  const occupancyEvents = generateOccupancyEvents(startDate, 56, 2); // 8 Weeks = 56 Days, every 2 hours
 
   // Create OccupancyEvents
   await prisma.occupancyEvent.createMany({
