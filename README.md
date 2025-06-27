@@ -47,6 +47,11 @@ Remove all containers and volumes
 docker-compose down -v
 ```
 
+Rebuild and run all services
+```bash
+docker-compose build --no-cache && docker-compose up -d
+```
+
 ## Database
 
 To interact with the database from the outside, modify the `.env` file and update the `DATABASE_URL` variable for the localhost.

@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, Depends, Body, Header
 from pydantic import BaseModel
 from sqlalchemy import create_engine, text
 from typing import Optional
+import asyncio
 
 # --- Configuration ---
 # Path to model file, as expected in Docker container
@@ -20,6 +21,17 @@ if not DATABASE_URL:
 STATIC_API_KEY = os.getenv("STATIC_API_KEY")
 if not STATIC_API_KEY:
     raise ValueError("STATIC_API_KEY environment variable not set!")
+
+# Load training interval from environment variable
+TRAINING_INTERVAL = os.getenv("TRAINING_INTERVAL")
+if not TRAINING_INTERVAL:
+    raise ValueError("TRAINING_INTERVAL environment variable not set!")
+
+# Convert TRAINING_INTERVAL to integer (seconds)
+try:
+    TRAINING_INTERVAL = int(TRAINING_INTERVAL)
+except ValueError:
+    raise ValueError("TRAINING_INTERVAL must be a valid integer representing seconds!")
 
 # --- Database connection ---
 try:
@@ -99,6 +111,24 @@ def get_latest_occupancy_data():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
+# --- Periodisches Training als Background-Task ---
+# Since the Environment variables are not available in the crontab, we need to run the training in the background.
+async def periodic_training():
+    while True:
+        try:
+            print("[BackgroundTask] Start automatic training...")
+            exit_code = os.system("python scripts/train.py")
+            if exit_code != 0:
+                print(f"[BackgroundTask] Training failed with exit code {exit_code}")
+            else:
+                print("[BackgroundTask] Training successful.")
+        except Exception as e:
+            print(f"[BackgroundTask] Error during training: {e}")
+        await asyncio.sleep(TRAINING_INTERVAL)
+
+@app.on_event("startup")
+async def start_periodic_training():
+    asyncio.create_task(periodic_training())
 
 # --- API endpoints ---
 @app.get("/", summary="Root endpoint")

@@ -89,7 +89,17 @@ X_train, X_test, y_occ_train, y_occ_test, y_door_train, y_door_test = train_test
 
 # --- Model 1: Regression for occupancy ---
 print("Train Regression model for occupancy...")
-lgbm_reg = lgb.LGBMRegressor(objective='regression_l1', random_state=42)
+lgbm_reg = lgb.LGBMRegressor(
+    objective='regression_l1', 
+    random_state=42,
+    n_estimators=100,
+    max_depth=6,
+    min_child_samples=20,
+    min_split_gain=0.01,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    verbose=-1  # Reduce verbosity
+)
 lgbm_reg.fit(
     X_train, y_occ_train, 
     eval_set=[(X_test, y_occ_test)], 
@@ -101,7 +111,14 @@ print("Train Classification model for door status...")
 lgbm_clf = lgb.LGBMClassifier(
     objective='binary', # objective='binary' for Yes/No
     random_state=42, 
-    class_weight='balanced' # to also consider less frequent classes (door closed is less frequent than door open)
+    class_weight='balanced', # to also consider less frequent classes (door closed is less frequent than door open)
+    n_estimators=100,
+    max_depth=6,
+    min_child_samples=20,
+    min_split_gain=0.01,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    verbose=-1  # Reduce verbosity
 )
 
 lgbm_clf.fit(
