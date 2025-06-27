@@ -8,8 +8,6 @@ void setup() {
     Serial.begin(115200);
     while(!Serial);
     
-    setupComponents();
-    
     Serial.println(F("\nPress any key within 10 seconds to enter test mode..."));
     unsigned long startTime = millis();
     
@@ -17,6 +15,7 @@ void setup() {
     while (millis() - startTime < 10000) {
         if (Serial.available()) {
             while(Serial.available()) Serial.read();  // Clear input buffer
+            setupComponents();
             showMenu();  // Enter test mode immediately
             return;
         }
