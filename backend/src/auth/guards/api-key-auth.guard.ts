@@ -58,6 +58,8 @@ export class ApiKeyAuthGuard implements CanActivate {
     }
 
     if (apiKey === this.expectedApiKey) {
+      this.logger.log(apiKey);
+      this.logger.log(this.expectedApiKey);
       this.logger.log('Valid API Key received.');
       // Optional: Sie könnten hier ein Dummy-Benutzerobjekt an request.user anhängen, falls Ihre Services/Resolver das erwarten.
       // request.user = { id: 'static-api-user', roles: ['admin'] }; 
