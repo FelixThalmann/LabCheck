@@ -21,8 +21,7 @@ export class PredictionsService {
   private readonly logger = new Logger(PredictionsService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly predictionCalculationService: PredictionCalculationService,
+    private readonly prisma: PrismaService, 
     private readonly predictionApiService: PredictionApiService,
   ) {}
 
@@ -108,7 +107,7 @@ export class PredictionsService {
 
       // Transformiere die Antwort für das Frontend
       const occupancy = Math.round(mlResponse.predicted_occupancy);
-      const color = this.calculateColorFromOccupancy(occupancy);
+      const color = await this.calculateColorFromOccupancy(occupancy);
 
       return {
         predictedOccupancy: occupancy,
@@ -129,15 +128,24 @@ export class PredictionsService {
 
   /**
    * @method calculateColorFromOccupancy
-   * @description Berechnet Farbkodierung basierend auf Belegung
-   * Konsistent mit der bestehenden Logik für Tages-/Wochenvorhersagen
+   * @description Berechnet Farbkodierung basierend auf Belegung.
+   * Die Kapazität wird aus der Datenbank vom Standard-Raum bezogen.
+   * @param occupancy - Die aktuelle oder vorhergesagte Belegung
+   * @returns Farb-String (green, yellow, red)
    */
-  private calculateColorFromOccupancy(occupancy: number): string {
-    // Farblogik: grün (niedrig), gelb (mittel), rot (hoch)
-    // Basiert auf typischer Laborkapazität von ~20 Personen
-    if (occupancy <= 5) return 'green';
-    if (occupancy <= 12) return 'yellow';
-    return 'red';
+  private async calculateColorFromOccupancy(occupancy: number): Promise<string> {
+    const room = await this.getDefaultRoom();
+    const capacity = room.maxCapacity;
+
+    if (capacity <= 0) {
+      return 'red'; // Fallback, falls Kapazität nicht positiv ist
+    }
+
+    const percentage = (occupancy / capacity) * 100;
+
+    if (percentage >= 90) return 'red';
+    if (percentage >= 50) return 'yellow';
+    return 'green';
   }
 
   /**
@@ -237,7 +245,7 @@ export class PredictionsService {
         predictions.push({
           occupancy: averageOccupancy,
           day: daysOfWeek[dayIndex],
-          color: this.calculateColorFromOccupancy(averageOccupancy),
+          color: await this.calculateColorFromOccupancy(averageOccupancy),
           date: currentDay.toISOString().split('T')[0], // YYYY-MM-DD Format
         });
       } catch (error) {
@@ -286,17 +294,19 @@ export class PredictionsService {
       const mlPredictions = await this.predictionApiService.getMultiplePredictions(timestamps);
       
       // Transformiere zu gewünschtem Format
-      return timeSlots.map((timeSlot, index) => {
-        const mlPrediction = mlPredictions[index];
-        const occupancy = Math.round(mlPrediction?.predicted_occupancy || 0);
-        const color = this.calculateColorFromOccupancy(occupancy);
-        
-        return {
-          occupancy,
-          time: timeSlot,
-          color,
-        };
-      });
+      return Promise.all(
+        timeSlots.map(async (timeSlot, index) => {
+          const mlPrediction = mlPredictions[index];
+          const occupancy = Math.round(mlPrediction?.predicted_occupancy || 0);
+          const color = await this.calculateColorFromOccupancy(occupancy);
+
+          return {
+            occupancy,
+            time: timeSlot,
+            color,
+          };
+        }),
+      );
     } catch (error) {
       this.logger.error(`Error generating ML day predictions: ${error.message}`);
       
@@ -336,7 +346,7 @@ export class PredictionsService {
         // Berechne Durchschnitt der Belegung für den Tag
         const averageOccupancy = dayPredictions.reduce((sum, pred) => sum + pred.occupancy, 0) / dayPredictions.length;
         const roundedOccupancy = Math.round(averageOccupancy);
-        const color = this.calculateColorFromOccupancy(roundedOccupancy);
+        const color = await this.calculateColorFromOccupancy(roundedOccupancy);
         
         weekPredictions.push({
           occupancy: roundedOccupancy,

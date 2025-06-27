@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Logger, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Logger, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiSecurity } from '@nestjs/swagger';
 import { PredictionsService } from '../services/predictions.service';
+import { ApiKeyAuthGuard } from '../../auth/guards/api-key-auth.guard';
 import {
   DayPredictionResponseDto,
   WeekPredictionResponseDto,
@@ -13,9 +14,12 @@ import {
  * @class PredictionsController
  * @description REST Controller für Vorhersage-Endpunkte
  * Implementiert die API-Spezifikation für /api/predictions/*
+ * Alle Endpunkte erfordern API-Key-Authentifizierung über X-API-Key Header
  */
 @Controller('api/predictions')
 @ApiTags('🤖 Predictions')
+@ApiSecurity('X-API-Key')
+@UseGuards(ApiKeyAuthGuard)
 export class PredictionsController {
   private readonly logger = new Logger(PredictionsController.name);
 
