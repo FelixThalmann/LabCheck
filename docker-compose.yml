@@ -43,6 +43,8 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - DEBUG_PREDICTION=${DEBUG_PREDICTION}
+      - STATIC_API_KEY=${STATIC_API_KEY}
+      - TRAINING_INTERVAL=${TRAINING_INTERVAL}
     depends_on:
       - postgres
     restart: unless-stopped
@@ -51,29 +53,29 @@ services:
     networks:
       - labcheck_network
 
-  #backend:
-  #  build:
-  #    context: ./backend
-  #    dockerfile: Dockerfile
-  #    target: production
-  #  container_name: labcheck_backend
-  #  environment:
-  #    - DATABASE_URL=${DATABASE_URL}
-  #    - MQTT_BROKER_URL=${MQTT_BROKER_URL}
-  #    - PORT=${PORT_BACKEND}
-  #  ports:
-  #    - "${PORT_BACKEND}:${PORT_BACKEND}"
-  #  depends_on:
-  #    postgres:
-  #      condition: service_healthy
-  #    mqtt:
-  #      condition: service_started
-  #  restart: unless-stopped
-  #  networks:
-  #    - labcheck_network
-  #  command: >
-  #    sh -c "npx prisma migrate deploy &&
-  #           node dist/src/main"
+  backend:
+   build:
+     context: ./backend
+     dockerfile: Dockerfile
+     target: production
+   container_name: labcheck_backend
+   environment:
+     - DATABASE_URL=${DATABASE_URL}
+     - MQTT_BROKER_URL=${MQTT_BROKER_URL}
+     - PORT=${PORT_BACKEND}
+   ports:
+     - "${PORT_BACKEND}:${PORT_BACKEND}"
+   depends_on:
+     postgres:
+       condition: service_healthy
+     mqtt:
+       condition: service_started
+   restart: unless-stopped
+   networks:
+     - labcheck_network
+   command: >
+     sh -c "npx prisma migrate deploy &&
+            node dist/src/main"
 
 networks:
   labcheck_network:

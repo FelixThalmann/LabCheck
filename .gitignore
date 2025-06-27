@@ -12,6 +12,12 @@ backend/data-generator/dist/
 # Database
 data/postgres/
 
+## ----- Prediction Service -----
+
+# Models
+prediction-service/models/
+
+
 
 ## ----- Frontend -----
 

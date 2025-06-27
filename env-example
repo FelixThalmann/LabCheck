@@ -30,6 +30,7 @@ MQTT_PASSWORD=
 
 PORT_PREDICTION=
 DEBUG_PREDICTION=
+TRAINING_INTERVAL=
 
 # ---- Frontend Configuration ----
 
