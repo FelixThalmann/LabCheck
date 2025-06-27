@@ -25,7 +25,7 @@ DEBUG_PREDICTION = os.getenv("DEBUG_PREDICTION", "false").lower() == "true"
 # --- 2. Load Data from Database ---
 
 # SQL query to fetch all relevant data
-query = 'SELECT "timestamp", "occupancy", "doorIsOpen" FROM "occupancy_training_data" ORDER BY "timestamp" ASC'
+query = 'SELECT "timestamp", "personCount", "isDoorOpen" FROM "OccupancyEvent" ORDER BY "timestamp" ASC'
 
 print("Loading data from database...")
 print(f"DATABASE_URL: {DATABASE_URL}")
@@ -64,8 +64,8 @@ df['is_weekend'] = (df.index.dayofweek >= 5).astype(int)
 
 if DEBUG_PREDICTION:
     print(df.head(20))
-    print(df['occupancy'].value_counts())
-    print(df['doorIsOpen'].value_counts())
+    print(df['personCount'].value_counts())
+    print(df['isDoorOpen'].value_counts())
     print(df.describe())
 
 # --- 4. Model Training ---
@@ -73,11 +73,11 @@ if DEBUG_PREDICTION:
 print("Starting combined model training...")
 
 # Target variable 1: Regression (occupancy)
-y_occupancy = df['occupancy']
+y_occupancy = df['personCount']
 
 # Target variable 2: Classification (door status)
 # Convert Boolean (True/False) to Integer (1/0)
-y_door = df['doorIsOpen'].astype(int)
+y_door = df['isDoorOpen'].astype(int)
 
 # Features (for both models identical)
 X = df[['hour', 'minute', 'day_of_week', 'is_weekend']]

@@ -86,16 +86,8 @@ async function main() {
   const occupancyEvents = generateOccupancyEvents(startDate, 56, 2); // 8 Weeks = 56 Days, every 2 hours
 
   // Create OccupancyEvents
-  await prisma.occupancyTrainingData.createMany({
-    data: occupancyEvents.map((event) => ({
-      timestamp: event.timestamp,
-      occupancy: event.personCount,
-      occupancyChange: event.personCount,
-      hourOfDay: event.timestamp.getHours(),
-      dayOfWeek: event.timestamp.getDay(),
-      isHoliday: false,
-      doorIsOpen: event.isDoorOpen,
-    })),
+  await prisma.occupancyEvent.createMany({
+    data: occupancyEvents,
   });
 
   console.log('🌱 Minimal Seed completed!');
