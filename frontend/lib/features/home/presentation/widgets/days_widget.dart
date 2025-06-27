@@ -277,12 +277,10 @@ class _DaysWidgetState extends State<DaysWidget> {
                       child: SizedBox(
                         width: 28,
                         height: 28,
-                        child: Container(
-                          child: const Icon(
-                            Icons.arrow_back_ios,
-                            color: AppColors.primary,
-                            size: 16,
-                          ),
+                        child: const Icon(
+                          Icons.arrow_back_ios,
+                          color: AppColors.primary,
+                          size: 16,
                         ),
                       ),
                     ),
@@ -305,12 +303,10 @@ class _DaysWidgetState extends State<DaysWidget> {
                       child: SizedBox(
                         width: 28,
                         height: 28,
-                        child: Container(
-                          child: const Icon(
-                            Icons.arrow_forward_ios,
-                            color: AppColors.primary,
-                            size: 16,
-                          ),
+                        child: const Icon(
+                          Icons.arrow_forward_ios,
+                          color: AppColors.primary,
+                          size: 16,
                         ),
                       ),
                     ),
