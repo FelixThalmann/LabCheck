@@ -2,9 +2,10 @@ import os
 import joblib
 import pandas as pd
 from datetime import datetime
-from fastapi import FastAPI, HTTPException, Depends, Body
+from fastapi import FastAPI, HTTPException, Depends, Body, Header
 from pydantic import BaseModel
 from sqlalchemy import create_engine, text
+from typing import Optional
 
 # --- Configuration ---
 # Path to model file, as expected in Docker container
@@ -15,12 +16,27 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable not set!")
 
+# Load API key from environment variable
+STATIC_API_KEY = os.getenv("STATIC_API_KEY")
+if not STATIC_API_KEY:
+    raise ValueError("STATIC_API_KEY environment variable not set!")
+
 # --- Database connection ---
 try:
     engine = create_engine(DATABASE_URL)
 except Exception as e:
     print(f"Could not establish database connection: {e}")
     engine = None
+
+# --- API Key Authentication ---
+async def verify_api_key(x_api_key: Optional[str] = Header(None)):
+    """Verifies that the provided API key matches the static API key."""
+    if x_api_key != STATIC_API_KEY:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or missing API key. Please provide a valid X-API-Key header."
+        )
+    return x_api_key
 
 # --- API data models (with Pydantic) ---
 class PredictionRequest(BaseModel):
@@ -86,12 +102,12 @@ def get_latest_occupancy_data():
 
 # --- API endpoints ---
 @app.get("/", summary="Root endpoint")
-def read_root():
+def read_root(api_key: str = Depends(verify_api_key)):
     """Returns a simple welcome message."""
     return {"message": "Welcome to the Prediction API!"}
 
 @app.get("/health", summary="Health Check")
-def health_check():
+def health_check(api_key: str = Depends(verify_api_key)):
     """Checks if the API is running and the model is loaded."""
     model_status = "loaded" if model_cache["model"] is not None else "not found"
     return {
@@ -101,7 +117,7 @@ def health_check():
     }
 
 @app.put("/train", summary="Train the model")
-def train():
+def train(api_key: str = Depends(verify_api_key)):
     """Trains the model with current data."""
     # run train script in scripts/train.py
     os.system("python scripts/train.py")
@@ -120,7 +136,7 @@ def train():
     return {"message": "Training started."}
 
 @app.post("/predict", response_model=PredictionResponse, summary="Predict room occupancy")
-def predict(request: PredictionRequest):
+def predict(request: PredictionRequest, api_key: str = Depends(verify_api_key)):
     """
     Predicts occupancy and door status for a specific future time point.
     Example for a request body (JSON): {"timestamp": "2025-06-19T14:30:00"}
