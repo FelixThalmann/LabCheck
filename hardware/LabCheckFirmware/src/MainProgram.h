@@ -10,6 +10,7 @@
 #include "WiFiConfig.h"
 #include "ToFSensor.h"
 #include "PIRSensor.h"
+#include "Preferences.h"
 
 class MainProgram{
 public:
@@ -19,9 +20,12 @@ public:
   
   // Update loop for the main program
   void update();
+
+  // Set the entrance/exit inversion state
+  void setInvertEntranceExit(bool invert);
   
   // Stop the main program
-    void stop();
+  void stop();
 
 private:
   LED leds;
@@ -31,6 +35,7 @@ private:
   ToFSensor tofSensor1;
   ToFSensor tofSensor2;
   PIRSensor pirSensor;
+  Preferences prefs;
 
   int programmode;
   int sensorStorage[128][2];
@@ -39,6 +44,7 @@ private:
   int millis;
   int delayTime;
   int activeLed;
+  bool invertEntranceExit; // true if entrance/exit is inverted
 
   // testing. replace with real tof sensors
   bool sensor1Active;
@@ -46,7 +52,7 @@ private:
   int sensorTimer;
 
   bool isWiFiAvailable();
-  void storeSensorData(int sensorValue, int duration);
+  //void storeSensorData(int sensorValue, int duration);
   void prepareMode(int mode);
   void updateLed();
   void publishMQTT(const char* topic, const char* payload);
