@@ -280,18 +280,24 @@ class _DaysWidgetState extends State<DaysWidget> {
                   bottom: 0,
                   child: Center(
                     child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isCurrentWeek = true;
-                        });
-                      },
-                      child: SizedBox(
-                        width: 28,
-                        height: 28,
-                        child: const Icon(
-                          Icons.arrow_back_ios,
-                          color: AppColors.primary,
-                          size: 16,
+                      onTap:
+                          widget.noData
+                              ? null
+                              : () {
+                                setState(() {
+                                  _isCurrentWeek = true;
+                                });
+                              },
+                      child: Opacity(
+                        opacity: widget.noData ? 0.3 : 1.0,
+                        child: SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: const Icon(
+                            Icons.arrow_back_ios,
+                            color: AppColors.primary,
+                            size: 16,
+                          ),
                         ),
                       ),
                     ),
@@ -306,18 +312,24 @@ class _DaysWidgetState extends State<DaysWidget> {
                   bottom: 0,
                   child: Center(
                     child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isCurrentWeek = false;
-                        });
-                      },
-                      child: SizedBox(
-                        width: 28,
-                        height: 28,
-                        child: const Icon(
-                          Icons.arrow_forward_ios,
-                          color: AppColors.primary,
-                          size: 16,
+                      onTap:
+                          widget.noData
+                              ? null
+                              : () {
+                                setState(() {
+                                  _isCurrentWeek = false;
+                                });
+                              },
+                      child: Opacity(
+                        opacity: widget.noData ? 0.3 : 1.0,
+                        child: SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: const Icon(
+                            Icons.arrow_forward_ios,
+                            color: AppColors.primary,
+                            size: 16,
+                          ),
                         ),
                       ),
                     ),
