@@ -42,6 +42,10 @@ ENVIRONMENT=development
     return dotenv.env['DEMO_MODE'] == 'true';
   }
 
+  static String get apiKey {
+    return dotenv.env['STATIC_API_KEY'] ?? '0000000000';
+  }
+
   /// Alle verfügbaren Umgebungsvariablen ausgeben (nur im Debug-Modus)
   static void printAllVariables() {
     if (!kDebugMode) return;
@@ -49,6 +53,7 @@ ENVIRONMENT=development
     _logger.info('🔧 Current environment configuration:');
     _logger.info('  Environment: $environment');
     _logger.info('  API Base URL: $apiBaseUrl');
+    _logger.info('  API Key: $apiKey'); // TODO: Hide the key in the log
 
     if (dotenv.env.isNotEmpty) {
       _logger.info('📝 All available variables:');

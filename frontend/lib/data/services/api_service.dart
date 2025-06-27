@@ -5,18 +5,20 @@ import '../../core/config/environment_config.dart';
 
 class ApiService {
   late final String baseUrl;
+  late final String apiKey;
 
   // Singleton-Pattern
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal() {
     baseUrl = EnvironmentConfig.apiBaseUrl;
+    apiKey = EnvironmentConfig.apiKey;
   }
 
   // HTTP-Header
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
-    // Here we can add more headers like Auth-Token
+    'api-key': apiKey,
   };
 
   // GET-Request
