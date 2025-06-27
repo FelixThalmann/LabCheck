@@ -25,12 +25,9 @@ model Room {
   maxCapacity Int      @default(20) // Maximal zulässige Kapazität des Raums
   // Beziehungen
   sensors     Sensor[]
-  settings    RoomSetting[]
   dayPredictions  DayPrediction[]
   weekPredictions WeekPrediction[]
   occupancyHistory RoomOccupancyHistory[]
-  trainingData    OccupancyTrainingData[]
-
   @@map("rooms")
 }
 
@@ -51,22 +48,6 @@ model RoomOccupancyHistory {
   @@map("room_occupancy_history")
 }
 
-// Raumspezifische Einstellungen (erweitert das bestehende LabSetting Konzept)
-model RoomSetting {
-  id        String   @id @default(cuid())
-  key       String   // z.B. "capacity", "operating_hours", "alert_threshold"
-  value     String
-  notes     String?  // Optionale Notizen zur Einstellung
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  roomId String
-
-  @@unique([roomId, key])
-  @@map("room_settings")
-}
-
 model Sensor {
   id        String   @id @default(cuid())
   esp32Id   String   @unique // Eindeutige ID des ESP32-Boards
@@ -83,8 +64,6 @@ model Sensor {
   // Bestehende Event-Beziehungen
   doorEvents         DoorEvent[]
   passageEvents      PassageEvent[]
-  motionEvents       MotionEvent[]
-  lightBarrierEvents LightBarrierEvent[]
 
   @@map("sensors")
 }
@@ -118,40 +97,7 @@ model PassageEvent {
   @@map("passage_events")
 }
 
-model MotionEvent {
-  id               String   @id @default(cuid())
-  eventTimestamp   DateTime // Zeitstempel des Ereignisses
-  motionDetected   Boolean  @default(true) // In der Regel wird nur das Event des Detektierens gespeichert
-  createdAt        DateTime @default(now())
 
-  sensor   Sensor @relation(fields: [sensorId], references: [id])
-  sensorId String
-
-  @@map("motion_events")
-}
-
-model LightBarrierEvent {
-  id             String   @id @default(cuid())
-  eventTimestamp DateTime @default(now()) // Zeitstempel der Erfassung durch das Backend
-  isInterrupted  Boolean  // true, wenn Lichtschranke unterbrochen ("1"), false, wenn frei ("0")
-  createdAt      DateTime @default(now()) // Wird durch @default(now()) redundant, aber für Konsistenz beibehalten
-
-  sensor   Sensor @relation(fields: [sensorId], references: [id])
-  sensorId String
-
-  @@map("light_barrier_events") // Expliziter Tabellenname
-}
-
-// Globale Labor-Einstellungen (bestehend, aber erweitert)
-model LabSetting {
-  key       String   @id // z.B. "lab_total_capacity", "lab_name", "default_room"
-  value     String
-  notes     String?  // Optionale Notizen zur Einstellung
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("lab_settings")
-}
 
 // Tagesvorhersagen - jetzt raumspezifisch
 model DayPrediction {
@@ -191,52 +137,6 @@ model WeekPrediction {
   @@map("week_predictions")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String   // Wird gehasht gespeichert
-  name      String?  // Optionaler Name des Benutzers
-  role      UserRole @default(USER)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("users")
-}
-
-enum UserRole {
-  USER
-  ADMIN
-  MANAGER
-}
-
-// Training data model for ML/LSTM purposes
-// Stores processed occupancy data with additional features from CSV import
-model OccupancyTrainingData {
-  id               String   @id @default(cuid())
-  timestamp        DateTime // Original timestamp from CSV
-  occupancy        Int      // Current occupancy count
-  occupancyChange  Int      // Change in occupancy from previous measurement
-  hourOfDay        Int      // Hour of day (0-23)
-  dayOfWeek        Int      // Day of week (0-6, where 0 = Sunday)
-  isHoliday        Boolean  // Whether this date is a holiday
-  doorIsOpen       Boolean  // Whether the door is open at this time
-  createdAt        DateTime @default(now())
-
-  // Optional: Link to specific room for multi-room scenarios
-  room   Room?   @relation(fields: [roomId], references: [id])
-  roomId String?
-
-  @@index([timestamp])
-  @@index([roomId, timestamp])
-  @@map("occupancy_training_data")
-}
-
-// Models for Phase 2 (ML Predictions) and Phase 3 (LLM) will be added later
-// model MlPrediction { ... }
-// model UniversityCalendarEvent { ... }
-
-// For ML Prediction Model
 model OccupancyEvent {
   id          Int      @id @default(autoincrement())
   timestamp   DateTime @default(now())

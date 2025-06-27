@@ -29,17 +29,47 @@ async function bootstrap() {
   // Swagger API-Dokumentation konfigurieren
   const config = new DocumentBuilder()
     .setTitle('LabCheck API')
-    .setDescription('REST API für das LabCheck System - Laborüberwachung und Vorhersagen')
-    .setVersion('1.0')
-    .addTag('Lab Status', 'Endpunkte für den aktuellen Laborstatus')
-    .addTag('Predictions', 'Endpunkte für Belegungsvorhersagen')
+    .setDescription(`
+      **REST API für das LabCheck System - Laborüberwachung und ML-Vorhersagen**
+      
+      Diese API bietet Endpunkte für:
+      - 📊 **Laborstatus**: Aktuelle Belegung und Türstatus
+      - 🤖 **ML-Vorhersagen**: Tages- und Wochenvorhersagen mit Machine Learning
+      - 🔒 **Authentifizierung**: API-Key oder JWT-basiert
+      
+      **Neue Features:**
+      - ✨ Erweiterte Wochenvorhersagen (aktuelle + nächste Woche)
+      - 📅 Korrekte Wochenberechnung (immer Montag-Freitag)
+      - 🎯 Einzelne ML-Vorhersagen für spezifische Zeitpunkte
+    `)
+    .setVersion('2.0')
+    .setContact('LabCheck Team', 'https://github.com/your-repo/labcheck', 'admin@labcheck.com')
+    .addServer('http://localhost:3000', 'Development Server')
+    .addServer('https://api.labcheck.com', 'Production Server')
+    .addTag('🏠 Lab Status', 'Endpunkte für den aktuellen Laborstatus und kombinierte Daten')
+    .addTag('🤖 Predictions', 'Endpunkte für ML-basierte Belegungsvorhersagen')
+    .addTag('🔐 Authentication', 'Endpunkte für Benutzeranmeldung und -registrierung')
+    .addTag('👥 Users', 'Endpunkte für Benutzerverwaltung')
+    .addTag('📡 MQTT Events', 'WebSocket- und Event-basierte Kommunikation')
     .addApiKey(
       {
         type: 'apiKey',
         name: 'X-API-Key',
         in: 'header',
+        description: 'API-Schlüssel für die Authentifizierung. Format: X-API-Key: your-api-key-here',
       },
       'api-key',
+    )
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'JWT Token für die Authentifizierung. Erhalten Sie das Token über /auth/login',
+        in: 'header',
+      },
+      'bearer-token',
     )
     .build();
   
@@ -47,7 +77,20 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document, {
     customSiteTitle: 'LabCheck API Documentation',
     customfavIcon: '/favicon.ico',
-    customCss: '.swagger-ui .topbar { display: none }',
+    customCss: `
+      .swagger-ui .topbar { display: none }
+      .swagger-ui .info .title { color: #2c5282; }
+      .swagger-ui .info .description { font-size: 14px; line-height: 1.6; }
+      .swagger-ui .scheme-container { background: #f7fafc; padding: 10px; border-radius: 5px; }
+      .swagger-ui .opblock.opblock-get .opblock-summary { border-color: #38a169; }
+      .swagger-ui .opblock.opblock-post .opblock-summary { border-color: #3182ce; }
+    `,
+    swaggerOptions: {
+      persistAuthorization: true,
+      tryItOutEnabled: true,
+      filter: true,
+      showRequestDuration: true,
+    },
   });
 
   // Globale ValidationPipe für automatische Validierung von DTOs
@@ -67,7 +110,8 @@ async function bootstrap() {
 
   await app.startAllMicroservices(); // Startet alle Microservices (inkl. MQTT)
   await app.listen(port);
-  console.log(`Application is running on: ${await app.getUrl()}`);
-  console.log(`MQTT Microservice connected to: ${mqttBrokerUrl}`);
+  console.log(`🚀 Application is running on: ${await app.getUrl()}`);
+  console.log(`📚 Swagger UI available at: ${await app.getUrl()}/api/docs`);
+  console.log(`📡 MQTT Microservice connected to: ${mqttBrokerUrl}`);
 }
 bootstrap();

@@ -138,18 +138,7 @@ async function importCsvTrainingData(
 
   console.log(`🏠 Using room: ${targetRoom.name} (${targetRoom.id})`);
 
-  // Clear existing training data for this room (optional)
-  const existingCount = await prisma.occupancyTrainingData.count({
-    where: { roomId: targetRoom.id },
-  });
-  if (existingCount > 0) {
-    console.log(
-      `🧹 Clearing ${existingCount} existing training data records...`,
-    );
-    await prisma.occupancyTrainingData.deleteMany({
-      where: { roomId: targetRoom.id },
-    });
-  }
+
 
   // Import CSV data in batches for better performance
   const batchSize = 1000;

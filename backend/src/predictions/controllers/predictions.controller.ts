@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Logger, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PredictionsService } from '../services/predictions.service';
 import {
   DayPredictionResponseDto,
   WeekPredictionResponseDto,
+  ExtendedWeekPredictionResponseDto,
   PredictionRequestDto,
   SinglePredictionResponseDto,
 } from '../dto';
@@ -14,7 +15,7 @@ import {
  * Implementiert die API-Spezifikation für /api/predictions/*
  */
 @Controller('api/predictions')
-@ApiTags('Predictions')
+@ApiTags('🤖 Predictions')
 export class PredictionsController {
   private readonly logger = new Logger(PredictionsController.name);
 
@@ -28,34 +29,39 @@ export class PredictionsController {
   @Get('day')
   @ApiOperation({
     summary: 'Tagesvorhersagen für Laborbelegung',
-    description: 'Liefert Vorhersagen für die Laborbelegung im Tagesverlauf',
+    description:
+      'Liefert Vorhersagen für die Laborbelegung im Tagesverlauf. Standardmäßig für heute, oder für ein spezifisches Datum via `?date=YYYY-MM-DD`.',
   })
   @ApiResponse({
     status: 200,
     description: 'Tagesvorhersagen erfolgreich abgerufen',
     type: DayPredictionResponseDto,
   })
-  async getDayPredictions(): Promise<DayPredictionResponseDto> {
-    this.logger.debug('REST API: GET /api/predictions/day');
-    return this.predictionsService.getDayPredictions();
+  async getDayPredictions(
+    @Query('date') date?: string,
+  ): Promise<DayPredictionResponseDto> {
+    this.logger.debug(
+      `REST API: GET /api/predictions/day for date: ${date || 'today'}`,
+    );
+    return this.predictionsService.getDayPredictions(date);
   }
 
   /**
    * @method getWeekPredictions
-   * @description Liefert durchschnittliche Vorhersagen für die Laborbelegung pro Wochentag
-   * Entspricht GET /api/predictions/week aus der API-Dokumentation
+   * @description Liefert erweiterte Vorhersagen für aktuelle und nächste Woche (Montag-Freitag)
+   * Entspricht GET /api/predictions/week aus der API-Dokumentation (erweitert)
    */
   @Get('week')
   @ApiOperation({
-    summary: 'Wochenvorhersagen für Laborbelegung',
-    description: 'Liefert durchschnittliche Vorhersagen für die Laborbelegung pro Wochentag',
+    summary: 'Erweiterte Wochenvorhersagen für Laborbelegung',
+    description: 'Liefert Vorhersagen für aktuelle und nächste Woche (Montag-Freitag)',
   })
   @ApiResponse({
     status: 200,
-    description: 'Wochenvorhersagen erfolgreich abgerufen',
-    type: WeekPredictionResponseDto,
+    description: 'Erweiterte Wochenvorhersagen erfolgreich abgerufen',
+    type: ExtendedWeekPredictionResponseDto,
   })
-  async getWeekPredictions(): Promise<WeekPredictionResponseDto> {
+  async getWeekPredictions(): Promise<ExtendedWeekPredictionResponseDto> {
     this.logger.debug('REST API: GET /api/predictions/week');
     return this.predictionsService.getWeekPredictions();
   }

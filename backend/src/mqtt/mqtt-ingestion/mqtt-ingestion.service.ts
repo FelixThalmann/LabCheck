@@ -214,9 +214,6 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
             case 'passage':
               await this.handlePassageEvent(esp32IdFromTopic, rawMessage.data);
               break;
-            case 'motion':
-              await this.handleMotionEvent(esp32IdFromTopic, rawMessage.data);
-              break;
             default:
               this.logger.warn(`Unknown message type '${rawMessage.type}' received from ESP32 ID '${esp32IdFromTopic}' (topic: '${topic}'). Message ignored.`);
           }
@@ -529,71 +526,6 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * @private
-   * @async
-   * @method handleMotionEvent
-   * @description Handles incoming motion event data from an MQTT message.
-   * @param {string} esp32Id - The ESP32 ID of the sensor.
-   * @param {unknown} data - The raw data payload for the motion event.
-   * @returns {Promise<void>}
-   *
-   * Technische Erklärung:
-   * - Diese Methode wird aufgerufen, wenn eine MQTT-Nachricht mit dem Typ "motion" empfangen wurde.
-   * - Die empfangenen Rohdaten werden zunächst im Debug-Log ausgegeben.
-   * - Die Daten werden gegen das DTO (MqttMotionDataDto) validiert. Bei Fehlern wird abgebrochen.
-   * - Anschließend wird versucht, den zugehörigen Sensor anhand der ESP32-ID aus der Datenbank zu laden
-   *   (oder ggf. anzulegen). Falls kein Sensor gefunden/angelegt werden kann, wird ein Fehler geloggt und abgebrochen.
-   * - Es wird geprüft, ob das Feld "motionDetected" im Payload gesetzt ist. Falls nicht, wird standardmäßig "true" angenommen.
-   * - Es wird ein neues MotionEvent in der Datenbank gespeichert, mit Sensor-Referenz, Zeitstempel und Bewegungsstatus.
-   *   Der Zeitstempel wird aus den Daten übernommen, falls vorhanden, sonst wird die aktuelle Zeit verwendet.
-   * - Nach erfolgreichem Speichern wird ein Log geschrieben.
-   * - Optional könnte das Event per WebSocket an das Frontend gesendet werden (auskommentiert).
-   * - Fehler beim Speichern werden abgefangen und geloggt.
-   */
-  private async handleMotionEvent(esp32Id: string, data: unknown): Promise<void> {
-    // Debug-Log: Zeigt an, dass ein Motion-Event verarbeitet wird, inkl. Rohdaten
-    this.logger.debug(`Processing 'motion' event from ESP32 ID '${esp32Id}'. Raw data: ${JSON.stringify(data)}`);
-
-    // 1. Validierung der empfangenen Daten gegen das MotionDataDto
-    const validatedData = await this.validateAndLogErrors(data, MqttMotionDataDto, esp32Id, 'motion');
-    if (!validatedData) return; // Bei Validierungsfehler: Abbruch
-
-    // 2. Sensor anhand der ESP32-ID aus der Datenbank holen (oder ggf. anlegen)
-    const sensor = await this.getSensor(esp32Id);
-    if (!sensor) {
-        // Wenn kein Sensor gefunden oder angelegt werden konnte, Fehler loggen und abbrechen
-        this.logger.error(`Could not find or create sensor for ESP32 ID '${esp32Id}'. 'motion' event cannot be stored.`);
-        return;
-    }
-
-    try {
-      // 3. Bewegungsstatus bestimmen (Standard: true, falls nicht gesetzt)
-      const motionDetectedState = validatedData.motionDetected === undefined ? true : validatedData.motionDetected;
-
-      // 4. Versuch, das MotionEvent in der Datenbank zu speichern
-      this.logger.verbose(`Attempting to store MotionEvent for sensor '${sensor.esp32Id}' (DB ID: ${sensor.id}), motionDetected: ${motionDetectedState}.`);
-      const createdEvent = await this.prismaService.motionEvent.create({
-        data: {
-          sensorId: sensor.id,
-          eventTimestamp: validatedData.timestamp ? new Date(validatedData.timestamp) : new Date(),
-          motionDetected: motionDetectedState,
-        },
-      });
-
-      // 5. Log: Erfolgreiches Speichern des Events
-      this.logger.log(`Successfully stored MotionEvent: ID ${createdEvent.id} for sensor '${sensor.esp32Id}' (detected: ${createdEvent.motionDetected}).`);
-
-      // 6. Optional: Event per WebSocket an das Frontend senden (auskommentiert)
-      // if (this.eventsGateway) {
-      //   this.logger.verbose(`Sending motion event update via WebSocket for event ID ${createdEvent.id}.`);
-      //   // this.eventsGateway.sendMotionEvent(createdEvent); 
-      // }
-    } catch (error) {
-      // Fehler beim Speichern des Events werden geloggt
-      this.logger.error(`Error storing MotionEvent for sensor '${sensor.esp32Id}'. Data: ${JSON.stringify(validatedData)}. Error: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error.stack : undefined);
-    }
-  }
  
   /**
    * @private

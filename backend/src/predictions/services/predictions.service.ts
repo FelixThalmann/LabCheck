@@ -5,6 +5,8 @@ import { PredictionApiService } from './prediction-api.service';
 import {
   DayPredictionResponseDto,
   WeekPredictionResponseDto,
+  ExtendedWeekPredictionResponseDto,
+  WeekPredictionItemDto,
   PredictionRequestDto,
   SinglePredictionResponseDto,
 } from '../dto';
@@ -28,23 +30,32 @@ export class PredictionsService {
    * @method getDayPredictions
    * @description Liefert ML-basierte Tagesvorhersagen
    * Generiert Vorhersagen von 8:00 bis 18:00 alle 2 Stunden
+   * @param dateString Optionales Datum im Format YYYY-MM-DD
    */
-  async getDayPredictions(): Promise<DayPredictionResponseDto> {
-    this.logger.debug('Fetching ML-based day predictions');
-    
+  async getDayPredictions(
+    dateString?: string,
+  ): Promise<DayPredictionResponseDto> {
+    this.logger.debug(
+      `Fetching ML-based day predictions for ${dateString || 'today'}`,
+    );
+
     try {
-      const today = new Date();
-      const predictions = await this.generateMLDayPredictions(today);
-      
+      const date = dateString ? new Date(dateString) : new Date();
+      if (isNaN(date.getTime())) {
+        // TODO: Throw a BadRequestException for better error handling
+        throw new Error('Invalid date provided');
+      }
+
+      const predictions = await this.generateMLDayPredictions(date);
+
       return {
-        predictions: predictions.map(p => ({
+        predictions: predictions.map((p) => ({
           occupancy: p.occupancy,
           time: p.time,
           color: p.color,
         })),
         lastUpdated: new Date().toISOString(),
       };
-      
     } catch (error) {
       this.logger.error('Error fetching ML day predictions', error.stack);
       throw error;
@@ -53,27 +64,30 @@ export class PredictionsService {
 
   /**
    * @method getWeekPredictions
-   * @description Liefert ML-basierte Wochenvorhersagen
+   * @description Liefert erweiterte ML-basierte Wochenvorhersagen für aktuelle und nächste Woche
    * Generiert Durchschnittswerte basierend auf ML-Tagesvorhersagen
    */
-  async getWeekPredictions(): Promise<WeekPredictionResponseDto> {
-    this.logger.debug('Fetching ML-based week predictions');
+  async getWeekPredictions(): Promise<ExtendedWeekPredictionResponseDto> {
+    this.logger.debug('Fetching extended ML-based week predictions');
     
     try {
-      const weekStart = this.getWeekStart(new Date());
-      const predictions = await this.generateMLWeekPredictions(weekStart);
+      const currentWeekRange = this.getCurrentWeekRange();
+      const nextWeekRange = this.getNextWeekRange();
+      
+      // Generiere Vorhersagen für beide Wochen parallel
+      const [currentWeekPredictions, nextWeekPredictions] = await Promise.all([
+        this.generateMLWeekPredictionsForRange(currentWeekRange.start, 'current'),
+        this.generateMLWeekPredictionsForRange(nextWeekRange.start, 'next'),
+      ]);
       
       return {
-        predictions: predictions.map(p => ({
-          occupancy: p.occupancy,
-          day: p.day,
-          color: p.color,
-        })),
+        currentWeek: currentWeekPredictions,
+        nextWeek: nextWeekPredictions,
         lastUpdated: new Date().toISOString(),
       };
       
     } catch (error) {
-      this.logger.error('Error fetching ML week predictions', error.stack);
+      this.logger.error('Error fetching extended ML week predictions', error);
       throw error;
     }
   }
@@ -161,6 +175,87 @@ export class PredictionsService {
     const weekStart = new Date(d.setDate(diff));
     weekStart.setHours(0, 0, 0, 0);
     return weekStart;
+  }
+
+  /**
+   * @method getCurrentWeekRange
+   * @description Berechnet Start- und Enddatum der aktuellen Woche (Montag-Freitag)
+   */
+  private getCurrentWeekRange(): { start: Date; end: Date } {
+    const now = new Date();
+    const currentWeekStart = this.getWeekStart(now);
+    const currentWeekEnd = new Date(currentWeekStart);
+    currentWeekEnd.setDate(currentWeekStart.getDate() + 4); // Freitag
+    return { start: currentWeekStart, end: currentWeekEnd };
+  }
+
+  /**
+   * @method getNextWeekRange
+   * @description Berechnet Start- und Enddatum der nächsten Woche (Montag-Freitag)
+   */
+  private getNextWeekRange(): { start: Date; end: Date } {
+    const currentWeek = this.getCurrentWeekRange();
+    const nextWeekStart = new Date(currentWeek.start);
+    nextWeekStart.setDate(currentWeek.start.getDate() + 7);
+    const nextWeekEnd = new Date(nextWeekStart);
+    nextWeekEnd.setDate(nextWeekStart.getDate() + 4);
+    return { start: nextWeekStart, end: nextWeekEnd };
+  }
+
+  /**
+   * @method generateMLWeekPredictionsForRange
+   * @description Generiert ML-basierte Wochenvorhersagen für eine spezifische Woche
+   * @param weekStart - Startdatum der Woche (Montag)
+   * @param weekLabel - Label für Logging (z.B. 'current' oder 'next')
+   * @returns Array von erweiterten Wochenvorhersagen mit Datum
+   */
+  private async generateMLWeekPredictionsForRange(
+    weekStart: Date,
+    weekLabel: string,
+  ): Promise<WeekPredictionItemDto[]> {
+    const predictions: WeekPredictionItemDto[] = [];
+    const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
+    this.logger.debug(`Generating ML week predictions for ${weekLabel} week`);
+
+    for (let dayIndex = 0; dayIndex < 5; dayIndex++) {
+      const currentDay = new Date(weekStart);
+      currentDay.setDate(weekStart.getDate() + dayIndex);
+
+      // Überspringe Wochenenden (sollte nicht auftreten, aber Sicherheitscheck)
+      if (currentDay.getDay() === 0 || currentDay.getDay() === 6) {
+        continue;
+      }
+
+      try {
+        const dayPredictions = await this.generateMLDayPredictions(currentDay);
+        const averageOccupancy = Math.round(
+          dayPredictions.reduce((sum, pred) => sum + pred.occupancy, 0) /
+            dayPredictions.length,
+        );
+
+        predictions.push({
+          occupancy: averageOccupancy,
+          day: daysOfWeek[dayIndex],
+          color: this.calculateColorFromOccupancy(averageOccupancy),
+          date: currentDay.toISOString().split('T')[0], // YYYY-MM-DD Format
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Error generating predictions for day ${dayIndex} in ${weekLabel} week: ${error}`,
+        );
+
+        // Fallback für einzelne Tage
+        predictions.push({
+          occupancy: Math.floor(Math.random() * 8) + 1,
+          day: daysOfWeek[dayIndex],
+          color: 'yellow',
+          date: currentDay.toISOString().split('T')[0],
+        });
+      }
+    }
+
+    return predictions;
   }
 
   /**

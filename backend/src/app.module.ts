@@ -5,7 +5,6 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma.module';
 import { MqttModule } from './mqtt/mqtt.module';
 import { EventsModule } from './events/events.module';
-import { UsersModule } from './users/users.module';
 import { LabStatusModule } from './lab-status/lab-status.module';
 import { PredictionsModule } from './predictions/predictions.module';
 import { OccupancyModule } from './occupancy/occupancy.module';
@@ -18,7 +17,6 @@ import { OccupancyModule } from './occupancy/occupancy.module';
       envFilePath: '.env',
     }),
     PrismaModule,
-    UsersModule, 
     MqttModule,
     EventsModule,
     LabStatusModule, // Erweitert für REST API

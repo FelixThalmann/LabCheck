@@ -17,7 +17,7 @@ import {
  * Implementiert die API-Spezifikation für /api/lab/* mit vollständiger GraphQL-Migration
  */
 @Controller('api/lab')
-@ApiTags('Lab Status & Settings')
+@ApiTags('🏠 Lab Status')
 @ApiSecurity('api-key')
 export class LabStatusController {
   private readonly logger = new Logger(LabStatusController.name);

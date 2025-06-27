@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -56,7 +56,6 @@ function generateOccupancyEvents(startDate: Date, days: number, intervalHours: n
 async function main() {
   // Clear database
   await prisma.occupancyEvent.deleteMany();
-  await prisma.user.deleteMany();
   await prisma.room.deleteMany();
 
   // Create room
@@ -70,16 +69,6 @@ async function main() {
     },
   });
 
-  // Create user
-  const user = await prisma.user.create({
-    data: {
-      email: 'testuser@example.com',
-      password: 'testpass', // In Produktion: Passwort hashen!
-      name: 'Test User',
-      role: UserRole.USER,
-      isActive: true,
-    },
-  });
 
   // Trainingsdata for 3 weeks (Startdate z.B. today)
   const startDate = new Date('2025-04-01T00:00:00Z');
