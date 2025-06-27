@@ -67,7 +67,7 @@ npx prisma studio
 
 ```bash
 cd backend
-npm run db:seed 
+npm run db:seed:test 
 ```
 
 or

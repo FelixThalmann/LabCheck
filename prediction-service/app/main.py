@@ -122,6 +122,19 @@ async def periodic_training():
                 print(f"[BackgroundTask] Training failed with exit code {exit_code}")
             else:
                 print("[BackgroundTask] Training successful.")
+
+                # reload model
+                load_model()
+
+                # check if model is loaded
+                if model_cache["model"] is None:
+                    raise HTTPException(status_code=503, detail="Model is not loaded. Please try again later.")
+                
+                # check if model is trained
+                if model_cache["model_timestamp"] is None:
+                    raise HTTPException(status_code=503, detail="Model is not trained. Please try again later.")
+                
+                return {"message": "Training completed successfully.", "model_timestamp": model_cache["model_timestamp"]}
         except Exception as e:
             print(f"[BackgroundTask] Error during training: {e}")
         await asyncio.sleep(TRAINING_INTERVAL)
