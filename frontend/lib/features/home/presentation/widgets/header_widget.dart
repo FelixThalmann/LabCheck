@@ -64,7 +64,7 @@ class HeaderWidget extends StatelessWidget {
             child: SizedBox(
               width: screenWidth * 0.6,
               child: Text(
-                'May I com in?',
+                'May I come in?',
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: screenWidth * 0.025,
