@@ -155,7 +155,7 @@ class _HoursWidgetState extends State<HoursWidget> {
     );
 
     // Calculate the upper limit of the Y-axis (rounded up to the next multiple of 5)
-    final maxY = (maxValue * 1.2);
+    final maxY = (maxValue * 1.4);
 
     return LineChartData(
       gridData: FlGridData(show: false),
