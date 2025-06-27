@@ -274,25 +274,15 @@ class _DaysWidgetState extends State<DaysWidget> {
                           _isCurrentWeek = true;
                         });
                       },
-                      child: Container(
+                      child: SizedBox(
                         width: 28,
                         height: 28,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x3F000000),
-                              blurRadius: 2,
-                              offset: Offset(0, 2),
-                              spreadRadius: 0,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_ios,
-                          color: Colors.white,
-                          size: 16,
+                        child: Container(
+                          child: const Icon(
+                            Icons.arrow_back_ios,
+                            color: AppColors.primary,
+                            size: 16,
+                          ),
                         ),
                       ),
                     ),
@@ -312,25 +302,15 @@ class _DaysWidgetState extends State<DaysWidget> {
                           _isCurrentWeek = false;
                         });
                       },
-                      child: Container(
+                      child: SizedBox(
                         width: 28,
                         height: 28,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x3F000000),
-                              blurRadius: 2,
-                              offset: Offset(0, 2),
-                              spreadRadius: 0,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.arrow_forward_ios,
-                          color: Colors.white,
-                          size: 16,
+                        child: Container(
+                          child: const Icon(
+                            Icons.arrow_forward_ios,
+                            color: AppColors.primary,
+                            size: 16,
+                          ),
                         ),
                       ),
                     ),
