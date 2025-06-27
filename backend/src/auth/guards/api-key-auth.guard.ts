@@ -50,7 +50,7 @@ export class ApiKeyAuthGuard implements CanActivate {
       throw new UnauthorizedException('Interner Authentifizierungsfehler.');
     }
 
-    const apiKey = request.headers['X-API-Key']; // Wir erwarten den API-Key im Header 'X-API-Key'
+    const apiKey = request.headers['x-api-key']; // Wir erwarten den API-Key im Header 'X-API-Key'
 
     if (!apiKey) {
       this.logger.warn('API Key (X-API-Key) missing from request headers.');
