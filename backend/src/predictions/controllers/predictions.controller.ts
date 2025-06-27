@@ -1,7 +1,12 @@
-import { Controller, Get, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PredictionsService } from '../services/predictions.service';
-import { DayPredictionResponseDto, WeekPredictionResponseDto } from '../dto';
+import {
+  DayPredictionResponseDto,
+  WeekPredictionResponseDto,
+  PredictionRequestDto,
+  SinglePredictionResponseDto,
+} from '../dto';
 
 /**
  * @class PredictionsController
@@ -53,5 +58,35 @@ export class PredictionsController {
   async getWeekPredictions(): Promise<WeekPredictionResponseDto> {
     this.logger.debug('REST API: GET /api/predictions/week');
     return this.predictionsService.getWeekPredictions();
+  }
+
+  /**
+   * @method getSinglePrediction
+   * @description Liefert eine ML-Vorhersage für einen spezifischen Zeitpunkt
+   * Entspricht POST /api/predictions/single aus der API-Erweiterung
+   */
+  @Post('single')
+  @ApiOperation({
+    summary: 'Einzelne ML-Vorhersage für spezifischen Zeitpunkt',
+    description: 'Ruft eine Vorhersage vom ML-Service für einen konkreten Zeitpunkt ab',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'ML-Vorhersage erfolgreich abgerufen',
+    type: SinglePredictionResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Ungültiger Zeitstempel',
+  })
+  @ApiResponse({
+    status: 503,
+    description: 'ML-Service nicht verfügbar oder Model nicht trainiert',
+  })
+  async getSinglePrediction(
+    @Body() request: PredictionRequestDto,
+  ): Promise<SinglePredictionResponseDto> {
+    this.logger.debug(`REST API: POST /api/predictions/single for ${request.timestamp}`);
+    return this.predictionsService.getSinglePrediction(request);
   }
 }

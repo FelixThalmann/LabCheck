@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LabCheck WebSocket Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .event-log {
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .event-item {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #007bff;
+            background-color: white;
+        }
+        .event-item.door-update {
+            border-left-color: #28a745;
+        }
+        .event-item.occupancy-update {
+            border-left-color: #ffc107;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button.connect {
+            background-color: #28a745;
+            color: white;
+        }
+        button.disconnect {
+            background-color: #dc3545;
+            color: white;
+        }
+        button.clear {
+            background-color: #6c757d;
+            color: white;
+        }
+        .mqtt-test {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .mqtt-test h3 {
+            margin-top: 0;
+        }
+        .mqtt-examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .mqtt-example {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .mqtt-example h4 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        .mqtt-example code {
+            background: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 2px;
+            font-family: 'Courier New', monospace;
+            display: block;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚪 LabCheck WebSocket Live Test</h1>
+    
+    <div class="container">
+        <h2>WebSocket Verbindung</h2>
+        <div id="connectionStatus" class="status disconnected">❌ Nicht verbunden</div>
+        
+        <div class="controls">
+            <button id="connectBtn" class="connect" onclick="connect()">🔌 Verbinden</button>
+            <button id="disconnectBtn" class="disconnect" onclick="disconnect()">🔌 Trennen</button>
+            <button class="clear" onclick="clearLog()">🗑️ Log leeren</button>
+        </div>
+        
+        <div>
+            <label for="serverUrl">Server URL:</label>
+            <input type="text" id="serverUrl" value="http://localhost:3000" style="width: 300px; padding: 5px;">
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📊 Live Events</h2>
+        <div id="eventLog" class="event-log">
+            <div class="event-item">
+                <strong>🚀 WebSocket Test bereit</strong><br>
+                Klicken Sie auf "Verbinden" um Live-Updates zu empfangen
+            </div>
+        </div>
+    </div>
+
+    <div class="container mqtt-test">
+        <h2>🧪 MQTT Test Kommandos</h2>
+        <p>Um die WebSocket-Funktionalität zu testen, senden Sie MQTT-Nachrichten an Ihren MQTT-Broker:</p>
+        
+        <div class="mqtt-examples">
+            <div class="mqtt-example">
+                <h4>🚪 Tür-Events (Einfach)</h4>
+                <strong>Topic:</strong> <code>labcheck/[ESP32-ID]/door</code>
+                <strong>Payload für "Tür offen":</strong> <code>1</code>
+                <strong>Payload für "Tür geschlossen":</strong> <code>0</code>
+                <strong>Beispiel:</strong> <code>mosquitto_pub -h localhost -t "labcheck/test-sensor-01/door" -m "1"</code>
+            </div>
+            
+            <div class="mqtt-example">
+                <h4>🚶 Personen Ein/Aus (Einfach)</h4>
+                <strong>Topic:</strong> <code>labcheck/[ESP32-ID]/entrance</code>
+                <strong>Payload für "Person rein":</strong> <code>1</code>
+                <strong>Payload für "Person raus":</strong> <code>0</code>
+                <strong>Beispiel:</strong> <code>mosquitto_pub -h localhost -t "labcheck/test-sensor-01/entrance" -m "1"</code>
+            </div>
+            
+            <div class="mqtt-example">
+                <h4>🚪 Tür-Events (JSON-Format)</h4>
+                <strong>Topic:</strong> <code>labcheck/door/[ESP32-ID]/events</code>
+                <strong>Payload:</strong> <code>{"type": "door", "data": {"isOpen": true, "timestamp": "2024-01-01T12:00:00Z"}}</code>
+                <strong>Beispiel:</strong> <code>mosquitto_pub -h localhost -t "labcheck/door/test-sensor-02/events" -m '{"type":"door","data":{"isOpen":true}}'</code>
+            </div>
+            
+            <div class="mqtt-example">
+                <h4>🚶 Passage-Events (JSON-Format)</h4>
+                <strong>Topic:</strong> <code>labcheck/door/[ESP32-ID]/events</code>
+                <strong>Payload:</strong> <code>{"type": "passage", "data": {"direction": "IN", "timestamp": "2024-01-01T12:00:00Z"}}</code>
+                <strong>Beispiel:</strong> <code>mosquitto_pub -h localhost -t "labcheck/door/test-sensor-02/events" -m '{"type":"passage","data":{"direction":"IN"}}'</code>
+            </div>
+        </div>
+        
+        <h3>💡 Test-Tipps:</h3>
+        <ul>
+            <li>Starten Sie Ihr NestJS Backend mit <code>npm run start:dev</code></li>
+            <li>Öffnen Sie diese HTML-Datei und verbinden Sie sich mit dem WebSocket</li>
+            <li>Verwenden Sie <code>mosquitto_pub</code> oder einen MQTT-Client, um Test-Nachrichten zu senden</li>
+            <li>Beobachten Sie die Live-Updates in der Event-Log-Sektion</li>
+            <li>Die Sensor-IDs werden automatisch in der Datenbank angelegt, falls sie nicht existieren</li>
+        </ul>
+    </div>
+
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <script>
+        let socket = null;
+        let connected = false;
+
+        function connect() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            
+            if (socket) {
+                socket.disconnect();
+            }
+            
+            socket = io(serverUrl, {
+                transports: ['websocket', 'polling']
+            });
+            
+            socket.on('connect', () => {
+                connected = true;
+                updateConnectionStatus('✅ Verbunden mit ' + serverUrl, 'connected');
+                logEvent('WebSocket', '🔌 Erfolgreich verbunden', 'info');
+                
+                // Request initial status
+                socket.emit('requestInitialStatus', { clientId: 'web-test-client' });
+            });
+            
+            socket.on('disconnect', () => {
+                connected = false;
+                updateConnectionStatus('❌ Verbindung getrennt', 'disconnected');
+                logEvent('WebSocket', '🔌 Verbindung getrennt', 'info');
+            });
+            
+            socket.on('connect_error', (error) => {
+                connected = false;
+                updateConnectionStatus('❌ Verbindungsfehler: ' + error.message, 'disconnected');
+                logEvent('WebSocket', '❌ Verbindungsfehler: ' + error.message, 'error');
+            });
+            
+            // Listen for door status updates
+            socket.on('doorStatusUpdate', (data) => {
+                logEvent('Door Status', formatDoorStatusUpdate(data), 'door-update');
+            });
+            
+            // Listen for occupancy updates
+            socket.on('occupancyUpdate', (currentOccupancy, maxCapacity) => {
+                logEvent('Occupancy', formatOccupancyUpdate(currentOccupancy, maxCapacity), 'occupancy-update');
+            });
+            
+            // Listen for general messages
+            socket.on('message', (data) => {
+                logEvent('Message', JSON.stringify(data), 'info');
+            });
+        }
+        
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+            connected = false;
+            updateConnectionStatus('❌ Nicht verbunden', 'disconnected');
+        }
+        
+        function updateConnectionStatus(text, className) {
+            const statusElement = document.getElementById('connectionStatus');
+            statusElement.textContent = text;
+            statusElement.className = 'status ' + className;
+        }
+        
+        function logEvent(type, message, className = 'info') {
+            const eventLog = document.getElementById('eventLog');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const eventItem = document.createElement('div');
+            eventItem.className = 'event-item ' + className;
+            eventItem.innerHTML = `
+                <strong>[${timestamp}] ${type}:</strong><br>
+                ${message}
+            `;
+            
+            eventLog.appendChild(eventItem);
+            eventLog.scrollTop = eventLog.scrollHeight;
+        }
+        
+        function formatDoorStatusUpdate(data) {
+            const statusIcon = data.isOpen ? '🚪📂' : '🚪📁';
+            const statusText = data.isOpen ? 'OFFEN' : 'GESCHLOSSEN';
+            const colorIcon = data.color === 'green' ? '🟢' : data.color === 'orange' ? '🟠' : '🔴';
+            
+            return `
+                ${statusIcon} <strong>Tür ${statusText}</strong> ${colorIcon}<br>
+                📊 Belegung: ${data.currentOccupancy}/${data.maxOccupancy}<br>
+                🔧 Sensor: ${data.sensorId}<br>
+                📅 Zeit: ${new Date(data.currentDate).toLocaleString()}<br>
+                📝 Event ID: ${data.eventId}
+            `;
+        }
+        
+        function formatOccupancyUpdate(currentOccupancy, maxCapacity) {
+            const percentage = maxCapacity > 0 ? Math.round((currentOccupancy / maxCapacity) * 100) : 0;
+            const fillIcon = percentage >= 100 ? '🔴' : percentage >= 75 ? '🟠' : '🟢';
+            
+            return `
+                ${fillIcon} <strong>Belegung aktualisiert</strong><br>
+                👥 Personen: ${currentOccupancy}/${maxCapacity} (${percentage}%)<br>
+                📅 Zeit: ${new Date().toLocaleString()}
+            `;
+        }
+        
+        function clearLog() {
+            const eventLog = document.getElementById('eventLog');
+            eventLog.innerHTML = '<div class="event-item"><strong>🗑️ Log geleert</strong></div>';
+        }
+        
+        // Auto-connect on page load
+        window.addEventListener('load', () => {
+            // Uncomment the next line to auto-connect on page load
+            // connect();
+        });
+    </script>
+</body>
+</html>

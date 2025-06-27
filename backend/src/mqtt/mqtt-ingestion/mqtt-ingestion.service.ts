@@ -113,9 +113,9 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
         { name: `${JSON_BASED_EVENTS_TOPIC_PREFIX}`, description: 'JSON-based sensor events (legacy)' }, 
         { name: `${LIGHT_BARRIER_TOPIC_PREFIX}`, description: 'Light barrier status events (legacy)' },
         // 🔥 NEW: Dynamic topics with ESP32 ID
-        { name: DYNAMIC_TOPIC_PATTERNS.DOOR, description: 'Door sensor events with ESP32 ID' },
-        { name: DYNAMIC_TOPIC_PATTERNS.ENTRANCE, description: 'Entrance sensor events with ESP32 ID' },
-        //{ name: DYNAMIC_TOPIC_PATTERNS.STATUS, description: 'General status events with ESP32 ID' }
+        { name: `labcheck/esp32/door`, description: 'Door sensor events with ESP32 ID' },
+        { name: `labcheck/esp32/entrance`, description: 'Entrance sensor events with ESP32 ID' },
+        //{ name: `labcheck/+/status`, description: 'General status events with ESP32 ID' }
 
       ];
 
@@ -185,8 +185,8 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
       else if (topic.startsWith(JSON_BASED_EVENTS_TOPIC_PREFIX)) { 
         // Zerlege das Topic in Teile, um die ESP32-ID zu extrahieren
         const topicParts = topic.split('/');
-        // uni/lab/door/{sensorId}/events -> sensorId ist an Index 3
-        const esp32IdFromTopic = topicParts[3]; 
+        // labcheck/door/{sensorId}/events -> sensorId ist an Index 2
+        const esp32IdFromTopic = topicParts[2]; 
 
         if (!esp32IdFromTopic) {
           this.logger.warn(`Could not extract ESP32 ID from JSON-based event topic: '${topic}'. Message ignored.`);
@@ -450,12 +450,10 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
       // Log: Erfolgreiches Speichern des Events
       this.logger.log(`DoorEvent erfolgreich gespeichert: ID ${createdEvent.id} für Sensor '${sensor.esp32Id}' (isOpen: ${validatedData.isOpen}).`);
       // Falls ein EventsGateway existiert, sende ein WebSocket-Update
-
-      ///////// WEBSOCKET IMPLEMENTATION HERE /////////
-      /*if (this.eventsGateway) {
+      if (this.eventsGateway) {
         this.logger.verbose(`Sende Türstatus-Update via WebSocket für Event ID ${createdEvent.id}.`);
-        this.eventsGateway.sendDoorStatusUpdate(createdEvent); // MAYBE LATER HERE TO SEND REAL TIME UPDATES VIA WEBSOCKETS
-      }*/
+        await this.eventsGateway.sendDoorStatusUpdate(createdEvent);
+      }
     } catch (error) {
       // Fehler beim Speichern des Events in der Datenbank
       this.logger.error(

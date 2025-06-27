@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -10,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { DoorEvent } from '@prisma/client'; // Assuming we send these types or parts thereof. PassageEvent is currently unused.
 import { OccupancyStatusDto } from 'src/door/models';
+import { PrismaService } from '../../prisma.service';
 
 
 // WebSocket events emitted by the server
@@ -59,13 +61,15 @@ export class EventsGateway
   @WebSocketServer()
   private server: Server; // Type Server from socket.io
 
+  constructor(private readonly prisma: PrismaService) {}
+
   /**
    * @method afterInit
    * @description Lifecycle hook called after the gateway has been initialized.
-   * @param {Server} server - The Socket.IO server instance.
+   * @param {Server} _server - The Socket.IO server instance.
    */
-  afterInit(server: Server): void {
-    // The 'server' parameter here is the same instance as 'this.server'
+  afterInit(_server: Server): void {
+    // The '_server' parameter here is the same instance as 'this.server'
     // It's provided by NestJS for convenience within this lifecycle hook.
     this.logger.log('WebSocket Gateway initialized');
   }
@@ -74,9 +78,9 @@ export class EventsGateway
    * @method handleConnection
    * @description Lifecycle hook called when a new client connects.
    * @param {Socket} client - The connected client socket.
-   * @param {any[]} args - Additional arguments passed during connection (rarely used).
+   * @param {any[]} _args - Additional arguments passed during connection (rarely used).
    */
-  handleConnection(client: Socket, ...args: any[]): void {
+  handleConnection(client: Socket, ..._args: any[]): void {
     this.logger.log(
       `Client connected: ${client.id} from IP ${client.handshake.address}`,
     );
@@ -114,28 +118,175 @@ export class EventsGateway
   /**
    * @method sendDoorStatusUpdate
    * @description Broadcasts a door status update to all connected clients.
+   * Includes room occupancy data and door status information.
    * @param {DoorEvent} doorEvent - The door event data to send.
+   * @param {number} [currentOccupancy] - Current room occupancy (optional, will be fetched if not provided).
+   * @param {number} [maxOccupancy] - Maximum room capacity (optional, will be fetched if not provided).
    */
-  public sendDoorStatusUpdate(doorEvent: DoorEvent): void {
+  public async sendDoorStatusUpdate(
+    doorEvent: DoorEvent, 
+    currentOccupancy?: number, 
+    maxOccupancy?: number
+  ): Promise<void> {
     this.logger.log('Sending door status update:', doorEvent);
+    
+    // If occupancy data not provided, fetch from database
+    let finalCurrentOccupancy = currentOccupancy ?? 0;
+    let finalMaxOccupancy = maxOccupancy ?? 0;
+    
+    if (currentOccupancy === undefined || maxOccupancy === undefined) {
+      try {
+        // Import PrismaService to fetch room data
+        const { PrismaClient } = await import('@prisma/client');
+        const prisma = new PrismaClient();
+        
+        // Find sensor and room to get current occupancy
+        const sensor = await prisma.sensor.findUnique({
+          where: { id: doorEvent.sensorId },
+          include: { room: true }
+        });
+        
+        if (sensor?.room) {
+          finalCurrentOccupancy = sensor.room.capacity;
+          finalMaxOccupancy = sensor.room.maxCapacity;
+          this.logger.verbose(`Fetched room data: occupancy ${finalCurrentOccupancy}/${finalMaxOccupancy} for sensor ${sensor.esp32Id}`);
+        }
+        
+        await prisma.$disconnect();
+      } catch (error) {
+        this.logger.error('Failed to fetch room occupancy data:', error);
+      }
+    }
+    
+    // Determine room status color based on door state and occupancy
+    let statusColor = 'green'; // Default: open and not full
+    if (!doorEvent.doorIsOpen) {
+      statusColor = 'red'; // Closed
+    } else if (finalCurrentOccupancy >= finalMaxOccupancy && finalMaxOccupancy > 0) {
+      statusColor = 'orange'; // Open but full
+    }
+
     this.server.emit(WS_EVENT_DOOR_STATUS_UPDATE, {
       isOpen: doorEvent.doorIsOpen,
-      currentOccupancy: 0, // TODO: Implement
-      maxOccupancy: 0, // TODO: Implement
-      color: 'red', // TODO: Implement
-      currentDate: doorEvent.eventTimestamp, // or createdAt for backend time
-      lastUpdated: doorEvent.eventTimestamp, // TODO: Implement (last time the status was sent by the hardware)
+      currentOccupancy: finalCurrentOccupancy,
+      maxOccupancy: finalMaxOccupancy,
+      color: statusColor,
+      currentDate: doorEvent.eventTimestamp,
+      lastUpdated: doorEvent.eventTimestamp,
+      sensorId: doorEvent.sensorId,
+      eventId: doorEvent.id,
     });
   }
 
   /**
    * @method sendOccupancyUpdate
    * @description Broadcasts an occupancy status update to all connected clients.
-   * @param {LabCapacityResponseDto} occupancyStatus - The occupancy status data to send.
+   * Dynamically fetches door status from database.
+   * @param {OccupancyStatusDto} occupancyStatus - The occupancy status data to send.
+   * @param {number} maxCapacity - Maximum room capacity.
+   * @param {string} [roomId] - Optional room ID to fetch door status for specific room.
    */
-  public sendOccupancyUpdate(occupancyStatus: OccupancyStatusDto, maxCapacity: number): void {
+  public async sendOccupancyUpdate(
+    occupancyStatus: OccupancyStatusDto,
+    maxCapacity: number,
+    roomId?: string,
+  ): Promise<void> {
     this.logger.log('Sending occupancy update:', occupancyStatus);
-    this.server.emit(WS_EVENT_OCCUPANCY_UPDATE, occupancyStatus.currentOccupancy, maxCapacity);
+    
+    // Fetch current door status from database
+    let isOpen = true; // Default fallback
+    try {
+      // Get the most recent door event for the room
+      let latestDoorEvent;
+      
+      if (roomId) {
+        // If specific room ID provided, get door event for that room
+        latestDoorEvent = await this.prisma.doorEvent.findFirst({
+          where: {
+            sensor: {
+              roomId: roomId,
+            },
+          },
+          orderBy: {
+            eventTimestamp: 'desc',
+          },
+        });
+      } else {
+        // If no room ID, get the latest door event across all rooms
+        latestDoorEvent = await this.prisma.doorEvent.findFirst({
+          orderBy: {
+            eventTimestamp: 'desc',
+          },
+        });
+      }
+
+      if (latestDoorEvent) {
+        isOpen = latestDoorEvent.doorIsOpen;
+        this.logger.debug(`Fetched door status: ${isOpen ? 'open' : 'closed'}`);
+      } else {
+        this.logger.warn('No door events found in database, using default (open)');
+      }
+    } catch (error) {
+      this.logger.error('Failed to fetch door status from database:', error);
+      // Keep default value (true)
+    }
+
+    // Calculate color based on occupancy and door status
+    const color = this.getOccupancyColorWithDoorStatus(
+      occupancyStatus.currentOccupancy,
+      maxCapacity,
+      isOpen,
+    );
+
+    this.server.emit(
+      WS_EVENT_OCCUPANCY_UPDATE,
+      {
+        currentOccupancy: occupancyStatus.currentOccupancy,
+        maxOccupancy: maxCapacity,
+        isOpen,
+        color,
+        currentDate: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
+      },
+    );
+  }
+
+  private getOccupancyColor(currentOccupancy: number, maxOccupancy: number): string {
+    if (currentOccupancy >= maxOccupancy && maxOccupancy > 0) {
+      return 'orange'; // Voll
+    } else if (currentOccupancy > 0) {
+      return 'green'; // Besetzt aber nicht voll
+    } else {
+      return 'gray'; // Leer
+    }
+  }
+
+  /**
+   * @method getOccupancyColorWithDoorStatus
+   * @description Berechnet Farbkodierung basierend auf Belegung und Türstatus
+   * @param {number} currentOccupancy - Aktuelle Belegung
+   * @param {number} maxOccupancy - Maximale Kapazität
+   * @param {boolean} isOpen - Türstatus (offen/geschlossen)
+   * @returns {string} Farbkodierung (red, orange, green, gray)
+   */
+  private getOccupancyColorWithDoorStatus(
+    currentOccupancy: number,
+    maxOccupancy: number,
+    isOpen: boolean,
+  ): string {
+    // Priorität: Türstatus überschreibt Belegungsfarbe
+    if (!isOpen) {
+      return 'red'; // Tür geschlossen = rot, unabhängig von Belegung
+    }
+    
+    // Wenn Tür offen, normale Belegungslogik
+    if (currentOccupancy >= maxOccupancy && maxOccupancy > 0) {
+      return 'orange'; // Voll
+    } else if (currentOccupancy > 0) {
+      return 'green'; // Besetzt aber nicht voll
+    } else {
+      return 'gray'; // Leer
+    }
   }
 
   // If we also want to push MotionEvents:

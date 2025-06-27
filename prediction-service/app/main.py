@@ -30,7 +30,7 @@ class PredictionResponse(BaseModel):
     predicted_occupancy: float
     prediction_isDoorOpen: bool
     prediction_for_timestamp: datetime
-    model_last_trained: datetime | None # When was the model trained?
+    last_trained_at: datetime | None # When was the model trained?
 
 # --- FastAPI application ---
 app = FastAPI(
@@ -164,5 +164,5 @@ def predict(request: PredictionRequest):
         "predicted_occupancy": predicted_occupancy if predicted_occupancy > 0 else 0.0, # Avoid negative values
         "prediction_isDoorOpen": predicted_door_open,
         "prediction_for_timestamp": prediction_date,
-        "model_last_trained": model_cache["model_timestamp"]
+        "last_trained_at": model_cache["model_timestamp"]
     }

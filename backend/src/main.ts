@@ -12,7 +12,7 @@ async function bootstrap() {
   // MQTT Microservice Konfiguration
   const mqttBrokerUrl = app
     .get(ConfigService)
-    .get<string>('MQTT_BROKER_URL', 'mqtt://localhost:1883');
+    .get<string>('MQTT_BROKER_URL', 'mqtt://labcheck_mosquitto:1883');
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.MQTT,
     options: {
