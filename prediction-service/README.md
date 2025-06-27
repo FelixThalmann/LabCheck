@@ -25,7 +25,7 @@ docker-compose build prediction-service
 ### Health check
 
 ```bash
-curl http://localhost:3100/health
+curl http://localhost:3100/health -H "X-API-Key: 0000000000"
 ```
 
 output:
@@ -41,7 +41,7 @@ output:
 ### Train the model
 
 ```bash
-curl -X PUT http://localhost:3100/train
+curl -X POST http://localhost:3100/train -H "X-API-Key: 0000000000"
 ```
 
 output:
@@ -57,7 +57,10 @@ The model needs to be trained first. But the training is done automatically ever
 The timestamp must be in ISO format (YYYY-MM-DDTHH:MM:SS).
 
 ```bash
-curl -X POST http://localhost:3100/predict -H "Content-Type: application/json" -d '{"timestamp": "2025-06-19T14:30:00"}'
+curl -X POST http://localhost:3100/predict \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: 0000000000" \
+  -d '{"timestamp": "2025-06-19T14:30:00"}'
 ```
 
 output:
