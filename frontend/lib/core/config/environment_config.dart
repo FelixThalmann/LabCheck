@@ -53,7 +53,7 @@ ENVIRONMENT=development
     _logger.info('🔧 Current environment configuration:');
     _logger.info('  Environment: $environment');
     _logger.info('  API Base URL: $apiBaseUrl');
-    _logger.info('  API Key: $apiKey'); // TODO: Hide the key in the log
+    // _logger.info('  API Key: $apiKey');
 
     if (dotenv.env.isNotEmpty) {
       _logger.info('📝 All available variables:');

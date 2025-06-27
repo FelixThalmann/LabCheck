@@ -9,6 +9,7 @@
 #include "Speaker.h"
 #include "WiFiConfig.h"
 #include "ToFSensor.h"
+#include "PIRSensor.h"
 
 class MainProgram{
 public:
@@ -29,7 +30,7 @@ private:
   WiFiConfig wifi;
   ToFSensor tofSensor1;
   ToFSensor tofSensor2;
-  
+  PIRSensor pirSensor;
 
   int programmode;
   int sensorStorage[128][2];
@@ -48,6 +49,7 @@ private:
   void storeSensorData(int sensorValue, int duration);
   void prepareMode(int mode);
   void updateLed();
+  void publishMQTT(const char* topic, const char* payload);
 };
 
 #endif // MAINPROGRAM_H

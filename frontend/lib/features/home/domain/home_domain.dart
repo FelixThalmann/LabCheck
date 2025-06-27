@@ -60,7 +60,7 @@ class HomeDomain {
       return LabStatusDto.fromJson(response);
     } catch (e) {
       _logger.warning('Failed to fetch lab status from API: $e');
-      lastException = e as Exception;
+      lastException = e is Exception ? e : Exception(e.toString());
       if (isDemoMode) {
         _logger.info('Using demo data for lab status');
         // Fallback to Demo-Data if error
@@ -79,7 +79,7 @@ class HomeDomain {
       return DayPredictionDto.fromJson(response);
     } catch (e) {
       _logger.warning('Failed to fetch day predictions from API: $e');
-      lastException = e as Exception;
+      lastException = e is Exception ? e : Exception(e.toString());
       if (isDemoMode) {
         _logger.info('Using demo data for day predictions');
         // Fallback to Demo-Data if error
@@ -98,7 +98,7 @@ class HomeDomain {
       return WeekPredictionDto.fromJson(response);
     } catch (e) {
       _logger.warning('Failed to fetch week predictions from API: $e');
-      lastException = e as Exception;
+      lastException = e is Exception ? e : Exception(e.toString());
       if (isDemoMode) {
         _logger.info('Using demo data for week predictions');
         // Fallback to Demo-Data if error
@@ -165,14 +165,17 @@ class HomeDomain {
   }
 
   WeekPredictionDto _getFallbackWeekPredictions() {
+    final fallbackPredictions = [
+      WeekPrediction(occupancy: 1, day: 'Mon', color: 'green'),
+      WeekPrediction(occupancy: 4, day: 'Tue', color: 'yellow'),
+      WeekPrediction(occupancy: 10, day: 'Wed', color: 'red'),
+      WeekPrediction(occupancy: 4, day: 'Thu', color: 'yellow'),
+      WeekPrediction(occupancy: 2, day: 'Fri', color: 'green'),
+    ];
+
     return WeekPredictionDto(
-      predictions: [
-        WeekPrediction(occupancy: 1, day: 'Mon', color: 'green'),
-        WeekPrediction(occupancy: 4, day: 'Tue', color: 'yellow'),
-        WeekPrediction(occupancy: 10, day: 'Wed', color: 'red'),
-        WeekPrediction(occupancy: 4, day: 'Thu', color: 'yellow'),
-        WeekPrediction(occupancy: 2, day: 'Fri', color: 'green'),
-      ],
+      currentWeek: fallbackPredictions,
+      nextWeek: fallbackPredictions,
       lastUpdated: DateTime.now(),
     );
   }

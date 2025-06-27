@@ -15,28 +15,46 @@ MainProgram::MainProgram() : tofSensor1{TOF1_XSHUT, TOF1_SDA, TOF1_SCL}, tofSens
   activeLed = 0;
 }
 
+enum ProgramMode {
+  IDLE = 0,
+  AWAITING_MOTION = 5,
+  AWAITING_DETECTION = 1,
+  ENTRANCE_CONFIRMATION = 2,
+  EXIT_CONFIRMATION = 3,
+  DETECTION_COMPLETION = 4,
+};
+
 void MainProgram::begin(){
+
   Serial.println(F("Initializing Main Program..."));
-  Serial.println(F("Testing WiFi connection..."));
+
+  leds.begin();
   updateLed();
+
   wifi.begin();
-  if (wifi.connect()) {
-    Serial.println(F("WiFi available! Proceeding..."));
-    programmode = 1;
-  } else {
-    Serial.println(F("Failed to connect to WiFi. Proceeding with caution..."));
-    programmode = 1;
-  }
-  //wifi.disconnect();
-  if (isWiFiAvailable()){
-    mqtt.setCredentials("user", "password");
-    if (mqtt.connect("LabCheckESP32")){
-      Serial.println(F("Connected to MQTT Broker!"));
-    }
-    else {
-      Serial.println(F("Failed to connect to MQTT Broker!"));
+  Serial.print(F("Connecting to WiFi..."));
+  while(!isWiFiAvailable()) {
+    if (wifi.connect()) {
+      Serial.println(F("WiFi available! Proceeding..."));
+    } else {
+      Serial.println(F("Failed to connect to WiFi. Retrying..."));
     }
   }
+
+  mqtt.begin();
+  mqtt.setCredentials("user", "password");
+  Serial.print(F("Connecting to MQTT Broker..."));
+  while(!mqtt.isConnected()) {
+    if (isWiFiAvailable()){
+      if (mqtt.connect("LabCheckESP32")){
+        Serial.println(F("Connected to MQTT Broker! Proceeding..."));
+      }
+      else {
+        Serial.println(F("Failed to connect to MQTT Broker! Retrying..."));
+      }
+    }
+  }
+
   // Initialize toF sensors
   if (!tofSensor1.begin()) {
     Serial.println(F("ToF Sensor 1 initialization failed!"));
@@ -48,8 +66,15 @@ void MainProgram::begin(){
   } else {
     Serial.println(F("ToF Sensor 2 initialized successfully."));
   }
-  
   Serial.println(F("ToF sensors initialized with separate I2C buses."));
+
+  // Initialize magnetic sensor
+  magneticSensor.begin();
+
+  // Initialize speaker
+  speaker.begin();
+
+  programmode = ProgramMode::IDLE;
   
 }
 
@@ -59,62 +84,61 @@ void MainProgram::update(){
   uint16_t distance1 = tofSensor1.readDistance();
   // Read sensor 2
   uint16_t distance2 = tofSensor2.readDistance();
-  
-  /* Serial.print(F("Distance 1: "));
-  Serial.print(distance1);
-  Serial.print(F(" mm, Distance 2: "));
-  Serial.print(distance2);
-  Serial.println(F(" mm")); */
+
+  // Check and maintain MQTT connection
+  if (!mqtt.isConnected() && isWiFiAvailable()) {
+    Serial.println(F("MQTT disconnected, attempting reconnection..."));
+    if (!mqtt.connect("LabCheckESP32")) {
+      Serial.println(F("MQTT reconnection failed!"));
+    }
+  }
+
+  if (programmode != ProgramMode::IDLE){
+    if(magneticSensor.isActive()){
+      Serial.println(F("Door closed! Idleing..."));
+      publishMQTT("labcheck/esp32/door", "0");
+      prepareMode(ProgramMode::IDLE);
+    }
+  }
 
   switch(programmode){
-    // idle if door sensor active
-    case 0:
+    
+    case 0: // idle if door sensor active
       if(!magneticSensor.isActive()){
         Serial.println(F("Door opened!"));
-        mqtt.publish("labcheck/esp32/door", "1");
-        prepareMode(1);
+        publishMQTT("labcheck/esp32/door", "1");
+        prepareMode(ProgramMode::AWAITING_MOTION);
       }
       break;
-    // Main behavior loop if door sensor inactive
-    case 1:
-      if(magneticSensor.isActive()){
+    
+    case 5: // Awaiting motion
+      if(pirSensor.motionDetected()){
+        Serial.println(F("Motion detected! Awaiting ToF detection..."));
+        prepareMode(ProgramMode::AWAITING_DETECTION);
+        break;
+      }
+    
+    case 1:// Awaiting tof detection
+      /* if(magneticSensor.isActive()){
         Serial.println(F("Door closed! Idleing..."));
         mqtt.publish("labcheck/esp32/door", "0");
-        prepareMode(0);
+        prepareMode(ProgramMode::IDLE);
+        break;
+      } */
+      if (!pirSensor.motionDetected()){
+        Serial.println(F("No motion! Awaiting motion..."));
+        prepareMode(ProgramMode::AWAITING_MOTION);
         break;
       }
 
-      /* if (peopleCounter == 10){
-        activeLed = 3;
-      } else if (peopleCounter >= 5){
-        activeLed = 2;
-      } else {
-        activeLed = 1;
-      } */
-
-
-
-
-      if(distance1 < 1000){
+      if(distance1 < 500){
         Serial.print(F("Possible entrance detected..."));
-        /* if (peopleCounter >= 10){
-          Serial.println(F("But the room is full!"));
-          prepareMode(4);
-        } else {
-          prepareMode(2);
-        } */
         prepareMode(2);
         break;
       }
 
-      if(distance2 < 1000){
+      if(distance2 < 500){
         Serial.print(F("Possible exit detected..."));
-        /* if (peopleCounter <= 0){
-          Serial.println(F("But this can't be possible, the room should be empty!"));
-          prepareMode(4);
-        } else {
-          prepareMode(3);
-        } */
         prepareMode(3);
         break;
       }
@@ -123,13 +147,13 @@ void MainProgram::update(){
     // Person entering detection mode
     case 2:
       sensorTimer += delayTime;
-      if(distance2 < 1000){
+      if(distance2 < 500){
         Serial.print(F("Person entered! Took "));
         Serial.print(sensorTimer);	
         Serial.println(F(" ms to pass!"));
         speaker.playSuccess();
         peopleCounter++;
-        mqtt.publish("labcheck/esp32/entrance", "1");
+        publishMQTT("labcheck/esp32/entrance", "1");
         storeSensorData(1, 123);
         prepareMode(4);
         break;
@@ -144,13 +168,13 @@ void MainProgram::update(){
     // Persion exiting detection mode 
     case 3:
       sensorTimer += delayTime;
-      if(distance1 < 1000){
+      if(distance1 < 500){
           Serial.print(F("Person exited! Took "));
           Serial.print(sensorTimer);	
           Serial.println(F(" ms to pass!"));
           speaker.playSuccess();
           peopleCounter--;
-          mqtt.publish("labcheck/esp32/entrance", "0");
+          publishMQTT("labcheck/esp32/entrance", "0");
           storeSensorData(0, 123);
           prepareMode(4);
           break;
@@ -165,12 +189,12 @@ void MainProgram::update(){
     // Awaiting default sensor data mode
     case 4:      
       if (distance1>1000 && distance2>1000){
-        prepareMode(1);
+        Serial.println(F("ToF area clear! Returning to awaiting motion..."));
+        prepareMode(ProgramMode::AWAITING_MOTION);
         break;
       }
-      Serial.print(F("."));
+      //Serial.print(F("."));
       break;
-
  
     default:
       Serial.println(F("Idle mode."));
@@ -198,21 +222,26 @@ bool MainProgram::isWiFiAvailable(){
 
 void MainProgram::prepareMode(int mode){
   switch(mode){
-    case 0: // idle
+    case 0: // idle, waiting for door sensor
       delayTime = 5000;
-      activeLed = 3;
       programmode = 0;
       break;
+    case 5: // awaiting motion
+      activeLed = 0;
+      delayTime = 1000;
+      programmode = 5;
+      break;
     case 1: // awaiting detection
-      delayTime = 200;
+      activeLed = 1;
+      delayTime = 50;
       programmode = 1;
       break;
-    case 2: // entrance detection
+    case 2: // entrance detected, awaiting confirmation
       delayTime = 20;
       sensorTimer = 0;
       programmode = 2;
       break;
-    case 3: // exit detection
+    case 3: // exit detected, awaiting confirmation
       delayTime = 20;
       sensorTimer = 0;
       programmode = 3;
@@ -230,5 +259,16 @@ void MainProgram::prepareMode(int mode){
 void MainProgram::updateLed(){
   if (activeLed != 0){
     leds.setGreen(activeLed == 1 ? true : false);
+  } else {
+    leds.setGreen(false);
+  }
+}
+
+void MainProgram::publishMQTT(const char* topic, const char* payload) {
+  if (mqtt.isConnected()) {
+    mqtt.publish(topic, payload);
+  } else {
+    Serial.print(F("MQTT not connected, failed to publish to: "));
+    Serial.println(topic);
   }
 }
