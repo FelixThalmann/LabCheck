@@ -6,8 +6,15 @@ import '../../../../data/models/week_prediction_dto.dart';
 class _BarChart extends StatelessWidget {
   final List<Map<String, dynamic>> predictions;
   final bool noData;
+  final String currentDay;
+  final bool isCurrentWeek;
 
-  const _BarChart({required this.predictions, required this.noData});
+  const _BarChart({
+    required this.predictions,
+    required this.noData,
+    required this.currentDay,
+    required this.isCurrentWeek,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -116,25 +123,27 @@ class _BarChart extends StatelessWidget {
     border: const Border(bottom: BorderSide(color: Colors.black, width: 1)),
   );
 
-  LinearGradient get _barsGradient => LinearGradient(
-    colors: [AppColors.secondary, AppColors.primary],
-    begin: Alignment.bottomCenter,
-    end: Alignment.topCenter,
-  );
+  List<BarChartGroupData> get barGroups =>
+      List.generate(predictions.length, (index) {
+        // Extract the day from the currentDay (e.g. "Fri" from "Fri 27. Jun")
+        final currentDayShort = currentDay.split(' ')[0];
+        final isCurrentDay = predictions[index]['label'] == currentDayShort;
 
-  List<BarChartGroupData> get barGroups => List.generate(
-    predictions.length,
-    (index) => BarChartGroupData(
-      x: index,
-      barRods: [
-        BarChartRodData(
-          toY: predictions[index]['value'].toDouble(),
-          gradient: _barsGradient,
-        ),
-      ],
-      showingTooltipIndicators: [0],
-    ),
-  );
+        return BarChartGroupData(
+          x: index,
+          barRods: [
+            BarChartRodData(
+              toY: predictions[index]['value'].toDouble(),
+              color:
+                  (isCurrentDay && isCurrentWeek)
+                      ? AppColors.primary
+                      : AppColors.secondary,
+              width: (isCurrentDay && isCurrentWeek) ? 12 : 8,
+            ),
+          ],
+          showingTooltipIndicators: [0],
+        );
+      });
 }
 
 class DaysWidget extends StatefulWidget {
@@ -257,6 +266,8 @@ class _DaysWidgetState extends State<DaysWidget> {
                   child: _BarChart(
                     predictions: daysPredictions,
                     noData: widget.noData,
+                    currentDay: widget.currentDay,
+                    isCurrentWeek: _isCurrentWeek,
                   ),
                 ),
               ),
