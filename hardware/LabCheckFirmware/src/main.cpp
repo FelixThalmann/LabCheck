@@ -144,14 +144,16 @@ void loop() {
                 Serial.println(F("By default, going from blue to green led is considered as entrance, going from green to blue is considered as exit."));
                 Serial.println(F("Invert Entrance/Exit? (y/n)"));
                 while (!Serial.available());
-                char invertChoice = Serial.read();
-                while (Serial.available()) {Serial.read();};
-                if (invertChoice == 'y') {
-                    mainProgram.setInvertEntranceExit(true);
-                    Serial.println(F("Entrance/Exit inverted."));
-                } else {
-                    mainProgram.setInvertEntranceExit(false);
-                    Serial.println(F("Entrance/Exit not inverted."));
+                {
+                    char invertChoice = Serial.read();
+                    while (Serial.available()) {Serial.read();};
+                    if (invertChoice == 'y') {
+                        mainProgram.setInvertEntranceExit(true);
+                        Serial.println(F("Entrance/Exit inverted."));
+                    } else {
+                        mainProgram.setInvertEntranceExit(false);
+                        Serial.println(F("Entrance/Exit not inverted."));
+                    }
                 }
                 showMenu();
                 break;

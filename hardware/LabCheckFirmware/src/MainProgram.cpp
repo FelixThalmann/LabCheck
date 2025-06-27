@@ -13,6 +13,10 @@ MainProgram::MainProgram() : tofSensor1{TOF1_XSHUT, TOF1_SDA, TOF1_SCL}, tofSens
   sensor2Active = false;
   sensorTimer = 0;
   activeLed = 0;
+  invertEntranceExit = false;
+  calibratedDistance1 = 1000;
+  calibratedDistance2 = 1000;
+  tofDetectionTolerance = 10; // 10mm tolerance
 }
 
 enum ProgramMode {
@@ -22,6 +26,7 @@ enum ProgramMode {
   ENTRANCE_CONFIRMATION = 2,
   EXIT_CONFIRMATION = 3,
   DETECTION_COMPLETION = 4,
+  CALIBRATION = 6
 };
 
 void MainProgram::begin(){
@@ -80,7 +85,7 @@ void MainProgram::begin(){
   prefs.end();
   
 
-  programmode = ProgramMode::IDLE;
+  programmode = ProgramMode::CALIBRATION;
   
 }
 
@@ -108,6 +113,28 @@ void MainProgram::update(){
   }
 
   switch(programmode){
+
+    case ProgramMode::CALIBRATION: {
+      static int calibrationCount = 0;
+      static uint32_t distance1Sum = 0;
+      static uint32_t distance2Sum = 0;
+      
+      if (calibrationCount < 20) {
+        distance1Sum += distance1;
+        distance2Sum += distance2;
+        calibrationCount++;
+        if (calibrationCount >= 20) {
+          calibratedDistance1 = distance1Sum / calibrationCount;
+          calibratedDistance2 = distance2Sum / calibrationCount;
+          prepareMode(ProgramMode::IDLE);
+        }
+      }
+
+      // calc tolerance by taking 30% from calibrated distances (theri average) 
+      tofDetectionTolerance = (calibratedDistance1 + calibratedDistance2) / 2 * 0.3;
+
+      break;
+    }
     
     case 0: // idle if door sensor active
       if(!magneticSensor.isActive()){
@@ -137,13 +164,13 @@ void MainProgram::update(){
         break;
       }
 
-      if(distance1 < 500){
+      if(distance1 < calibratedDistance1 - tofDetectionTolerance){
         Serial.print(F("Possible entrance detected..."));
         prepareMode(2);
         break;
       }
 
-      if(distance2 < 500){
+      if(distance2 < calibratedDistance2 - tofDetectionTolerance){
         Serial.print(F("Possible exit detected..."));
         prepareMode(3);
         break;
@@ -153,7 +180,7 @@ void MainProgram::update(){
     // Person entering detection mode
     case 2:
       sensorTimer += delayTime;
-      if(distance2 < 500){
+      if(distance2 < calibratedDistance2 - tofDetectionTolerance){
         Serial.print(F("Person entered! Took "));
         Serial.print(sensorTimer);	
         Serial.println(F(" ms to pass!"));
@@ -173,7 +200,7 @@ void MainProgram::update(){
     // Persion exiting detection mode 
     case 3:
       sensorTimer += delayTime;
-      if(distance1 < 500){
+      if(distance1 < calibratedDistance1 - tofDetectionTolerance){
           Serial.print(F("Person exited! Took "));
           Serial.print(sensorTimer);	
           Serial.println(F(" ms to pass!"));
@@ -191,8 +218,12 @@ void MainProgram::update(){
       break;
 
     // Awaiting default sensor data mode
-    case 4:      
-      if (distance1>1000 && distance2>1000){
+    case 4:   
+      Serial.print(distance1);
+      Serial.print(F(", "));
+      Serial.println(distance2);
+      
+      if (distance1>(calibratedDistance1-tofDetectionTolerance) && distance2>(calibratedDistance2-tofDetectionTolerance)){
         Serial.println(F("ToF area clear! Returning to awaiting motion..."));
         prepareMode(ProgramMode::AWAITING_MOTION);
         break;

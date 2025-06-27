@@ -45,6 +45,9 @@ private:
   int delayTime;
   int activeLed;
   bool invertEntranceExit; // true if entrance/exit is inverted
+  int calibratedDistance1;
+  int calibratedDistance2;
+  int tofDetectionTolerance; // tolerance for ToF sensor detection in mm
 
   // testing. replace with real tof sensors
   bool sensor1Active;
