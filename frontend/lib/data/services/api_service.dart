@@ -18,7 +18,7 @@ class ApiService {
   // HTTP-Header
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
-    'api-key': apiKey,
+    'x-api-key': apiKey,
   };
 
   // GET-Request
