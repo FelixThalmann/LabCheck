@@ -28,6 +28,19 @@ export class PredictionApiService {
   }
 
   /**
+   * @method getAuthHeaders
+   * @description Erstellt die Authentifizierungs-Header für ML-Service-Anfragen
+   * @returns Headers-Objekt mit API-Key
+   */
+  private getAuthHeaders(): Record<string, string> {
+    const apiKey = this.configService.get<string>('STATIC_API_KEY');
+    return {
+      'Content-Type': 'application/json',
+      'X-API-Key': apiKey || '',
+    };
+  }
+
+  /**
    * @method getSinglePrediction
    * @description Ruft eine Vorhersage vom FastAPI Service ab
    * @param request - Zeitstempel für die Vorhersage
@@ -42,7 +55,7 @@ export class PredictionApiService {
     );
 
     try {
-      // HTTP POST Request an FastAPI /predict Endpunkt
+      // HTTP POST Request an FastAPI /predict Endpunkt mit API-Key
       const response: AxiosResponse<MLPredictionResponseDto> =
         await firstValueFrom(
           this.httpService.post<MLPredictionResponseDto>(
@@ -52,9 +65,7 @@ export class PredictionApiService {
             },
             {
               timeout: 10000, // 10 Sekunden timeout
-              headers: {
-                'Content-Type': 'application/json',
-              },
+              headers: this.getAuthHeaders(),
             },
           ),
         );
@@ -150,6 +161,7 @@ export class PredictionApiService {
       const response = await firstValueFrom(
         this.httpService.get(`${this.predictionServiceUrl}/health`, {
           timeout: 5000,
+          headers: this.getAuthHeaders(),
         }),
       );
       return response.status === 200;
