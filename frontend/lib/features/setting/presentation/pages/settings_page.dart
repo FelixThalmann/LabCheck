@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:labcheck/core/theme/app_colors.dart';
 import 'package:labcheck/shared/widgets/header_widget.dart';
 import 'package:labcheck/features/setting/presentation/widgets/password_input_widget.dart';
@@ -52,6 +53,8 @@ class _SettingsPageState extends State<SettingsPage> {
         _errorMessage = '';
       });
     } else {
+      // Haptic feedback for better user experience
+      HapticFeedback.heavyImpact();
       setState(() {
         _errorMessage = 'Wrong password';
       });
@@ -119,6 +122,8 @@ class _SettingsPageState extends State<SettingsPage> {
         ); // true indicates that data should be refreshed
       }
     } else {
+      // Haptic feedback for better user experience
+      HapticFeedback.heavyImpact();
       SnackbarUtils.showError(context, 'Wrong password');
       setState(() {
         _errorMessage = 'Wrong password';
