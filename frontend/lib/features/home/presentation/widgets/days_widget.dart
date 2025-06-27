@@ -138,12 +138,16 @@ class _BarChart extends StatelessWidget {
 }
 
 class DaysWidget extends StatefulWidget {
-  final List<WeekPrediction> predictions;
+  final List<WeekPrediction> currentWeekPredictions;
+  final List<WeekPrediction> nextWeekPredictions;
+  final String currentDay;
   final bool noData;
 
   const DaysWidget({
     super.key,
-    required this.predictions,
+    required this.currentWeekPredictions,
+    required this.nextWeekPredictions,
+    required this.currentDay,
     required this.noData,
   });
 
@@ -152,8 +156,15 @@ class DaysWidget extends StatefulWidget {
 }
 
 class _DaysWidgetState extends State<DaysWidget> {
+  bool _isCurrentWeek = true;
+
   List<Map<String, dynamic>> get daysPredictions {
-    return widget.predictions.map((prediction) {
+    final predictions =
+        _isCurrentWeek
+            ? widget.currentWeekPredictions
+            : widget.nextWeekPredictions;
+
+    return predictions.map((prediction) {
       Color color;
       switch (prediction.color) {
         case 'green':
@@ -177,36 +188,54 @@ class _DaysWidgetState extends State<DaysWidget> {
     }).toList();
   }
 
+  String get weekTitle {
+    return _isCurrentWeek
+        ? 'Week prediction - current'
+        : 'Week prediction - next';
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final containerWidth = screenWidth * 0.85;
 
-    return Container(
-      width: containerWidth,
-      decoration: BoxDecoration(
-        color: widget.noData ? Colors.grey[300] : Colors.white,
-        borderRadius: BorderRadius.circular(17.0),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x3F000000),
-            blurRadius: 4,
-            offset: Offset(0, 4),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(17.0),
-        child: Stack(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.only(top: 12, left: 12),
-              child: SizedBox(
-                width: 147,
-                height: 22,
+    return GestureDetector(
+      onHorizontalDragEnd: (DragEndDetails details) {
+        // Swipe to the previous week (to the right)
+        if (details.primaryVelocity! > 0 && !_isCurrentWeek) {
+          setState(() {
+            _isCurrentWeek = true;
+          });
+        }
+        // Swipe to the next week (to the left)
+        else if (details.primaryVelocity! < 0 && _isCurrentWeek) {
+          setState(() {
+            _isCurrentWeek = false;
+          });
+        }
+      },
+      child: Container(
+        width: containerWidth,
+        decoration: BoxDecoration(
+          color: widget.noData ? Colors.grey[300] : Colors.white,
+          borderRadius: BorderRadius.circular(17.0),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x3F000000),
+              blurRadius: 4,
+              offset: Offset(0, 4),
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(17.0),
+          child: Stack(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.only(top: 12, left: 12, right: 50),
                 child: Text(
-                  'Week prediction',
+                  weekTitle,
                   style: TextStyle(
                     color: widget.noData ? Colors.grey[600] : Colors.black,
                     fontSize: 12,
@@ -216,23 +245,99 @@ class _DaysWidgetState extends State<DaysWidget> {
                   ),
                 ),
               ),
-            ),
-            AspectRatio(
-              aspectRatio: 1.70,
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  right: 26,
-                  left: 26,
-                  top: 24,
-                  bottom: 12,
-                ),
-                child: _BarChart(
-                  predictions: daysPredictions,
-                  noData: widget.noData,
+              AspectRatio(
+                aspectRatio: 1.70,
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    right: 26,
+                    left: 26,
+                    top: 24,
+                    bottom: 12,
+                  ),
+                  child: _BarChart(
+                    predictions: daysPredictions,
+                    noData: widget.noData,
+                  ),
                 ),
               ),
-            ),
-          ],
+
+              // Left navigation button (previous)
+              if (!_isCurrentWeek)
+                Positioned(
+                  left: 8,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isCurrentWeek = true;
+                        });
+                      },
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x3F000000),
+                              blurRadius: 2,
+                              offset: Offset(0, 2),
+                              spreadRadius: 0,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Right navigation button (next)
+              if (_isCurrentWeek)
+                Positioned(
+                  right: 8,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isCurrentWeek = false;
+                        });
+                      },
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x3F000000),
+                              blurRadius: 2,
+                              offset: Offset(0, 2),
+                              spreadRadius: 0,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

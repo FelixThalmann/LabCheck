@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
+import 'package:intl/intl.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/date_widget.dart';
 import '../widgets/hours_widget.dart';
@@ -81,14 +82,27 @@ class _HomePageState extends State<HomePage> {
 
       // Check if an error occurred
       if (_data.containsKey('error') && mounted) {
-        final error = _data['error'] as Exception;
+        final error = _data['error'];
 
         if (error is NetworkException) {
           SnackbarUtils.showNetworkError(context, error);
         } else if (error is ApiException) {
           SnackbarUtils.showError(context, 'Server error: ${error.message}');
+        } else if (error is TypeError) {
+          SnackbarUtils.showError(
+            context,
+            'Data format error: ${error.toString()}',
+          );
+        } else if (error is Exception) {
+          SnackbarUtils.showError(
+            context,
+            'An unexpected error occurred: ${error.toString()}',
+          );
         } else {
-          SnackbarUtils.showError(context, 'An unexpected error occurred');
+          SnackbarUtils.showError(
+            context,
+            'An unexpected error occurred: ${error.toString()}',
+          );
         }
 
         // Remove the error from the data, so it is not used in the UI
@@ -179,8 +193,17 @@ class _HomePageState extends State<HomePage> {
                       Padding(
                         padding: EdgeInsets.only(top: screenHeight * 0.04),
                         child: DaysWidget(
-                          predictions:
-                              _data['weekPredictions']?.predictions ?? [],
+                          currentWeekPredictions:
+                              _data['weekPredictions']?.currentWeek ?? [],
+                          nextWeekPredictions:
+                              _data['weekPredictions']?.nextWeek ?? [],
+                          currentDay:
+                              _data['labStatus']?.currentDate != null
+                                  ? DateFormat(
+                                    'EEE d. MMM',
+                                    'en_US',
+                                  ).format(_data['labStatus']!.currentDate)
+                                  : '',
                           noData: _data['noDataWeekPredictions'] ?? false,
                         ),
                       ),
