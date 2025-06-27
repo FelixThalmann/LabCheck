@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/date_widget.dart';
@@ -61,6 +62,9 @@ class _HomePageState extends State<HomePage> {
 
   /// Manual refresh (pull-to-refresh)
   Future<void> _onRefresh() async {
+    // Haptic feedback for better user experience
+    HapticFeedback.lightImpact();
+
     setState(() {});
 
     _logger.info('Manual refresh triggered...');
