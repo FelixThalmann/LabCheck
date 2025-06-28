@@ -25,6 +25,11 @@ export const WS_EVENT_DOOR_STATUS_UPDATE = 'doorStatusUpdate';
  * @description WebSocket event name for occupancy updates.
  */
 export const WS_EVENT_OCCUPANCY_UPDATE = 'occupancyUpdate';
+/**
+ * @constant WS_EVENT_CAPACITY_UPDATE
+ * @description WebSocket event name for capacity updates.
+ */
+export const WS_EVENT_CAPACITY_UPDATE = 'capacityUpdate';
 
 /**
  * @class EventsGateway
@@ -232,7 +237,7 @@ export class EventsGateway
     }
 
     // Calculate color based on occupancy and door status
-    const color = this.getOccupancyColorWithDoorStatus(
+    const color = await this.getOccupancyColorWithDoorStatus(
       occupancyStatus.currentOccupancy,
       maxCapacity,
       isOpen,
@@ -262,31 +267,102 @@ export class EventsGateway
   }
 
   /**
+   * @method getDefaultRoom
+   * @description Holt den Standard-Raum oder erstellt einen falls keiner existiert
+   * Identische Logik wie im PredictionsService
+   */
+  private async getDefaultRoom() {
+    let room = await this.prisma.room.findFirst({
+      where: { isOpen: true },
+    });
+    
+    if (!room) {
+      room = await this.prisma.room.create({
+        data: {
+          name: 'Hauptlabor',
+          description: 'Standard-Laborraum',
+          capacity: 20,
+          isOpen: true,
+        },
+      });
+    }
+    
+    return room;
+  }
+
+  /**
+   * @method calculateColorFromOccupancy
+   * @description Berechnet Farbkodierung basierend auf Belegung.
+   * Identische Logik wie im PredictionsService für Konsistenz.
+   * @param occupancy - Die aktuelle oder vorhergesagte Belegung
+   * @returns Farb-String (green, yellow, red)
+   */
+  private async calculateColorFromOccupancy(occupancy: number): Promise<string> {
+    const room = await this.getDefaultRoom();
+    const capacity = room.maxCapacity;
+
+    if (capacity <= 0) {
+      return 'red'; // Fallback, falls Kapazität nicht positiv ist
+    }
+
+    const percentage = (occupancy / capacity) * 100;
+
+    if (percentage >= 90) return 'red';
+    if (percentage >= 50) return 'yellow';
+    return 'green';
+  }
+
+  /**
    * @method getOccupancyColorWithDoorStatus
    * @description Berechnet Farbkodierung basierend auf Belegung und Türstatus
+   * Verwendet jetzt die einheitliche Farblogik
    * @param {number} currentOccupancy - Aktuelle Belegung
    * @param {number} maxOccupancy - Maximale Kapazität
    * @param {boolean} isOpen - Türstatus (offen/geschlossen)
-   * @returns {string} Farbkodierung (red, orange, green, gray)
+   * @returns {string} Farbkodierung (red, yellow, green)
    */
-  private getOccupancyColorWithDoorStatus(
+  private async getOccupancyColorWithDoorStatus(
     currentOccupancy: number,
     maxOccupancy: number,
     isOpen: boolean,
-  ): string {
+  ): Promise<string> {
     // Priorität: Türstatus überschreibt Belegungsfarbe
     if (!isOpen) {
       return 'red'; // Tür geschlossen = rot, unabhängig von Belegung
     }
     
-    // Wenn Tür offen, normale Belegungslogik
-    if (currentOccupancy >= maxOccupancy && maxOccupancy > 0) {
-      return 'orange'; // Voll
-    } else if (currentOccupancy > 0) {
-      return 'green'; // Besetzt aber nicht voll
-    } else {
-      return 'gray'; // Leer
-    }
+    // Wenn Tür offen, verwende einheitliche Belegungslogik
+    return await this.calculateColorFromOccupancy(currentOccupancy);
+  }
+
+  /**
+   * @method sendCapacityUpdate
+   * @description Sendet eine Kapazitäts-Update über WebSocket an alle Clients
+   * @param newMaxCapacity - Die neue maximale Kapazität
+   * @param currentOccupancy - Die aktuelle Belegung
+   * @param isOpen - Türstatus
+   */
+  public async sendCapacityUpdate(
+    newMaxCapacity: number,
+    currentOccupancy: number,
+    isOpen: boolean,
+  ): Promise<void> {
+    this.logger.log(`Sending capacity update: maxCapacity=${newMaxCapacity}, currentOccupancy=${currentOccupancy}`);
+    
+    // Berechne neue Farbe mit einheitlicher Logik
+    const color = await this.getOccupancyColorWithDoorStatus(
+      currentOccupancy,
+      newMaxCapacity,
+      isOpen,
+    );
+
+    this.server.emit(WS_EVENT_CAPACITY_UPDATE, {
+      newMaxCapacity,
+      currentOccupancy,
+      isOpen,
+      color,
+      lastUpdated: new Date().toISOString(),
+    });
   }
 
   // If we also want to push MotionEvents:

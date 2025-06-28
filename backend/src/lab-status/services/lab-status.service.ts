@@ -10,6 +10,7 @@ import {
   LabCapacityResponseDto, 
 } from '../dto';
 import { PrismaService } from 'src/prisma.service';
+import { EventsGateway } from '../../events/events/events.gateway';
 
 
 
@@ -26,6 +27,7 @@ export class LabStatusService {
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly eventsGateway: EventsGateway,
   ) {}
 
   /**
@@ -192,7 +194,30 @@ export class LabStatusService {
       });
 
       this.logger.debug(`Laborkapazität erfolgreich auf ${capacity} gesetzt`);
-      // TODO: Sende Türstatus-Update via WebSocket an Frontend
+      
+      // Sende Kapazitäts-Update via WebSocket an Frontend
+      try {
+        // Hole aktuelle Belegung und Türstatus für WebSocket-Event
+        const currentOccupancy = mainRoom.capacity; // Aktuelle Belegung
+        
+        // Hole aktuellen Türstatus
+        const latestDoorEvent = await this.prisma.doorEvent.findFirst({
+          orderBy: { eventTimestamp: 'desc' },
+        });
+        const isOpen = latestDoorEvent?.doorIsOpen ?? true;
+
+        // Sende WebSocket-Event mit neuer Kapazität
+        await this.eventsGateway.sendCapacityUpdate(
+          capacity, // neue maximale Kapazität
+          currentOccupancy, // aktuelle Belegung
+          isOpen, // Türstatus
+        );
+        
+        this.logger.debug('WebSocket capacity update sent successfully');
+      } catch (wsError) {
+        this.logger.warn('Failed to send WebSocket capacity update:', wsError);
+        // WebSocket-Fehler soll setLabCapacity nicht blockieren
+      }
 
       return {
         success: true,

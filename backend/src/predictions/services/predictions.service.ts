@@ -28,7 +28,7 @@ export class PredictionsService {
   /**
    * @method getDayPredictions
    * @description Liefert ML-basierte Tagesvorhersagen
-   * Generiert Vorhersagen von 8:00 bis 18:00 alle 2 Stunden
+   * Generiert Vorhersagen von 8:00 bis 18:00 alle 2 Stunden und speichert sie in der Datenbank
    * @param dateString Optionales Datum im Format YYYY-MM-DD
    */
   async getDayPredictions(
@@ -46,6 +46,9 @@ export class PredictionsService {
       }
 
       const predictions = await this.generateMLDayPredictions(date);
+      
+      // Speichere Vorhersagen in der Datenbank
+      await this.saveDayPredictions(predictions, date);
 
       return {
         predictions: predictions.map((p) => ({
@@ -64,7 +67,7 @@ export class PredictionsService {
   /**
    * @method getWeekPredictions
    * @description Liefert erweiterte ML-basierte Wochenvorhersagen für aktuelle und nächste Woche
-   * Generiert Durchschnittswerte basierend auf ML-Tagesvorhersagen
+   * Generiert Durchschnittswerte basierend auf ML-Tagesvorhersagen und speichert sie in der Datenbank
    */
   async getWeekPredictions(): Promise<ExtendedWeekPredictionResponseDto> {
     this.logger.debug('Fetching extended ML-based week predictions');
@@ -77,6 +80,12 @@ export class PredictionsService {
       const [currentWeekPredictions, nextWeekPredictions] = await Promise.all([
         this.generateMLWeekPredictionsForRange(currentWeekRange.start, 'current'),
         this.generateMLWeekPredictionsForRange(nextWeekRange.start, 'next'),
+      ]);
+      
+      // Speichere Vorhersagen in der Datenbank
+      await Promise.all([
+        this.saveWeekPredictions(currentWeekPredictions, currentWeekRange.start),
+        this.saveWeekPredictions(nextWeekPredictions, nextWeekRange.start),
       ]);
       
       return {
@@ -366,5 +375,109 @@ export class PredictionsService {
     }
 
     return weekPredictions;
+  }
+
+  /**
+   * @method saveDayPredictions
+   * @description Speichert Tagesvorhersagen in der Datenbank (upsert)
+   * @param predictions - Array von Tagesvorhersagen
+   * @param date - Datum für das die Vorhersagen gelten
+   */
+  private async saveDayPredictions(
+    predictions: Array<{ occupancy: number; time: string; color: string }>,
+    date: Date,
+  ): Promise<void> {
+    try {
+      const room = await this.getDefaultRoom();
+      const normalizedDate = new Date(date);
+      normalizedDate.setHours(0, 0, 0, 0);
+
+      this.logger.debug(`Saving ${predictions.length} day predictions for ${normalizedDate.toISOString()}`);
+
+      // Verwende Prisma Transaction für atomare Operationen
+      await this.prisma.$transaction(async (prisma) => {
+        for (const prediction of predictions) {
+          await prisma.dayPrediction.upsert({
+            where: {
+              roomId_date_time: {
+                roomId: room.id,
+                date: normalizedDate,
+                time: prediction.time,
+              },
+            },
+            update: {
+              occupancy: prediction.occupancy,
+              color: prediction.color,
+              confidence: 0.8, // Standard-Konfidenz für ML-Vorhersagen
+            },
+            create: {
+              roomId: room.id,
+              time: prediction.time,
+              occupancy: prediction.occupancy,
+              color: prediction.color,
+              date: normalizedDate,
+              confidence: 0.8,
+            },
+          });
+        }
+      });
+
+      this.logger.debug('Day predictions saved successfully');
+    } catch (error) {
+      this.logger.error(`Error saving day predictions: ${error.message}`, error.stack);
+      // Fehler beim Speichern soll die API-Antwort nicht blockieren
+    }
+  }
+
+  /**
+   * @method saveWeekPredictions
+   * @description Speichert Wochenvorhersagen in der Datenbank (upsert)
+   * @param predictions - Array von Wochenvorhersagen mit Datum
+   * @param weekStart - Startdatum der Woche (Montag)
+   */
+  private async saveWeekPredictions(
+    predictions: WeekPredictionItemDto[],
+    weekStart: Date,
+  ): Promise<void> {
+    try {
+      const room = await this.getDefaultRoom();
+      const normalizedWeekStart = new Date(weekStart);
+      normalizedWeekStart.setHours(0, 0, 0, 0);
+
+      this.logger.debug(`Saving ${predictions.length} week predictions for week starting ${normalizedWeekStart.toISOString()}`);
+
+      // Verwende Prisma Transaction für atomare Operationen
+      await this.prisma.$transaction(async (prisma) => {
+        for (const prediction of predictions) {
+          await prisma.weekPrediction.upsert({
+            where: {
+              roomId_weekStart_day: {
+                roomId: room.id,
+                weekStart: normalizedWeekStart,
+                day: prediction.day,
+              },
+            },
+            update: {
+              occupancy: prediction.occupancy,
+              color: prediction.color,
+              confidence: 0.8, // Standard-Konfidenz für ML-Vorhersagen
+            },
+            create: {
+              roomId: room.id,
+              day: prediction.day,
+              occupancy: prediction.occupancy,
+              color: prediction.color,
+              weekStart: normalizedWeekStart,
+              confidence: 0.8,
+            },
+          });
+        }
+      });
+
+      this.logger.debug('Week predictions saved successfully');
+    } catch (error) {
+      this.logger.error(`Error saving week predictions: ${error.message}`, error.stack);
+      // Fehler beim Speichern soll die API-Antwort nicht blockieren
+    }
   }
 }

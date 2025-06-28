@@ -26,7 +26,7 @@ export class PredictionCalculationService {
     const room = await this.prisma.room.findUnique({
       where: { id: roomId },
     });
-    const capacity = room?.capacity || 20;
+    const capacity = room?.maxCapacity || 20;
 
     for (const time of timeSlots) {
       // Einfache Mock-Logik für Vorhersagen
@@ -64,7 +64,7 @@ export class PredictionCalculationService {
     const room = await this.prisma.room.findUnique({
       where: { id: roomId },
     });
-    const capacity = room?.capacity || 20;
+    const capacity = room?.maxCapacity || 20;
 
     for (const day of weekDays) {
       // Einfache Mock-Logik für Wochenvorhersagen

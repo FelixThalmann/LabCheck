@@ -3,6 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 
 import { LabStatusController } from './controllers/lab-status.controller';
 import { LabStatusService } from './services/lab-status.service';
+import { EventsGateway } from '../events/events/events.gateway';
+import { PrismaService } from '../prisma.service';
 
 
 /**
@@ -18,6 +20,8 @@ import { LabStatusService } from './services/lab-status.service';
   controllers: [LabStatusController], // Erweitert für REST API
   providers: [
     LabStatusService, // Erweitert für REST API
+    EventsGateway, // Für WebSocket-Benachrichtigungen
+    PrismaService, // Für Datenbankzugriff
     Logger,
   ],
   exports: [LabStatusService],
