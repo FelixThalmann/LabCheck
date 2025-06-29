@@ -13,10 +13,17 @@ Copy the `.env` file to the different directories (backend, frontend, prediction
 
 ### Run/Stop as production
 
+Run all services:
 ```bash
 docker-compose up -d
 ```
 
+Stop all containers:
+```bash
+docker stop $(docker ps -aq)
+```
+
+Stop all containers and remove:
 ```bash
 docker-compose down
 ```
