@@ -170,7 +170,7 @@ export class PredictionsService {
       this.logger.log('No active room found, creating default room');
       room = await this.prisma.room.create({
         data: {
-          name: 'Hauptlabor',
+          name: 'LabCheck-Main-Room',
           description: 'Standard-Laborraum',
           capacity: 20,
           isOpen: true,

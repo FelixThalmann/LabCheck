@@ -3,13 +3,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { Injectable, Logger, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { 
   LabStatusResponseDto, 
   LabCapacityResponseDto, 
 } from '../dto';
-import { PrismaService } from 'src/prisma.service';
+import { PrismaService } from '../../prisma.service';
 import { EventsGateway } from '../../events/events/events.gateway';
 
 
@@ -27,6 +27,7 @@ export class LabStatusService {
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => EventsGateway))
     private readonly eventsGateway: EventsGateway,
   ) {}
 
@@ -36,10 +37,12 @@ export class LabStatusService {
    * Implementiert die Farblogik aus der API-Dokumentation
    */
   private calculateColor(currentOccupancy: number, maxOccupancy: number): string {
-    if (maxOccupancy === 0) return 'green';
-    
+    if (maxOccupancy <= 0) {
+      return 'red'; // Fallback, falls Kapazität nicht positiv ist
+    }
+
     const percentage = (currentOccupancy / maxOccupancy) * 100;
-    
+
     if (percentage >= 90) return 'red';
     if (percentage >= 50) return 'yellow';
     return 'green';
@@ -56,26 +59,17 @@ export class LabStatusService {
     const currentTime = new Date();
 
     try {
-      // Türstatus abrufen (nutzt bestehenden DoorService)
-      const doorStatus = await this.prisma.room.findFirst({
-        select: { isOpen: true }
-      });
-      const isOpen = doorStatus?.isOpen ?? false;
+      // Kapazität direkt aus Room-Tabelle holen (erster Raum, ältester zuerst)
+      const mainRoom = await this.prisma.room.findFirst();
 
       // Belegung abrufen (nutzt bestehenden DoorService)
-      const occupancyData = await this.getLabCapacity();
-      const currentOccupancy = occupancyData?.capacity ?? 0;
-
-      // Kapazität direkt aus Room-Tabelle holen (erster Raum, ältester zuerst)
-      const mainRoom = await this.prisma.room.findFirst({
-        orderBy: { createdAt: 'asc' },
-      });
 
       if (!mainRoom) {
         this.logger.error('Kein Laborraum gefunden.');
         throw new BadRequestException('Kein Laborraum gefunden.');
       }
-
+      const currentOccupancy = mainRoom.capacity;
+      const isOpen = mainRoom.isOpen
       const maxOccupancy: number = mainRoom.maxCapacity;
 
       // Farbe berechnen - ROT wenn Tür geschlossen, sonst Belegungslogik
@@ -104,26 +98,21 @@ export class LabStatusService {
 
   /**
    * @method getLabCapacity
-   * @description Liefert die aktuelle Laborkapazität direkt aus der Room-Tabelle (maxCapacity des aktiven Raums)
+   * @description Liefert die aktuelle Laborkapazität direkt aus der Room-Tabelle (capacity des aktiven Raums)
    */
-  async getLabCapacity(): Promise<LabCapacityResponseDto> {
+  async getLabCapacity(): Promise<number> {
     this.logger.debug('Hole aktuelle Laborkapazität direkt aus der Room-Tabelle');
 
     try {
       // Hole den ersten Laborraum (ältester zuerst)
-      const mainRoom = await this.prisma.room.findFirst({
-        orderBy: { createdAt: 'asc' },
-      });
+      const mainRoom = await this.prisma.room.findFirst();
 
       if (!mainRoom) {
         this.logger.error('Kein Laborraum gefunden.');
         throw new BadRequestException('Kein Laborraum gefunden.');
       }
 
-      return {
-        capacity: mainRoom.capacity,
-        lastUpdated: new Date().toISOString(),
-      };
+      return mainRoom.capacity;
     } catch (error) {
       this.logger.error('Fehler beim Abrufen der Laborkapazität', error.stack);
       throw error;
@@ -254,7 +243,7 @@ export class LabStatusService {
 
     return {
       success: true,
-      message: 'Login successfull',
+      message: 'Login erfolgreich',
     };
   }
 }

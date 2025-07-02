@@ -1,4 +1,5 @@
 /* eslint-disable prettier/prettier */
+import { Logger, Inject, forwardRef } from '@nestjs/common';
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -8,10 +9,9 @@ import {
   OnGatewayInit,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
-import { DoorEvent } from '@prisma/client'; // Assuming we send these types or parts thereof. PassageEvent is currently unused.
+import { DoorEvent } from '@prisma/client';
 import { OccupancyStatusDto } from 'src/door/models';
-import { PrismaService } from '../../prisma.service';
+import { LabStatusService } from '../../lab-status/services/lab-status.service';
 
 
 // WebSocket events emitted by the server
@@ -66,7 +66,7 @@ export class EventsGateway
   @WebSocketServer()
   private server: Server; // Type Server from socket.io
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(forwardRef(() => LabStatusService)) private readonly labStatusService: LabStatusService) {}
 
   /**
    * @method afterInit
@@ -122,222 +122,78 @@ export class EventsGateway
 
   /**
    * @method sendDoorStatusUpdate
-   * @description Broadcasts a door status update to all connected clients.
-   * Includes room occupancy data and door status information.
+   * @description Broadcasts a door status update to all connected clients using LabStatusService.
+   * Uses centralized business logic for consistent data across REST API and WebSocket updates.
    * @param {DoorEvent} doorEvent - The door event data to send.
-   * @param {number} [currentOccupancy] - Current room occupancy (optional, will be fetched if not provided).
-   * @param {number} [maxOccupancy] - Maximum room capacity (optional, will be fetched if not provided).
    */
-  public async sendDoorStatusUpdate(
-    doorEvent: DoorEvent, 
-    currentOccupancy?: number, 
-    maxOccupancy?: number
-  ): Promise<void> {
+  public async sendDoorStatusUpdate(doorEvent: DoorEvent): Promise<void> {
     this.logger.log('Sending door status update:', doorEvent);
     
-    // If occupancy data not provided, fetch from database
-    let finalCurrentOccupancy = currentOccupancy ?? 0;
-    let finalMaxOccupancy = maxOccupancy ?? 0;
-    
-    if (currentOccupancy === undefined || maxOccupancy === undefined) {
-      try {
-        // Import PrismaService to fetch room data
-        const { PrismaClient } = await import('@prisma/client');
-        const prisma = new PrismaClient();
-        
-        // Find sensor and room to get current occupancy
-        const sensor = await prisma.sensor.findUnique({
-          where: { id: doorEvent.sensorId },
-          include: { room: true }
-        });
-        
-        if (sensor?.room) {
-          finalCurrentOccupancy = sensor.room.capacity;
-          finalMaxOccupancy = sensor.room.maxCapacity;
-          this.logger.verbose(`Fetched room data: occupancy ${finalCurrentOccupancy}/${finalMaxOccupancy} for sensor ${sensor.esp32Id}`);
-        }
-        
-        await prisma.$disconnect();
-      } catch (error) {
-        this.logger.error('Failed to fetch room occupancy data:', error);
+    try {
+      // Get current lab status from centralized service (Single Source of Truth)
+      const labStatus = await this.labStatusService.getCombinedLabStatus();
+      
+      // Override door status with the actual event status
+      const isOpen = doorEvent.doorIsOpen;
+      
+      // Determine color based on door status and occupancy using consistent logic
+      let color = labStatus.color;
+      if (!isOpen) {
+        color = 'red'; // Door closed always shows red
       }
-    }
-    
-    // Determine room status color based on door state and occupancy
-    let statusColor = 'green'; // Default: open and not full
-    if (!doorEvent.doorIsOpen) {
-      statusColor = 'red'; // Closed
-    } else if (finalCurrentOccupancy >= finalMaxOccupancy && finalMaxOccupancy > 0) {
-      statusColor = 'orange'; // Open but full
-    }
+      
+      this.logger.verbose(`Broadcasting door status: isOpen=${isOpen}, occupancy=${labStatus.currentOccupancy}/${labStatus.maxOccupancy}, color=${color}`);
 
-    this.server.emit(WS_EVENT_DOOR_STATUS_UPDATE, {
-      isOpen: doorEvent.doorIsOpen,
-      currentOccupancy: finalCurrentOccupancy,
-      maxOccupancy: finalMaxOccupancy,
-      color: statusColor,
-      currentDate: doorEvent.eventTimestamp,
-      lastUpdated: doorEvent.eventTimestamp,
-      sensorId: doorEvent.sensorId,
-      eventId: doorEvent.id,
-    });
+      this.server.emit(WS_EVENT_DOOR_STATUS_UPDATE, {
+        isOpen,
+        currentOccupancy: labStatus.currentOccupancy,
+        maxOccupancy: labStatus.maxOccupancy,
+        color,
+        currentDate: doorEvent.eventTimestamp,
+        lastUpdated: doorEvent.eventTimestamp,
+        sensorId: doorEvent.sensorId,
+        eventId: doorEvent.id,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to send door status update for event ${doorEvent.id}:`, error);
+    }
   }
 
   /**
    * @method sendOccupancyUpdate
-   * @description Broadcasts an occupancy status update to all connected clients.
-   * Dynamically fetches door status from database.
+   * @description Broadcasts an occupancy status update to all connected clients using LabStatusService.
+   * Uses centralized business logic for consistent data across REST API and WebSocket updates.
    * @param {OccupancyStatusDto} occupancyStatus - The occupancy status data to send.
-   * @param {number} maxCapacity - Maximum room capacity.
-   * @param {string} [roomId] - Optional room ID to fetch door status for specific room.
    */
-  public async sendOccupancyUpdate(
-    occupancyStatus: OccupancyStatusDto,
-    maxCapacity: number,
-    roomId?: string,
-  ): Promise<void> {
+  public async sendOccupancyUpdate(occupancyStatus: OccupancyStatusDto): Promise<void> {
     this.logger.log('Sending occupancy update:', occupancyStatus);
     
-    // Fetch current door status from database
-    let isOpen = true; // Default fallback
     try {
-      // Get the most recent door event for the room
-      let latestDoorEvent;
+      // Get current lab status from centralized service (Single Source of Truth)
+      const labStatus = await this.labStatusService.getCombinedLabStatus();
       
-      if (roomId) {
-        // If specific room ID provided, get door event for that room
-        latestDoorEvent = await this.prisma.doorEvent.findFirst({
-          where: {
-            sensor: {
-              roomId: roomId,
-            },
-          },
-          orderBy: {
-            eventTimestamp: 'desc',
-          },
-        });
-      } else {
-        // If no room ID, get the latest door event across all rooms
-        latestDoorEvent = await this.prisma.doorEvent.findFirst({
-          orderBy: {
-            eventTimestamp: 'desc',
-          },
-        });
-      }
+      // Safe access to occupancyStatus properties (handle undefined/null gracefully)
+      const inputOccupancy = occupancyStatus?.currentOccupancy ?? 0;
+      
+      this.logger.verbose(`Broadcasting occupancy update: occupancy=${inputOccupancy}, maxOccupancy=${labStatus.maxOccupancy}, isOpen=${labStatus.isOpen}, color=${labStatus.color}`);
 
-      if (latestDoorEvent) {
-        isOpen = latestDoorEvent.doorIsOpen;
-        this.logger.debug(`Fetched door status: ${isOpen ? 'open' : 'closed'}`);
-      } else {
-        this.logger.warn('No door events found in database, using default (open)');
-      }
-    } catch (error) {
-      this.logger.error('Failed to fetch door status from database:', error);
-      // Keep default value (true)
-    }
-
-    // Calculate color based on occupancy and door status
-    const color = await this.getOccupancyColorWithDoorStatus(
-      occupancyStatus.currentOccupancy,
-      maxCapacity,
-      isOpen,
-    );
-
-    this.server.emit(
-      WS_EVENT_OCCUPANCY_UPDATE,
-      {
-        currentOccupancy: occupancyStatus.currentOccupancy,
-        maxOccupancy: maxCapacity,
-        isOpen,
-        color,
+      this.server.emit(WS_EVENT_OCCUPANCY_UPDATE, {
+        currentOccupancy: labStatus.currentOccupancy,
+        maxOccupancy: labStatus.maxOccupancy,
+        isOpen: labStatus.isOpen,
+        color: labStatus.color,
         currentDate: new Date().toISOString(),
         lastUpdated: new Date().toISOString(),
-      },
-    );
-  }
-
-  private getOccupancyColor(currentOccupancy: number, maxOccupancy: number): string {
-    if (currentOccupancy >= maxOccupancy && maxOccupancy > 0) {
-      return 'orange'; // Voll
-    } else if (currentOccupancy > 0) {
-      return 'green'; // Besetzt aber nicht voll
-    } else {
-      return 'gray'; // Leer
-    }
-  }
-
-  /**
-   * @method getDefaultRoom
-   * @description Holt den Standard-Raum oder erstellt einen falls keiner existiert
-   * Identische Logik wie im PredictionsService
-   */
-  private async getDefaultRoom() {
-    let room = await this.prisma.room.findFirst({
-      where: { isOpen: true },
-    });
-    
-    if (!room) {
-      room = await this.prisma.room.create({
-        data: {
-          name: 'Hauptlabor',
-          description: 'Standard-Laborraum',
-          capacity: 20,
-          isOpen: true,
-        },
       });
+    } catch (error) {
+      this.logger.error('Failed to send occupancy update:', error);
     }
-    
-    return room;
-  }
-
-  /**
-   * @method calculateColorFromOccupancy
-   * @description Berechnet Farbkodierung basierend auf Belegung.
-   * Identische Logik wie im PredictionsService für Konsistenz.
-   * @param occupancy - Die aktuelle oder vorhergesagte Belegung
-   * @returns Farb-String (green, yellow, red)
-   */
-  private async calculateColorFromOccupancy(occupancy: number): Promise<string> {
-    const room = await this.getDefaultRoom();
-    const capacity = room.maxCapacity;
-
-    if (capacity <= 0) {
-      return 'red'; // Fallback, falls Kapazität nicht positiv ist
-    }
-
-    const percentage = (occupancy / capacity) * 100;
-
-    if (percentage >= 90) return 'red';
-    if (percentage >= 50) return 'yellow';
-    return 'green';
-  }
-
-  /**
-   * @method getOccupancyColorWithDoorStatus
-   * @description Berechnet Farbkodierung basierend auf Belegung und Türstatus
-   * Verwendet jetzt die einheitliche Farblogik
-   * @param {number} currentOccupancy - Aktuelle Belegung
-   * @param {number} maxOccupancy - Maximale Kapazität
-   * @param {boolean} isOpen - Türstatus (offen/geschlossen)
-   * @returns {string} Farbkodierung (red, yellow, green)
-   */
-  private async getOccupancyColorWithDoorStatus(
-    currentOccupancy: number,
-    maxOccupancy: number,
-    isOpen: boolean,
-  ): Promise<string> {
-    // Priorität: Türstatus überschreibt Belegungsfarbe
-    if (!isOpen) {
-      return 'red'; // Tür geschlossen = rot, unabhängig von Belegung
-    }
-    
-    // Wenn Tür offen, verwende einheitliche Belegungslogik
-    return await this.calculateColorFromOccupancy(currentOccupancy);
   }
 
   /**
    * @method sendCapacityUpdate
-   * @description Sendet eine Kapazitäts-Update über WebSocket an alle Clients
+   * @description Broadcasts a capacity update to all connected clients using LabStatusService.
+   * Uses centralized business logic for consistent data across REST API and WebSocket updates.
    * @param newMaxCapacity - Die neue maximale Kapazität
    * @param currentOccupancy - Die aktuelle Belegung
    * @param isOpen - Türstatus
@@ -349,28 +205,28 @@ export class EventsGateway
   ): Promise<void> {
     this.logger.log(`Sending capacity update: maxCapacity=${newMaxCapacity}, currentOccupancy=${currentOccupancy}`);
     
-    // Berechne neue Farbe mit einheitlicher Logik
-    const color = await this.getOccupancyColorWithDoorStatus(
-      currentOccupancy,
-      newMaxCapacity,
-      isOpen,
-    );
+    try {
+      // Get current lab status from centralized service for consistent color logic
+      const labStatus = await this.labStatusService.getCombinedLabStatus();
+      
+      // Determine color based on door status - door closed always shows red
+      let color = labStatus.color;
+      if (!isOpen) {
+        color = 'red';
+      }
+      
+      this.logger.verbose(`Broadcasting capacity update: newMaxCapacity=${newMaxCapacity}, currentOccupancy=${currentOccupancy}, isOpen=${isOpen}, color=${color}`);
 
-    this.server.emit(WS_EVENT_CAPACITY_UPDATE, {
-      newMaxCapacity,
-      currentOccupancy,
-      isOpen,
-      color,
-      lastUpdated: new Date().toISOString(),
-    });
+      this.server.emit(WS_EVENT_CAPACITY_UPDATE, {
+        newMaxCapacity,
+        currentOccupancy,
+        isOpen,
+        color,
+        lastUpdated: new Date().toISOString(),
+      });
+    } catch (error) {
+      this.logger.error('Failed to send capacity update:', error);
+    }
   }
 
-  // If we also want to push MotionEvents:
-  // import { MotionEvent } from '@prisma/client';
-  // export const WS_EVENT_MOTION_DETECTED = 'motionDetected';
-  //
-  // public sendMotionEvent(motionEvent: MotionEvent): void {
-  //   this.logger.log('Sending motion event update:', motionEvent);
-  //   this.server.emit(WS_EVENT_MOTION_DETECTED, motionEvent);
-  // }
 }

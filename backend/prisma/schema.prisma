@@ -16,14 +16,14 @@ datasource db {
 // Raummodell für bessere Organisation und Skalierbarkeit
 model Room {
   id          String   @id @default(cuid())
-  name        String   @unique // z.B. "Laborraum A101", "Hauptlabor"
-  description String?  // Optionale Beschreibung des Raums
-  capacity    Int      @default(20) // Standardkapazität des Raums
-  isOpen      Boolean  @default(true) // Ob der Raum offen ist
+  name        String   @unique 
+  description String? 
+  capacity    Int      @default(20) 
+  isOpen      Boolean  @default(true) 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  maxCapacity Int      @default(20) // Maximal zulässige Kapazität des Raums
-  // Beziehungen
+  maxCapacity Int      @default(20) 
+
   sensors     Sensor[]
   dayPredictions  DayPrediction[]
   weekPredictions WeekPrediction[]
