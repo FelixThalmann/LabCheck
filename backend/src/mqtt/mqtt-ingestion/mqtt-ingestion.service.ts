@@ -17,17 +17,10 @@ import { Sensor } from '@prisma/client';
 import { OccupancyService } from '../../occupancy/services/occupancy.service';
 import { RoomManagementService } from '../../occupancy/services/room-management.service';
 
-
-const JSON_BASED_EVENTS_TOPIC_PREFIX = 'labcheck/door';
-const LIGHT_BARRIER_TOPIC_PREFIX = 'labcheck/entrance';
-const LIGHT_BARRIER_TOPIC_SUFFIX = '/statuss';
-
-
-// 🔥 NEW: Dynamic topic patterns for ESP32 ID-based topics
+// Dynamic topic patterns for ESP32 ID-based topics
 const DYNAMIC_TOPIC_PATTERNS = {
   DOOR: 'labcheck/esp32/door',        // labcheck/{esp32Id}/door
   ENTRANCE: 'labcheck/esp32/entrance', // labcheck/{esp32Id}/entrance
-  //STATUS: 'labcheck/+/status'      // labcheck/{esp32Id}/status
 };
 
 /**
@@ -58,7 +51,8 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
    * @param {ConfigService} configService - Service for accessing configuration variables.
    * @param {PrismaService} prismaService - Service for database interactions.
    * @param {EventsGateway} eventsGateway - Gateway for sending real-time updates via WebSockets.
-   * @param {DoorService} doorService - Service for door-related logic, including occupancy calculation.
+   * @param {OccupancyService} occupancyService - Service for room occupancy management.
+   * @param {RoomManagementService} roomManagementService - Service for automatic room assignment.
    */
   constructor(
     private readonly configService: ConfigService,
@@ -109,14 +103,8 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`Successfully connected to MQTT broker at ${brokerUrl}`);
       // Definiere die zu abonnierenden Topics (mit Beschreibung)
       const topicsToSubscribe = [
-        // Legacy topics (backward compatibility)
-        { name: `${JSON_BASED_EVENTS_TOPIC_PREFIX}`, description: 'JSON-based sensor events (legacy)' }, 
-        { name: `${LIGHT_BARRIER_TOPIC_PREFIX}`, description: 'Light barrier status events (legacy)' },
-        // 🔥 NEW: Dynamic topics with ESP32 ID
-        { name: `labcheck/esp32/door`, description: 'Door sensor events with ESP32 ID' },
-        { name: `labcheck/esp32/entrance`, description: 'Entrance sensor events with ESP32 ID' },
-        //{ name: `labcheck/+/status`, description: 'General status events with ESP32 ID' }
-
+        { name: DYNAMIC_TOPIC_PATTERNS.DOOR, description: 'Door sensor events with ESP32 ID' },
+        { name: DYNAMIC_TOPIC_PATTERNS.ENTRANCE, description: 'Entrance sensor events with ESP32 ID' },
       ];
 
       // Abonniere alle Topics aus obiger Liste
@@ -138,7 +126,7 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
       this.logger.debug(`Received raw message on topic '${topic}': "${messageContent}"`);
 
 
-      // 🔥 NEW: Check for dynamic ESP32 ID-based topics first (labcheck/{esp32Id}/{eventType})
+      // Check for dynamic ESP32 ID-based topics first (labcheck/{esp32Id}/{eventType})
       const topicParts = topic.split('/');
       if (topicParts.length === 3 && topicParts[0] === 'labcheck') {
         const esp32Id = topicParts[1];
@@ -163,73 +151,12 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
             default:
               this.logger.warn(`Unknown event type '${eventType}' for ESP32 ID '${esp32Id}' on topic '${topic}'. Message ignored.`);
           }
-          return; // Exit early to avoid legacy handlers
+          return; // Exit early after processing
         }
       }
 
-      // LEGACY HANDLERS (for backward compatibility)
-      
-      // Prüfe, ob es sich um ein Lichtschranken-Topic handelt
-      if (topic.startsWith(LIGHT_BARRIER_TOPIC_PREFIX)) {
-        // Extrahiere die ESP32-ID aus dem Topic (zwischen Prefix und Suffix)
-        const esp32IdFromTopic = topic.substring(LIGHT_BARRIER_TOPIC_PREFIX.length, topic.length - LIGHT_BARRIER_TOPIC_SUFFIX.length);
-        // Stelle sicher, dass die ID gültig ist (kein weiteres "/" enthalten)
-        if (esp32IdFromTopic && !esp32IdFromTopic.includes('/')) {
-          this.logger.verbose(`Extracted ESP32 ID '${esp32IdFromTopic}' from light barrier topic '${topic}' (legacy format).`);
-          await this.handleLightBarrierEvent(esp32IdFromTopic, messageContent);
-        } else {
-          this.logger.warn(`Malformed topic for light barrier: '${topic}'. Expected format '${LIGHT_BARRIER_TOPIC_PREFIX}{sensorId}'. Extracted ID part: '${esp32IdFromTopic}'. Message ignored.`);
-        }
-      } 
-      // Prüfe, ob es sich um ein JSON-basiertes Event-Topic handelt
-      else if (topic.startsWith(JSON_BASED_EVENTS_TOPIC_PREFIX)) { 
-        // Zerlege das Topic in Teile, um die ESP32-ID zu extrahieren
-        const topicParts = topic.split('/');
-        // labcheck/door/{sensorId}/events -> sensorId ist an Index 2
-        const esp32IdFromTopic = topicParts[2]; 
-
-        if (!esp32IdFromTopic) {
-          this.logger.warn(`Could not extract ESP32 ID from JSON-based event topic: '${topic}'. Message ignored.`);
-          return;
-        }
-        this.logger.verbose(`Extracted ESP32 ID '${esp32IdFromTopic}' from JSON-based topic '${topic}' (legacy format).`);
-
-        try {
-          // Versuche, die empfangene Nachricht als JSON zu parsen
-          const rawMessage = JSON.parse(messageContent);
-          this.logger.debug(`THIS IS THE RAW MESSAGE: ${JSON.stringify(rawMessage)}`);
-          this.logger.verbose(`Successfully parsed JSON message from ESP32 ID '${esp32IdFromTopic}'. Type: '${rawMessage?.type}'.`);
-
-          // Überprüfe, ob die Nachricht die erwarteten Felder enthält
-          if (!rawMessage || typeof rawMessage.type !== 'string' || typeof rawMessage.data === 'undefined') {
-              this.logger.warn(`Message from ESP32 ID '${esp32IdFromTopic}' (topic: '${topic}') is missing 'type' or 'data' field, or they have incorrect type. Payload: "${messageContent}". Message ignored.`);
-              return;
-          }
-
-          // Verarbeite die Nachricht je nach Typ
-          switch (rawMessage.type) {
-            case 'door':
-              await this.handleDoorEvent(esp32IdFromTopic, rawMessage.data);
-              break;
-            case 'passage':
-              await this.handlePassageEvent(esp32IdFromTopic, rawMessage.data);
-              break;
-            default:
-              this.logger.warn(`Unknown message type '${rawMessage.type}' received from ESP32 ID '${esp32IdFromTopic}' (topic: '${topic}'). Message ignored.`);
-          }
-        } catch (error) {
-          // Fehler beim Parsen oder Verarbeiten der Nachricht
-          if (error instanceof SyntaxError) {
-            this.logger.error(`Failed to parse JSON message from ESP32 ID '${esp32IdFromTopic}' (topic: '${topic}'): "${messageContent}". Error: ${error.message}`, error.stack);
-          } else {
-            this.logger.error(`Failed to process JSON-based MQTT message from ESP32 ID '${esp32IdFromTopic}' (topic: '${topic}'). Error: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error.stack : undefined);
-          }
-        }
-      } 
-      // Alle anderen Topics werden ignoriert
-      else {
-        this.logger.warn(`Message received on unhandled topic: '${topic}'. Message: "${messageContent}". Message ignored.`);
-      }
+      // If we reach here, the topic format is not recognized
+      this.logger.warn(`Message received on unhandled topic: '${topic}'. Message: "${messageContent}". Message ignored.`);
     });
 
     // Fehler-Handler für den MQTT-Client
@@ -297,14 +224,14 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
     if (!sensor) {
       this.logger.log(`Sensor with ESP32 ID '${esp32Id}' not found. Creating new sensor with auto-room assignment.`);
       try {
-        // 🔥 NEW: Get default room first for automatic assignment
+        // Get default room first for automatic assignment
         const defaultRoom = await this.roomManagementService.ensureDefaultRoomExists();
         
         sensor = await this.prismaService.sensor.create({
           data: { 
             esp32Id, 
             location: `Auto-created for ESP32: ${esp32Id}`,
-            roomId: defaultRoom.id  // 🎯 Automatic room assignment
+            roomId: defaultRoom.id  // Automatic room assignment
           },
           include: { room: true }
         });
@@ -316,7 +243,7 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
     } else {
       this.logger.verbose(`Found existing sensor with DB ID ${sensor.id} for ESP32 ID '${esp32Id}'.`);
       
-      // 🔥 NEW: Check if sensor has room assignment, if not assign to default room
+      // Check if sensor has room assignment, if not assign to default room
       if (!sensor.roomId) {
         this.logger.log(`Sensor ${esp32Id} exists but has no room assignment. Assigning to default room.`);
         const assignedRoom = await this.roomManagementService.assignSensorToDefaultRoom(sensor.id);
@@ -349,19 +276,6 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
    * @param {string} sensorEsp32Id - The ESP32 ID of the sensor from which the data originated.
    * @param {string} eventType - The type of event being validated (e.g., 'door', 'passage').
    * @returns {Promise<T | null>} A promise that resolves to the validated DTO instance or null if validation fails.
-   */
-  /**
-   * Validiert eingehende Event-Daten gegen ein DTO und loggt ggf. Fehler.
-   * 
-   * Technischer Ablauf:
-   * - Die Methode erhält rohe Daten (z.B. aus MQTT), eine DTO-Klasse, die ESP32-ID des Sensors und den Event-Typ.
-   * - Zuerst wird geprüft, ob die Daten ein Objekt sind (und nicht null). Falls nicht, wird ein Warn-Log geschrieben und null zurückgegeben.
-   * - Die Daten werden mittels class-transformer in eine Instanz der angegebenen DTO-Klasse umgewandelt.
-   * - Mit class-validator wird die Instanz asynchron validiert. Das Ergebnis ist ein Array von ValidationError-Objekten.
-   * - Falls Validierungsfehler auftreten, werden alle Fehlermeldungen extrahiert, geloggt und null zurückgegeben.
-   * - Bei erfolgreicher Validierung wird ein Erfolgs-Log geschrieben und die validierte DTO-Instanz zurückgegeben.
-   * 
-   * Vorteil: Die Methode kapselt Validierung und Fehlerlogging, sodass die aufrufende Logik sich nur um das Ergebnis kümmern muss.
    */
   private async validateAndLogErrors<T extends object>(
     data: unknown,
@@ -407,129 +321,6 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
   /**
    * @private
    * @async
-   * @method handleDoorEvent
-   * @description Verarbeitet eingehende Tür-Event-Daten aus einer MQTT-Nachricht.
-   * @param {string} esp32Id - Die ESP32-ID des Sensors.
-   * @param {unknown} data - Das rohe Daten-Payload für das Tür-Event.
-   * @returns {Promise<void>}
-   */
-  private async handleDoorEvent(esp32Id: string, data: unknown): Promise<void> {
-    // Debug-Log: Zeigt an, dass ein Tür-Event verarbeitet wird, inkl. Rohdaten
-    this.logger.debug(`Verarbeite 'door'-Event von ESP32 ID '${esp32Id}'. Rohdaten: ${JSON.stringify(data)}`);
-
-    // Validierung der empfangenen Daten gegen das DoorDataDto
-    const validatedData = await this.validateAndLogErrors(data, MqttDoorDataDto, esp32Id, 'door');
-    if (!validatedData) {
-      // Falls die Validierung fehlschlägt, wurde der Fehler bereits geloggt und die Verarbeitung wird abgebrochen
-      return;
-    }
-
-    // Sensor anhand der ESP32-ID aus der Datenbank holen (oder ggf. anlegen)
-    const sensor = await this.getSensor(esp32Id);
-    if (!sensor) {
-      // Wenn kein Sensor gefunden oder angelegt werden konnte, Fehler loggen und abbrechen
-      this.logger.error(`Konnte keinen Sensor für ESP32 ID '${esp32Id}' finden oder anlegen. 'door'-Event kann nicht gespeichert werden.`);
-      return;
-    }
-
-    try {
-      // Log: Versuch, das DoorEvent in der Datenbank zu speichern
-      this.logger.verbose(`Speichere DoorEvent für Sensor '${sensor.esp32Id}' (DB ID: ${sensor.id}), isOpen: ${validatedData.isOpen}.`);
-      // DoorEvent in der Datenbank anlegen
-      const createdEvent = await this.prismaService.doorEvent.create({
-        data: {
-          sensorId: sensor.id,
-          // Nutze den übermittelten Zeitstempel, falls vorhanden, sonst aktuellen Zeitpunkt
-          eventTimestamp: validatedData.timestamp ? new Date(validatedData.timestamp) : new Date(),
-          doorIsOpen: validatedData.isOpen,
-        },
-      });
-      // Log: Erfolgreiches Speichern des Events
-      this.logger.log(`DoorEvent erfolgreich gespeichert: ID ${createdEvent.id} für Sensor '${sensor.esp32Id}' (isOpen: ${validatedData.isOpen}).`);
-      // Falls ein EventsGateway existiert, sende ein WebSocket-Update
-      if (this.eventsGateway) {
-        this.logger.verbose(`Sende Türstatus-Update via WebSocket für Event ID ${createdEvent.id}.`);
-        await this.eventsGateway.sendDoorStatusUpdate(createdEvent);
-      }
-    } catch (error) {
-      // Fehler beim Speichern des Events in der Datenbank
-      this.logger.error(
-        `Fehler beim Speichern des DoorEvents für Sensor '${sensor.esp32Id}'. Daten: ${JSON.stringify(validatedData)}. Fehler: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined
-      );
-    }
-  }
-
-  /**
-   * @private
-   * @async
-   * @method handlePassageEvent
-   * Diese Methode verarbeitet eingehende Passage-Events, die über MQTT empfangen werden.
-   * Sie übernimmt die Validierung, Speicherung und ggf. das Senden von WebSocket-Updates.
-   * 
-   * Technische Ablaufbeschreibung:
-   * 1. Die Methode erhält die ESP32-ID des Sensors und die Rohdaten des Passage-Events.
-   * 2. Die Rohdaten werden gegen das erwartete DTO (MqttPassageDataDto) validiert.
-   *    - Falls die Validierung fehlschlägt, wird abgebrochen (Fehler wurde bereits geloggt).
-   * 3. Es wird versucht, den zugehörigen Sensor anhand der ESP32-ID aus der Datenbank zu laden (oder ggf. anzulegen).
-   *    - Falls kein Sensor gefunden/angelegt werden kann, wird ein Fehler geloggt und abgebrochen.
-   * 4. Das Passage-Event wird in der Datenbank gespeichert:
-   *    - Die Sensor-ID, der Zeitstempel (entweder aus den Daten oder aktuelle Zeit) und die Richtung werden gespeichert.
-   * 5. Nach erfolgreicher Speicherung wird ein Logeintrag geschrieben.
-   * 6. Optional: Falls ein EventsGateway und DoorService vorhanden sind,
-   *    - wird die aktuelle Belegung (Kapazität) neu berechnet (mittels labStatusService.getLabCapacity())
-   *    - und per WebSocket an verbundene Clients gesendet (sendOccupancyUpdate).
-   * 7. Fehler beim Speichern oder beim Senden des Updates werden geloggt.
-   * 
-   * @param {string} esp32Id - Die ESP32-ID des Sensors.
-   * @param {unknown} data - Das rohe Daten-Payload für das Passage-Event.
-   * @returns {Promise<void>}
-   */
-  private async handlePassageEvent(esp32Id: string, data: unknown): Promise<void> {
-    // Debug-Log: Zeigt an, dass ein Passage-Event verarbeitet wird, inkl. Rohdaten
-    this.logger.debug(`Processing 'passage' event from ESP32 ID '${esp32Id}'. Raw data: ${JSON.stringify(data)}`);
-
-    // 1. Validierung der empfangenen Daten gegen das PassageDataDto
-    const validatedData = await this.validateAndLogErrors(data, MqttPassageDataDto, esp32Id, 'passage');
-    if (!validatedData) return; // Bei Validierungsfehler: Abbruch
-
-    // 2. Sensor anhand der ESP32-ID aus der Datenbank holen (oder ggf. anlegen)
-    const sensor = await this.getSensor(esp32Id);
-    if (!sensor) {
-        // Wenn kein Sensor gefunden oder angelegt werden konnte, Fehler loggen und abbrechen
-        this.logger.error(`Could not find or create sensor for ESP32 ID '${esp32Id}'. 'passage' event cannot be stored.`);
-        return;
-    }
-
-    try {
-      // 3. Versuch, das PassageEvent in der Datenbank zu speichern
-      this.logger.verbose(`Attempting to store PassageEvent for sensor '${sensor.esp32Id}' (DB ID: ${sensor.id}), direction: ${validatedData.direction}.`);
-      const createdEvent = await this.prismaService.passageEvent.create({
-        data: {
-          sensorId: sensor.id,
-          // Nutze den übermittelten Zeitstempel, falls vorhanden, sonst aktuellen Zeitpunkt
-          eventTimestamp: validatedData.timestamp ? new Date(validatedData.timestamp) : new Date(),
-          direction: validatedData.direction,
-        },
-      });
-      // 4. Log: Erfolgreiches Speichern des Events
-      this.logger.log(`Successfully stored PassageEvent: ID ${createdEvent.id} for sensor '${sensor.esp32Id}' (direction: ${validatedData.direction}).`);
-
-      // 5. Aktualisiere die Raumbelegung automatisch basierend auf der Passage-Richtung
-      if (this.occupancyService) {
-        this.logger.verbose(`Updating room occupancy after passage event ID ${createdEvent.id}.`);
-        await this.occupancyService.updateRoomOccupancy(sensor.id, validatedData.direction);
-      }
-    } catch (error) {
-      // Fehler beim Speichern des Events oder beim Senden des Updates
-      this.logger.error(`Error storing PassageEvent or updating occupancy for sensor '${sensor.esp32Id}'. Data: ${JSON.stringify(validatedData)}. Error: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error.stack : undefined);
-    }
-  }
-
- 
-  /**
-   * @private
-   * @async
    * @method handleSimpleDoorEvent
    * @description Handles simple door status events from dynamic topics.
    * The payload is expected to be a simple string "1" (door open) or "0" (door closed).
@@ -570,7 +361,7 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
       
       this.logger.log(`Successfully stored DoorEvent: ID ${createdEvent.id} (isOpen: ${isOpen}) for sensor ${sensor.esp32Id}.`);
 
-      // 🔥 NEW: 2. Aktualisiere den Room-Status eindeutig mit der gleichen Sensor-zu-Raum-Logik
+      // 2. Aktualisiere den Room-Status eindeutig mit der gleichen Sensor-zu-Raum-Logik
       if (this.occupancyService) {
         this.logger.verbose(`Updating room open status after door event ID ${createdEvent.id}.`);
         const roomUpdate = await this.occupancyService.updateRoomOpenStatus(sensor.id, isOpen);
@@ -663,12 +454,6 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
         this.logger.verbose(`Updating room occupancy after passage event ID ${createdEvent.id}.`);
         await this.occupancyService.updateRoomOccupancy(sensor.id, direction);
       }
-
-      // Optional: Event per WebSocket an das Frontend senden (auskommentiert)
-      // if (this.eventsGateway) { 
-      //    this.logger.verbose(`Sending passage update via WebSocket for event ID ${createdEvent.id}.`);
-      //    // this.eventsGateway.sendPassageUpdate({ sensorId: sensor.esp32Id, direction, timestamp: createdEvent.eventTimestamp });
-      // }
     } catch (error) {
       // Fehler beim Speichern oder beim Senden des Updates werden geloggt
       this.logger.error(`Failed to process light barrier passage event for ESP32 ID '${esp32Id}'. Payload: "${statusPayload}". Error: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error.stack : undefined);
