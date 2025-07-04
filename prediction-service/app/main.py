@@ -23,7 +23,7 @@ if not STATIC_API_KEY:
     raise ValueError("STATIC_API_KEY environment variable not set!")
 
 # Load training interval from environment variable
-""" TRAINING_INTERVAL = os.getenv("TRAINING_INTERVAL")
+TRAINING_INTERVAL = os.getenv("TRAINING_INTERVAL")
 if not TRAINING_INTERVAL:
     raise ValueError("TRAINING_INTERVAL environment variable not set!")
 
@@ -31,7 +31,7 @@ if not TRAINING_INTERVAL:
 try:
     TRAINING_INTERVAL = int(TRAINING_INTERVAL)
 except ValueError:
-    raise ValueError("TRAINING_INTERVAL must be a valid integer representing seconds!") """
+    raise ValueError("TRAINING_INTERVAL must be a valid integer representing seconds!")
 
 # --- Database connection ---
 try:
@@ -137,7 +137,7 @@ async def periodic_training():
                 return {"message": "Training completed successfully.", "model_timestamp": model_cache["model_timestamp"]}
         except Exception as e:
             print(f"[BackgroundTask] Error during training: {e}")
-        #await asyncio.sleep(TRAINING_INTERVAL)
+        await asyncio.sleep(TRAINING_INTERVAL)
 
 @app.on_event("startup")
 async def start_periodic_training():
