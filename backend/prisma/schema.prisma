@@ -16,14 +16,14 @@ datasource db {
 // Raummodell für bessere Organisation und Skalierbarkeit
 model Room {
   id          String   @id @default(cuid())
-  name        String   @unique // z.B. "Laborraum A101", "Hauptlabor"
-  description String?  // Optionale Beschreibung des Raums
-  capacity    Int      @default(20) // Standardkapazität des Raums
-  isOpen      Boolean  @default(true) // Ob der Raum offen ist
+  name        String   @unique 
+  description String? 
+  capacity    Int      @default(20) 
+  isOpen      Boolean  @default(true) 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  maxCapacity Int      @default(20) // Maximal zulässige Kapazität des Raums
-  // Beziehungen
+  maxCapacity Int      @default(20) 
+
   sensors     Sensor[]
   dayPredictions  DayPrediction[]
   weekPredictions WeekPrediction[]
@@ -97,9 +97,7 @@ model PassageEvent {
   @@map("passage_events")
 }
 
-
-
-// Tagesvorhersagen - jetzt raumspezifisch
+// Tagesvorhersagen
 model DayPrediction {
   id          String   @id @default(cuid())
   time        String   // "8 AM", "10 AM", "12 PM", "2 PM", "4 PM", "6 PM"
@@ -118,7 +116,7 @@ model DayPrediction {
   @@map("day_predictions")
 }
 
-// Wochenvorhersagen - jetzt raumspezifisch
+// Wochenvorhersagen
 model WeekPrediction {
   id          String   @id @default(cuid())
   day         String   // "Mon", "Tue", "Wed", "Thu", "Fri"

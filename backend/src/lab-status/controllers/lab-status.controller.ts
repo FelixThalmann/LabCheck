@@ -63,7 +63,7 @@ export class LabStatusController {
     description: 'Laborkapazität erfolgreich abgerufen',
     type: LabCapacityResponseDto,
   })
-  async getLabCapacity(): Promise<LabCapacityResponseDto> {
+  async getLabCapacity(): Promise<number> {
     this.logger.debug('REST API: GET /api/lab/capacity');
     return this.labStatusService.getLabCapacity();
   }

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { PredictionCalculationService } from './prediction-calculation.service';
 import { PredictionApiService } from './prediction-api.service';
+import { HolidayService } from './holiday.service';
 import {
   DayPredictionResponseDto,
   WeekPredictionResponseDto,
@@ -23,12 +24,13 @@ export class PredictionsService {
   constructor(
     private readonly prisma: PrismaService, 
     private readonly predictionApiService: PredictionApiService,
+    private readonly holidayService: HolidayService,
   ) {}
 
   /**
    * @method getDayPredictions
    * @description Liefert ML-basierte Tagesvorhersagen
-   * Generiert Vorhersagen von 8:00 bis 18:00 alle 2 Stunden
+   * Generiert Vorhersagen von 8:00 bis 18:00 alle 2 Stunden und speichert sie in der Datenbank
    * @param dateString Optionales Datum im Format YYYY-MM-DD
    */
   async getDayPredictions(
@@ -41,11 +43,51 @@ export class PredictionsService {
     try {
       const date = dateString ? new Date(dateString) : new Date();
       if (isNaN(date.getTime())) {
-        // TODO: Throw a BadRequestException for better error handling
         throw new Error('Invalid date provided');
       }
 
+      // Check if there is weekend (Saturday or Sunday) or holiday (by default, the room is closed)
+      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+      const isHoliday = await this.holidayService.isHoliday(date);
+      
+      if (isWeekend || isHoliday) {
+        const reason = isWeekend ? 'weekend' : 'holiday';
+        this.logger.debug(`Room is closed on ${reason}, returning default closed predictions`);
+        const timeSlots = ['8 AM', '10 AM', '12 PM', '2 PM', '4 PM', '6 PM'];
+        return {
+          predictions: timeSlots.map(time => ({
+            occupancy: 0,
+            time,
+            color: 'red',
+          })),
+          lastUpdated: new Date().toISOString(),
+        };
+      }
+
+      // Check if there are already predictions for this date
+      const existingPredictions = await this.prisma.dayPrediction.findMany({
+        where: {
+          date: date,
+        },
+      });
+
+      if (existingPredictions.length > 0) {
+        this.logger.debug('Predictions already exist for this date, skipping generation');
+        return {
+          predictions: existingPredictions.map((p) => ({
+            occupancy: p.occupancy,
+            time: p.time,
+            color: p.color,
+          })),
+          lastUpdated: new Date().toISOString(),
+        };
+      }
+
+      // Generate new predictions
       const predictions = await this.generateMLDayPredictions(date);
+          
+      // Speichere Vorhersagen in der Datenbank
+      await this.saveDayPredictions(predictions, date);
 
       return {
         predictions: predictions.map((p) => ({
@@ -64,7 +106,7 @@ export class PredictionsService {
   /**
    * @method getWeekPredictions
    * @description Liefert erweiterte ML-basierte Wochenvorhersagen für aktuelle und nächste Woche
-   * Generiert Durchschnittswerte basierend auf ML-Tagesvorhersagen
+   * Generiert Durchschnittswerte basierend auf ML-Tagesvorhersagen und speichert sie in der Datenbank
    */
   async getWeekPredictions(): Promise<ExtendedWeekPredictionResponseDto> {
     this.logger.debug('Fetching extended ML-based week predictions');
@@ -72,11 +114,55 @@ export class PredictionsService {
     try {
       const currentWeekRange = this.getCurrentWeekRange();
       const nextWeekRange = this.getNextWeekRange();
-      
+
+      // Check if there are already predictions for this and next week
+      const existingCurrentWeekPredictions = await this.prisma.weekPrediction.findMany({
+        where: {
+          weekStart: {
+            gte: currentWeekRange.start,
+            lte: currentWeekRange.end,
+          },
+        },
+      });
+
+      const existingNextWeekPredictions = await this.prisma.weekPrediction.findMany({
+        where: {
+          weekStart: {
+            gte: nextWeekRange.start,
+            lte: nextWeekRange.end,
+          },
+        },
+      });
+
+      if (existingCurrentWeekPredictions.length > 0 && existingNextWeekPredictions.length > 0) {
+        this.logger.debug('Predictions already exist for the current week, skipping generation');
+        return {
+          currentWeek: existingCurrentWeekPredictions.map((p) => ({
+            occupancy: p.occupancy,
+            day: p.day,
+            color: p.color,
+            date: p.weekStart.toISOString().split('T')[0],
+          })),
+          nextWeek: existingNextWeekPredictions.map((p) => ({
+            occupancy: p.occupancy,
+            day: p.day,
+            color: p.color,
+            date: p.weekStart.toISOString().split('T')[0],
+          })),
+          lastUpdated: new Date().toISOString(),
+        };
+      }
+
       // Generiere Vorhersagen für beide Wochen parallel
       const [currentWeekPredictions, nextWeekPredictions] = await Promise.all([
         this.generateMLWeekPredictionsForRange(currentWeekRange.start, 'current'),
         this.generateMLWeekPredictionsForRange(nextWeekRange.start, 'next'),
+      ]);
+      
+      // Speichere Vorhersagen in der Datenbank
+      await Promise.all([
+        this.saveWeekPredictions(currentWeekPredictions, currentWeekRange.start),
+        this.saveWeekPredictions(nextWeekPredictions, nextWeekRange.start),
       ]);
       
       return {
@@ -161,7 +247,7 @@ export class PredictionsService {
       this.logger.log('No active room found, creating default room');
       room = await this.prisma.room.create({
         data: {
-          name: 'Hauptlabor',
+          name: 'LabCheck-Main-Room',
           description: 'Standard-Laborraum',
           capacity: 20,
           isOpen: true,
@@ -230,8 +316,13 @@ export class PredictionsService {
       const currentDay = new Date(weekStart);
       currentDay.setDate(weekStart.getDate() + dayIndex);
 
-      // Überspringe Wochenenden (sollte nicht auftreten, aber Sicherheitscheck)
-      if (currentDay.getDay() === 0 || currentDay.getDay() === 6) {
+      // Überspringe Wochenenden und Feiertage (sollte nicht auftreten, aber Sicherheitscheck)
+      const isWeekend = currentDay.getDay() === 0 || currentDay.getDay() === 6;
+      const isHoliday = await this.holidayService.isHoliday(currentDay);
+      
+      if (isWeekend || isHoliday) {
+        const reason = isWeekend ? 'weekend' : 'holiday';
+        this.logger.debug(`Skipping ${reason} day ${dayIndex} in ${weekLabel} week`);
         continue;
       }
 
@@ -339,6 +430,16 @@ export class PredictionsService {
       const currentDay = new Date(weekStart);
       currentDay.setDate(weekStart.getDate() + dayIndex);
       
+      // Überspringe Wochenenden und Feiertage
+      const isWeekend = currentDay.getDay() === 0 || currentDay.getDay() === 6;
+      const isHoliday = await this.holidayService.isHoliday(currentDay);
+      
+      if (isWeekend || isHoliday) {
+        const reason = isWeekend ? 'weekend' : 'holiday';
+        this.logger.debug(`Skipping ${reason} day ${dayIndex} in week predictions`);
+        continue;
+      }
+      
       try {
         // Hole Tagesvorhersagen für diesen Tag
         const dayPredictions = await this.generateMLDayPredictions(currentDay);
@@ -366,5 +467,109 @@ export class PredictionsService {
     }
 
     return weekPredictions;
+  }
+
+  /**
+   * @method saveDayPredictions
+   * @description Speichert Tagesvorhersagen in der Datenbank (upsert)
+   * @param predictions - Array von Tagesvorhersagen
+   * @param date - Datum für das die Vorhersagen gelten
+   */
+  private async saveDayPredictions(
+    predictions: Array<{ occupancy: number; time: string; color: string }>,
+    date: Date,
+  ): Promise<void> {
+    try {
+      const room = await this.getDefaultRoom();
+      const normalizedDate = new Date(date);
+      normalizedDate.setHours(0, 0, 0, 0);
+
+      this.logger.debug(`Saving ${predictions.length} day predictions for ${normalizedDate.toISOString()}`);
+
+      // Verwende Prisma Transaction für atomare Operationen
+      await this.prisma.$transaction(async (prisma) => {
+        for (const prediction of predictions) {
+          await prisma.dayPrediction.upsert({
+            where: {
+              roomId_date_time: {
+                roomId: room.id,
+                date: normalizedDate,
+                time: prediction.time,
+              },
+            },
+            update: {
+              occupancy: prediction.occupancy,
+              color: prediction.color,
+              confidence: 0.8, // Standard-Konfidenz für ML-Vorhersagen
+            },
+            create: {
+              roomId: room.id,
+              time: prediction.time,
+              occupancy: prediction.occupancy,
+              color: prediction.color,
+              date: normalizedDate,
+              confidence: 0.8,
+            },
+          });
+        }
+      });
+
+      this.logger.debug('Day predictions saved successfully');
+    } catch (error) {
+      this.logger.error(`Error saving day predictions: ${error.message}`, error.stack);
+      // Fehler beim Speichern soll die API-Antwort nicht blockieren
+    }
+  }
+
+  /**
+   * @method saveWeekPredictions
+   * @description Speichert Wochenvorhersagen in der Datenbank (upsert)
+   * @param predictions - Array von Wochenvorhersagen mit Datum
+   * @param weekStart - Startdatum der Woche (Montag)
+   */
+  private async saveWeekPredictions(
+    predictions: WeekPredictionItemDto[],
+    weekStart: Date,
+  ): Promise<void> {
+    try {
+      const room = await this.getDefaultRoom();
+      const normalizedWeekStart = new Date(weekStart);
+      normalizedWeekStart.setHours(0, 0, 0, 0);
+
+      this.logger.debug(`Saving ${predictions.length} week predictions for week starting ${normalizedWeekStart.toISOString()}`);
+
+      // Verwende Prisma Transaction für atomare Operationen
+      await this.prisma.$transaction(async (prisma) => {
+        for (const prediction of predictions) {
+          await prisma.weekPrediction.upsert({
+            where: {
+              roomId_weekStart_day: {
+                roomId: room.id,
+                weekStart: normalizedWeekStart,
+                day: prediction.day,
+              },
+            },
+            update: {
+              occupancy: prediction.occupancy,
+              color: prediction.color,
+              confidence: 0.8, // Standard-Konfidenz für ML-Vorhersagen
+            },
+            create: {
+              roomId: room.id,
+              day: prediction.day,
+              occupancy: prediction.occupancy,
+              color: prediction.color,
+              weekStart: normalizedWeekStart,
+              confidence: 0.8,
+            },
+          });
+        }
+      });
+
+      this.logger.debug('Week predictions saved successfully');
+    } catch (error) {
+      this.logger.error(`Error saving week predictions: ${error.message}`, error.stack);
+      // Fehler beim Speichern soll die API-Antwort nicht blockieren
+    }
   }
 }

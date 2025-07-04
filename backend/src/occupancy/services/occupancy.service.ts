@@ -294,7 +294,7 @@ export class OccupancyService {
           `Sende Belegungs-Update via WebSocket für Raum ${roomId}: ${newOccupancy} (maxCapacity: ${room.maxCapacity})`,
         );
         // Sende occupancyStatus und maxCapacity an das Gateway
-        this.eventsGateway.sendOccupancyUpdate(occupancyStatus, room.maxCapacity);
+        this.eventsGateway.sendOccupancyUpdate(occupancyStatus);
       }
     } catch (error) {
       this.logger.error(
@@ -320,23 +320,33 @@ export class OccupancyService {
   ): Promise<void> {
     try {
       // Hole aktuelle Raumdaten
-      const room = await this.prisma.room.findUnique({
-        where: { id: roomId },
-        select: { name: true, isOpen: true },
-      });
+      const room = await this.prisma.room.findFirst();
+      
+      if (!room) {
+        this.logger.error(`Room with ID ${roomId} not found`);
+        return;
+      }
+
+      // Berechne den Belegungsgrad in Prozent
+      const percentageFull =
+        room.maxCapacity > 0
+          ? Math.round((room.capacity / room.maxCapacity) * 100)
+          : 0;
+
+      const occupancyStatus: OccupancyStatusDto = {
+        currentOccupancy: room.capacity,
+        totalCapacity: room.maxCapacity,
+        timestamp: new Date(),
+        percentageFull,
+      };
 
       if (room && this.eventsGateway) {
         this.logger.verbose(
           `Sende Raum-Status-Update via WebSocket für Raum ${roomId}: isOpen = ${isOpen}`,
         );
-        // Sende Raum-Status-Update an das Gateway
-        // TODO: EventsGateway Methode für Room-Status implementieren
-        // this.eventsGateway.sendRoomStatusUpdate({ roomId, roomName: room.name, isOpen });
-        
-        // Fallback: Verwende occupancy update mit aktuellen Daten
-        const occupancyStatus = await this.getCurrentOccupancyStatus(roomId);
+
         if (occupancyStatus) {
-          this.eventsGateway.sendOccupancyUpdate(occupancyStatus, 0); // maxCapacity wird separat geholt
+          this.eventsGateway.sendOccupancyUpdate(occupancyStatus); 
         }
       }
     } catch (error) {
