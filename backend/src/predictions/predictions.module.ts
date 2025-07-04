@@ -6,6 +6,7 @@ import { PredictionsController } from './controllers/predictions.controller';
 import { PredictionsService } from './services/predictions.service';
 import { PredictionCalculationService } from './services/prediction-calculation.service';
 import { PredictionApiService } from './services/prediction-api.service';
+import { HolidayService } from './services/holiday.service';
 
 /**
  * @class PredictionsModule
@@ -23,6 +24,7 @@ import { PredictionApiService } from './services/prediction-api.service';
     PredictionsService,
     PredictionCalculationService,
     PredictionApiService,
+    HolidayService,
   ],
   exports: [PredictionsService],
 })

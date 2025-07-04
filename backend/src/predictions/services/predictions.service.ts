@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { PredictionCalculationService } from './prediction-calculation.service';
 import { PredictionApiService } from './prediction-api.service';
+import { HolidayService } from './holiday.service';
 import {
   DayPredictionResponseDto,
   WeekPredictionResponseDto,
@@ -23,6 +24,7 @@ export class PredictionsService {
   constructor(
     private readonly prisma: PrismaService, 
     private readonly predictionApiService: PredictionApiService,
+    private readonly holidayService: HolidayService,
   ) {}
 
   /**
@@ -41,8 +43,25 @@ export class PredictionsService {
     try {
       const date = dateString ? new Date(dateString) : new Date();
       if (isNaN(date.getTime())) {
-        // TODO: Throw a BadRequestException for better error handling
         throw new Error('Invalid date provided');
+      }
+
+      // Check if there is weekend (Saturday or Sunday) or holiday (by default, the room is closed)
+      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+      const isHoliday = await this.holidayService.isHoliday(date);
+      
+      if (isWeekend || isHoliday) {
+        const reason = isWeekend ? 'weekend' : 'holiday';
+        this.logger.debug(`Room is closed on ${reason}, returning default closed predictions`);
+        const timeSlots = ['8 AM', '10 AM', '12 PM', '2 PM', '4 PM', '6 PM'];
+        return {
+          predictions: timeSlots.map(time => ({
+            occupancy: 0,
+            time,
+            color: 'red',
+          })),
+          lastUpdated: new Date().toISOString(),
+        };
       }
 
       // Check if there are already predictions for this date
@@ -297,8 +316,13 @@ export class PredictionsService {
       const currentDay = new Date(weekStart);
       currentDay.setDate(weekStart.getDate() + dayIndex);
 
-      // Überspringe Wochenenden (sollte nicht auftreten, aber Sicherheitscheck)
-      if (currentDay.getDay() === 0 || currentDay.getDay() === 6) {
+      // Überspringe Wochenenden und Feiertage (sollte nicht auftreten, aber Sicherheitscheck)
+      const isWeekend = currentDay.getDay() === 0 || currentDay.getDay() === 6;
+      const isHoliday = await this.holidayService.isHoliday(currentDay);
+      
+      if (isWeekend || isHoliday) {
+        const reason = isWeekend ? 'weekend' : 'holiday';
+        this.logger.debug(`Skipping ${reason} day ${dayIndex} in ${weekLabel} week`);
         continue;
       }
 
@@ -405,6 +429,16 @@ export class PredictionsService {
     for (let dayIndex = 0; dayIndex < 5; dayIndex++) { // Nur Wochentage
       const currentDay = new Date(weekStart);
       currentDay.setDate(weekStart.getDate() + dayIndex);
+      
+      // Überspringe Wochenenden und Feiertage
+      const isWeekend = currentDay.getDay() === 0 || currentDay.getDay() === 6;
+      const isHoliday = await this.holidayService.isHoliday(currentDay);
+      
+      if (isWeekend || isHoliday) {
+        const reason = isWeekend ? 'weekend' : 'holiday';
+        this.logger.debug(`Skipping ${reason} day ${dayIndex} in week predictions`);
+        continue;
+      }
       
       try {
         // Hole Tagesvorhersagen für diesen Tag
