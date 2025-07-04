@@ -26,6 +26,6 @@ import { HolidayService } from './services/holiday.service';
     PredictionApiService,
     HolidayService,
   ],
-  exports: [PredictionsService],
+  exports: [PredictionsService, HolidayService],
 })
 export class PredictionsModule {}

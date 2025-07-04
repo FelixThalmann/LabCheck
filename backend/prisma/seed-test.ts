@@ -61,7 +61,7 @@ async function main() {
   // Create room
   const room = await prisma.room.create({
     data: {
-      name: 'Testlabor',
+      name: 'LabCheck-Main-Room',
       description: 'Minimal room for seed',
       capacity: 0,
       maxCapacity: 10,

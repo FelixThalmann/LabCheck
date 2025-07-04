@@ -5,6 +5,7 @@ import { LabStatusController } from './controllers/lab-status.controller';
 import { LabStatusService } from './services/lab-status.service';
 import { EventsModule } from '../events/events.module';
 import { PrismaService } from '../prisma.service';
+import { PredictionsModule } from '../predictions/predictions.module';
 
 
 /**
@@ -17,6 +18,7 @@ import { PrismaService } from '../prisma.service';
   imports: [
     ConfigModule, // Für Passwort-Validierung
     forwardRef(() => EventsModule), // Für EventsGateway Zugriff
+    forwardRef(() => PredictionsModule), // Für HolidayService Zugriff
   ],
   controllers: [LabStatusController], // Erweitert für REST API
   providers: [
