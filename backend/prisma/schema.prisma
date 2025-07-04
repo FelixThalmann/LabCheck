@@ -97,9 +97,7 @@ model PassageEvent {
   @@map("passage_events")
 }
 
-
-
-// Tagesvorhersagen - jetzt raumspezifisch
+// Tagesvorhersagen
 model DayPrediction {
   id          String   @id @default(cuid())
   time        String   // "8 AM", "10 AM", "12 PM", "2 PM", "4 PM", "6 PM"
@@ -118,7 +116,7 @@ model DayPrediction {
   @@map("day_predictions")
 }
 
-// Wochenvorhersagen - jetzt raumspezifisch
+// Wochenvorhersagen
 model WeekPrediction {
   id          String   @id @default(cuid())
   day         String   // "Mon", "Tue", "Wed", "Thu", "Fri"

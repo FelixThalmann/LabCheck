@@ -45,8 +45,28 @@ export class PredictionsService {
         throw new Error('Invalid date provided');
       }
 
+      // Check if there are already predictions for this date
+      const existingPredictions = await this.prisma.dayPrediction.findMany({
+        where: {
+          date: date,
+        },
+      });
+
+      if (existingPredictions.length > 0) {
+        this.logger.debug('Predictions already exist for this date, skipping generation');
+        return {
+          predictions: existingPredictions.map((p) => ({
+            occupancy: p.occupancy,
+            time: p.time,
+            color: p.color,
+          })),
+          lastUpdated: new Date().toISOString(),
+        };
+      }
+
+      // Generate new predictions
       const predictions = await this.generateMLDayPredictions(date);
-      
+          
       // Speichere Vorhersagen in der Datenbank
       await this.saveDayPredictions(predictions, date);
 
@@ -75,7 +95,45 @@ export class PredictionsService {
     try {
       const currentWeekRange = this.getCurrentWeekRange();
       const nextWeekRange = this.getNextWeekRange();
-      
+
+      // Check if there are already predictions for this and next week
+      const existingCurrentWeekPredictions = await this.prisma.weekPrediction.findMany({
+        where: {
+          weekStart: {
+            gte: currentWeekRange.start,
+            lte: currentWeekRange.end,
+          },
+        },
+      });
+
+      const existingNextWeekPredictions = await this.prisma.weekPrediction.findMany({
+        where: {
+          weekStart: {
+            gte: nextWeekRange.start,
+            lte: nextWeekRange.end,
+          },
+        },
+      });
+
+      if (existingCurrentWeekPredictions.length > 0 && existingNextWeekPredictions.length > 0) {
+        this.logger.debug('Predictions already exist for the current week, skipping generation');
+        return {
+          currentWeek: existingCurrentWeekPredictions.map((p) => ({
+            occupancy: p.occupancy,
+            day: p.day,
+            color: p.color,
+            date: p.weekStart.toISOString().split('T')[0],
+          })),
+          nextWeek: existingNextWeekPredictions.map((p) => ({
+            occupancy: p.occupancy,
+            day: p.day,
+            color: p.color,
+            date: p.weekStart.toISOString().split('T')[0],
+          })),
+          lastUpdated: new Date().toISOString(),
+        };
+      }
+
       // Generiere Vorhersagen für beide Wochen parallel
       const [currentWeekPredictions, nextWeekPredictions] = await Promise.all([
         this.generateMLWeekPredictionsForRange(currentWeekRange.start, 'current'),

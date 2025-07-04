@@ -69,7 +69,6 @@ async function main() {
     },
   });
 
-
   // Trainingsdata for 3 weeks (Startdate z.B. today)
   const startDate = new Date('2025-04-01T00:00:00Z');
   const occupancyEvents = generateOccupancyEvents(startDate, 56, 2); // 8 Weeks = 56 Days, every 2 hours
