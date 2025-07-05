@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 
-class SeatsInputWidget extends StatelessWidget {
-  final TextEditingController controller;
-  final VoidCallback onSave;
+class EntranceDirectionWidget extends StatelessWidget {
+  final VoidCallback onInvert;
 
-  const SeatsInputWidget({
-    super.key,
-    required this.controller,
-    required this.onSave,
-  });
+  const EntranceDirectionWidget({super.key, required this.onInvert});
 
   @override
   Widget build(BuildContext context) {
@@ -18,28 +13,19 @@ class SeatsInputWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          style: TextStyle(fontFamily: 'Inter', fontSize: screenWidth * 0.032),
-          decoration: InputDecoration(
-            labelText: 'Number of Seats',
-            labelStyle: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: screenWidth * 0.032,
-            ),
-            border: const OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: screenWidth * 0.03,
-              vertical: screenHeight * 0.015,
-            ),
+        Text(
+          'Invert the entrance direction for the door sensors',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: screenWidth * 0.03,
+            color: Colors.grey[600],
           ),
         ),
         SizedBox(height: screenHeight * 0.015),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: onSave,
+            onPressed: onInvert,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black,
               foregroundColor: Colors.white,
@@ -50,7 +36,7 @@ class SeatsInputWidget extends StatelessWidget {
               ),
               padding: EdgeInsets.symmetric(vertical: screenHeight * 0.012),
             ),
-            child: const Text('Save'),
+            child: const Text('Invert Direction'),
           ),
         ),
       ],

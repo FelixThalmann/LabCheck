@@ -47,4 +47,48 @@ class SettingsDomain {
 
     return result;
   }
+
+  Future<Map<String, dynamic>> setCurrentCapacity(
+    String seatsText,
+    String password,
+  ) async {
+    Map<String, dynamic> result = {};
+    final seats = int.tryParse(seatsText);
+
+    if (seats == null || seats < 0) {
+      result['error'] = 'Please enter a valid number';
+      return result;
+    }
+
+    try {
+      final response = await ApiService().post('/api/lab/current-capacity', {
+        'capacity': seats,
+        'password': password,
+      });
+
+      result['success'] = response['success'] ?? false;
+    } catch (e) {
+      _logger.warning('Failed to set current capacity: $e');
+      result['error'] = e as Exception;
+    }
+
+    return result;
+  }
+
+  Future<Map<String, dynamic>> setEntranceDirection(String password) async {
+    Map<String, dynamic> result = {};
+
+    try {
+      final response = await ApiService().post('/api/lab/entrance-direction', {
+        'password': password,
+      });
+
+      result['success'] = response['success'] ?? false;
+    } catch (e) {
+      _logger.warning('Failed to set entrance direction: $e');
+      result['error'] = e as Exception;
+    }
+
+    return result;
+  }
 }

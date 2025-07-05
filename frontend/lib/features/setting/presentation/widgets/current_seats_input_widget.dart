@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-class SeatsInputWidget extends StatelessWidget {
+class CurrentSeatsInputWidget extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSave;
 
-  const SeatsInputWidget({
+  const CurrentSeatsInputWidget({
     super.key,
     required this.controller,
     required this.onSave,
@@ -23,7 +23,7 @@ class SeatsInputWidget extends StatelessWidget {
           keyboardType: TextInputType.number,
           style: TextStyle(fontFamily: 'Inter', fontSize: screenWidth * 0.032),
           decoration: InputDecoration(
-            labelText: 'Number of Seats',
+            labelText: 'Current Occupied Seats',
             labelStyle: TextStyle(
               fontFamily: 'Inter',
               fontSize: screenWidth * 0.032,
