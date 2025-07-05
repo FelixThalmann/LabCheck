@@ -34,11 +34,11 @@ class SettingsContainerWidget extends StatelessWidget {
             margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
             padding: EdgeInsets.all(screenWidth * 0.04),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(12.0),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -73,11 +73,11 @@ class SettingsContainerWidget extends StatelessWidget {
             margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
             padding: EdgeInsets.all(screenWidth * 0.04),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(12.0),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -112,11 +112,11 @@ class SettingsContainerWidget extends StatelessWidget {
             margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
             padding: EdgeInsets.all(screenWidth * 0.04),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(12.0),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
