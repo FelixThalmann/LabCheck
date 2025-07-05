@@ -82,37 +82,21 @@ export class OccupancyService {
         const maxCapacity = sensor.room.maxCapacity;
         const newCapacity = currentCapacity + capacityChange;
 
-        // 3. Validate new occupancy
+        // 3. Apply bounds checking - no change if it would go out of bounds
         if (newCapacity < 0) {
           this.logger.warn(
             `Attempted to set negative occupancy for room ${sensor.room.name} (ID: ${sensor.room.id}). ` +
-              `Current: ${currentCapacity}, Change: ${capacityChange}. Setting to 0 instead.`,
+              `Current: ${currentCapacity}, Change: ${capacityChange}. Keeping current capacity.`,
           );
-          // Set to 0 instead of negative value
-          await tx.room.update({
-            where: { id: sensor.room.id },
-            data: {
-              capacity: 0,
-              updatedAt: new Date(),
-            },
-          });
-          return { newOccupancy: 0, roomId: sensor.room.id };
+          return { newOccupancy: currentCapacity, roomId: sensor.room.id };
         }
 
         if (newCapacity > maxCapacity) {
           this.logger.warn(
             `Attempted to exceed maximum capacity for room ${sensor.room.name} (ID: ${sensor.room.id}). ` +
-              `New: ${newCapacity}, Max: ${maxCapacity}. Setting to maximum instead.`,
+              `New: ${newCapacity}, Max: ${maxCapacity}. Keeping current capacity.`,
           );
-          // Set to maximum capacity
-          await tx.room.update({
-            where: { id: sensor.room.id },
-            data: {
-              capacity: maxCapacity,
-              updatedAt: new Date(),
-            },
-          });
-          return { newOccupancy: maxCapacity, roomId: sensor.room.id };
+          return { newOccupancy: currentCapacity, roomId: sensor.room.id };
         }
 
         // 4. Normal occupancy update

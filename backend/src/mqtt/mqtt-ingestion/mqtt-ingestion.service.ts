@@ -436,14 +436,24 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
       const entranceDirection = sensor.room?.entranceDirection ?? 'left';
       this.logger.debug(`Room entrance direction: ${entranceDirection}, Passage direction: ${direction}, Current person count: ${personCount}`);
 
-      // Update personCount based on direction
+      // Update personCount based on direction with bounds checking
       let newPersonCount = personCount;
+      const maxCapacity = sensor.room?.maxCapacity ?? 20;
+      
       if (entranceDirection === 'left') {
-        newPersonCount = direction === 'IN' ? personCount + 1 : personCount - 1;
-        this.logger.debug(`Left entrance logic: ${direction} = ${direction === 'IN' ? '+' : '-'}1, New count: ${newPersonCount}`);
+        const calculatedCount = direction === 'IN' ? personCount + 1 : personCount - 1;
+        newPersonCount = Math.max(0, Math.min(calculatedCount, maxCapacity));
+        this.logger.debug(`Left entrance logic: ${direction} = ${direction === 'IN' ? '+' : '-'}1, Calculated: ${calculatedCount}, Bounded: ${newPersonCount}`);
       } else {
-        newPersonCount = direction === 'IN' ? personCount - 1 : personCount + 1;
-        this.logger.debug(`Right entrance logic: ${direction} = ${direction === 'IN' ? '-' : '+'}1, New count: ${newPersonCount}`);
+        const calculatedCount = direction === 'IN' ? personCount - 1 : personCount + 1;
+        newPersonCount = Math.max(0, Math.min(calculatedCount, maxCapacity));
+        this.logger.debug(`Right entrance logic: ${direction} = ${direction === 'IN' ? '-' : '+'}1, Calculated: ${calculatedCount}, Bounded: ${newPersonCount}`);
+      }
+      
+      // Log if bounds were applied
+      if (newPersonCount !== (direction === 'IN' ? personCount + 1 : personCount - 1) && 
+          newPersonCount !== (direction === 'IN' ? personCount - 1 : personCount + 1)) {
+        this.logger.warn(`Person count bounded: ${personCount} → ${newPersonCount} (max: ${maxCapacity}) due to ${direction} event`);
       }
 
       const createdEvent = await this.prismaService.event.create({
