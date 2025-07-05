@@ -67,21 +67,6 @@ export class LabStatusService {
         throw new BadRequestException('Kein Laborraum gefunden.');
       }
 
-      // Check if it is a weekend or holiday
-      const isWeekend = currentTime.getDay() === 0 || currentTime.getDay() === 6;
-      const isHoliday = await this.holidayService.isHoliday(currentTime);
-      if (isWeekend || isHoliday) {
-        this.logger.debug('Laborraum ist geschlossen, da es ein Wochenende oder Feiertag ist');
-        return {
-          isOpen: false,
-          currentOccupancy: 0,
-          maxOccupancy: mainRoom.maxCapacity,
-          color: 'red',
-          currentDate: currentTime.toISOString(),
-          lastUpdated: currentTime.toISOString(),
-        };
-      }
-
       const currentOccupancy = mainRoom.capacity;
       const isOpen = mainRoom.isOpen
       const maxOccupancy: number = mainRoom.maxCapacity;
