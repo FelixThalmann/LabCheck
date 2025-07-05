@@ -1,8 +1,16 @@
+/**
+ * @file MainProgram.cpp
+ * @brief Implementation of the main entrance/exit detection program
+ */
+
 #include "MainProgram.h"
 #include "MQTTConfig.h"
 
 extern MQTTConfig mqtt;
 
+/**
+ * @brief Constructor - Initialize ToF sensors and default values
+ */
 MainProgram::MainProgram() : tofSensor1{TOF1_XSHUT, TOF1_SDA, TOF1_SCL}, tofSensor2{TOF2_XSHUT, TOF2_SDA, TOF2_SCL} {
   programmode = 0;
   sensorStorageIndex = 0;
@@ -16,28 +24,39 @@ MainProgram::MainProgram() : tofSensor1{TOF1_XSHUT, TOF1_SDA, TOF1_SCL}, tofSens
   calibratedDistance1 = 1000;
   calibratedDistance2 = 1000;
   calibratedMax = 900;
-  tofDetectionTolerance = 10; // 10mm tolerance
-  tofTolerancePercentage = 30; // 30% tolerance by default
+  tofDetectionTolerance = 10;
+  tofTolerancePercentage = 30;
   firstTimeSending = true;
 }
 
+/**
+ * @brief Program mode enumeration for state machine
+ */
+
+/**
+ * @brief Program mode enumeration for state machine
+ */
 enum ProgramMode {
-  IDLE = 0,
-  AWAITING_MOTION = 5,
-  AWAITING_DETECTION = 1,
-  ENTRANCE_CONFIRMATION = 2,
-  EXIT_CONFIRMATION = 3,
-  DETECTION_COMPLETION = 4,
-  CALIBRATION = 6
+  IDLE = 0,                    ///< Waiting for door to open
+  AWAITING_DETECTION = 1,      ///< Waiting for ToF sensor detection
+  ENTRANCE_CONFIRMATION = 2,   ///< Confirming entrance detection
+  EXIT_CONFIRMATION = 3,       ///< Confirming exit detection
+  DETECTION_COMPLETION = 4,    ///< Waiting for sensors to clear
+  AWAITING_MOTION = 5,         ///< Waiting for PIR motion detection
+  CALIBRATION = 6              ///< Calibrating sensor baseline distances
 };
 
-void MainProgram::begin(){
-
+/**
+ * @brief Initialize all hardware components and establish connections
+ */
+void MainProgram::begin() {
   Serial.println(F("Initializing Main Program..."));
 
+  // Initialize hardware components
   leds.begin();
   updateLed();
 
+  // Establish WiFi connection
   wifi.begin();
   Serial.print(F("Connecting to WiFi..."));
   while(!isWiFiAvailable()) {
@@ -48,21 +67,21 @@ void MainProgram::begin(){
     }
   }
 
+  // Establish MQTT connection
   mqtt.begin();
   mqtt.setCredentials("user", "password");
   Serial.print(F("Connecting to MQTT Broker..."));
   while(!mqtt.isConnected()) {
-    if (isWiFiAvailable()){
-      if (mqtt.connect("LabCheckESP32")){
+    if (isWiFiAvailable()) {
+      if (mqtt.connect("LabCheckESP32")) {
         Serial.println(F("Connected to MQTT Broker! Proceeding..."));
-      }
-      else {
+      } else {
         Serial.println(F("Failed to connect to MQTT Broker! Retrying..."));
       }
     }
   }
 
-  // Initialize toF sensors
+  // Initialize ToF sensors
   if (!tofSensor1.begin()) {
     Serial.println(F("ToF Sensor 1 initialization failed!"));
   } else {
@@ -75,35 +94,34 @@ void MainProgram::begin(){
   }
   Serial.println(F("ToF sensors initialized with separate I2C buses."));
 
-  // Initialize magnetic sensor
+  // Initialize remaining sensors
   magneticSensor.begin();
-
-  // Initialize speaker
   speaker.begin();
 
-  // Set entrance/exit inversion state from preferences
+  // Load entrance/exit inversion preference
   prefs.begin("lcmain", true);
   invertEntranceExit = prefs.getBool("invertEntranceExit", false);
   prefs.end();
-  
 
+  // Start with calibration
   programmode = ProgramMode::CALIBRATION;
-  
 }
 
-void MainProgram::update(){
-  // Read sensor 1
+/**
+ * @brief Main update loop - handles sensor readings and state machine
+ */
+void MainProgram::update() {
+  // Read current sensor distances
   uint16_t distance1 = tofSensor1.readDistance();
-  // Read sensor 2
   uint16_t distance2 = tofSensor2.readDistance();
 
-  // Print distances for debugging
+  // Debug output for sensor readings
   Serial.print(F("Distance 1: "));
   Serial.print(distance1);
   Serial.print(F(", Distance 2: "));
   Serial.println(distance2);
 
-  // Check and maintain MQTT connection
+  // Maintain MQTT connection
   if (!mqtt.isConnected() && isWiFiAvailable()) {
     Serial.println(F("MQTT disconnected, attempting reconnection..."));
     if (!mqtt.connect("LabCheckESP32")) {
@@ -111,9 +129,10 @@ void MainProgram::update(){
     }
   }
 
-  if (programmode != ProgramMode::IDLE){
-    if(magneticSensor.isActive()){
-      Serial.println(F("Door closed! Idleing..."));
+  // Handle door state changes (except when idle)
+  if (programmode != ProgramMode::IDLE) {
+    if (magneticSensor.isActive()) {
+      Serial.println(F("Door closed! Idling..."));
       if (firstTimeSending) {
         Serial.println(F("First time sending door status, skipping MQTT publish."));
         firstTimeSending = false;
@@ -124,9 +143,11 @@ void MainProgram::update(){
     }
   }
 
-  switch(programmode){
+  // State machine processing
+  switch(programmode) {
 
     case ProgramMode::CALIBRATION: {
+      // Calibrate sensor baseline distances by averaging multiple readings
       static int calibrationCount = 0;
       static uint32_t distance1Sum = 0;
       static uint32_t distance2Sum = 0;
@@ -135,16 +156,18 @@ void MainProgram::update(){
         distance1Sum += distance1;
         distance2Sum += distance2;
         calibrationCount++;
+        
         if (calibrationCount >= 20) {
           calibratedDistance1 = distance1Sum / calibrationCount;
           calibratedDistance2 = distance2Sum / calibrationCount;
           
-          // calc tolerance by taking 30% per default from calibrated distances (their average)
+          // Apply maximum distance limits
           calibratedDistance1 = min(calibratedDistance1, calibratedMax);
           calibratedDistance2 = min(calibratedDistance2, calibratedMax);
+          
+          // Calculate detection tolerance based on average calibrated distance
           tofDetectionTolerance = (calibratedDistance1 + calibratedDistance2) / 2 * (tofTolerancePercentage / 100.0);
           
-          // Print all the variables for debugging
           Serial.print(F("Calibration complete! Calibrated Distance 1: "));
           Serial.print(calibratedDistance1);
           Serial.print(F(", Calibrated Distance 2: "));
@@ -158,8 +181,9 @@ void MainProgram::update(){
       break;
     }
     
-    case ProgramMode::IDLE: // idle if door sensor active
-      if(!magneticSensor.isActive()){
+    case ProgramMode::IDLE:
+      // Wait for door to open
+      if (!magneticSensor.isActive()) {
         Serial.println(F("Door opened!"));
         if (firstTimeSending) {
           Serial.println(F("First time sending door status, skipping MQTT publish."));
@@ -171,37 +195,39 @@ void MainProgram::update(){
       }
       break;
 
-    case ProgramMode::AWAITING_MOTION: // Awaiting motion
-      if(pirSensor.motionDetected()){
+    case ProgramMode::AWAITING_MOTION:
+      // Wait for PIR motion detection
+      if (pirSensor.motionDetected()) {
         Serial.println(F("Motion detected! Awaiting ToF detection..."));
         prepareMode(ProgramMode::AWAITING_DETECTION);
       }
       break;
 
-    case ProgramMode::AWAITING_DETECTION: // Awaiting tof detection
-      if (!pirSensor.motionDetected()){
+    case ProgramMode::AWAITING_DETECTION:
+      // Wait for ToF sensor detection
+      if (!pirSensor.motionDetected()) {
         Serial.print(F("."));
         prepareMode(ProgramMode::AWAITING_MOTION);
         break;
       }
 
-      if(distance1 < calibratedDistance1 - tofDetectionTolerance){
+      if (distance1 < calibratedDistance1 - tofDetectionTolerance) {
         Serial.print(F("Possible entrance detected..."));
         prepareMode(ProgramMode::ENTRANCE_CONFIRMATION);
         break;
       }
 
-      if(distance2 < calibratedDistance2 - tofDetectionTolerance){
+      if (distance2 < calibratedDistance2 - tofDetectionTolerance) {
         Serial.print(F("Possible exit detected..."));
         prepareMode(ProgramMode::EXIT_CONFIRMATION);
         break;
       }
       break;
 
-    // Person entering detection mode
     case ProgramMode::ENTRANCE_CONFIRMATION:
+      // Confirm entrance by waiting for second sensor activation
       sensorTimer += delayTime;
-      if(distance2 < calibratedDistance2 - tofDetectionTolerance){
+      if (distance2 < calibratedDistance2 - tofDetectionTolerance) {
         Serial.print(F("Person entered! Took "));
         Serial.print(sensorTimer);	
         Serial.println(F(" ms to pass!"));
@@ -210,95 +236,94 @@ void MainProgram::update(){
         prepareMode(ProgramMode::DETECTION_COMPLETION);
         break;
       }
-      if (sensorTimer >= 3000){
-        Serial.println(F("Timeout!"));
+      if (sensorTimer >= 3000) {
+        Serial.println(F("Entrance confirmation timeout!"));
         prepareMode(ProgramMode::DETECTION_COMPLETION);
         break;
       }
       break;
 
-    // Person exiting detection mode
     case ProgramMode::EXIT_CONFIRMATION:
+      // Confirm exit by waiting for first sensor activation
       sensorTimer += delayTime;
-      if(distance1 < calibratedDistance1 - tofDetectionTolerance){
-          Serial.print(F("Person exited! Took "));
-          Serial.print(sensorTimer);	
-          Serial.println(F(" ms to pass!"));
-          speaker.playSuccess();
-          publishMQTT("labcheck/esp32/entrance", invertEntranceExit ? "1" : "0");
-          prepareMode(ProgramMode::DETECTION_COMPLETION);
-          break;
-        }
-      if (sensorTimer >= 3000){
-        Serial.println(F("Timeout!"));
+      if (distance1 < calibratedDistance1 - tofDetectionTolerance) {
+        Serial.print(F("Person exited! Took "));
+        Serial.print(sensorTimer);	
+        Serial.println(F(" ms to pass!"));
+        speaker.playSuccess();
+        publishMQTT("labcheck/esp32/entrance", invertEntranceExit ? "1" : "0");
+        prepareMode(ProgramMode::DETECTION_COMPLETION);
+        break;
+      }
+      if (sensorTimer >= 3000) {
+        Serial.println(F("Exit confirmation timeout!"));
         prepareMode(ProgramMode::DETECTION_COMPLETION);
         break;
       }
       break;
 
-    // Awaiting default sensor data mode
     case ProgramMode::DETECTION_COMPLETION:
+      // Wait for sensors to return to baseline (person has passed)
       Serial.print(distance1);
       Serial.print(F(", "));
       Serial.println(distance2);
       
-      if (distance1>(calibratedDistance1-tofDetectionTolerance) && distance2>(calibratedDistance2-tofDetectionTolerance)){
+      if (distance1 > (calibratedDistance1 - tofDetectionTolerance) && 
+          distance2 > (calibratedDistance2 - tofDetectionTolerance)) {
         Serial.println(F("ToF area clear! Returning to awaiting motion..."));
         prepareMode(ProgramMode::AWAITING_MOTION);
       }
       break;
  
     default:
-      Serial.println(F("Idle mode."));
+      Serial.println(F("Unknown program mode - idling."));
       break;
-    }
+  }
 
   updateLed();
   millis += delayTime;
   delay(delayTime);
 }
 
-/* void MainProgram::storeSensorData(int timestamp, int sensorValue){
-  if(sensorStorageIndex < 128){
-    sensorStorage[sensorStorageIndex][0] = timestamp;
-    sensorStorage[sensorStorageIndex][1] = sensorValue;
-    sensorStorageIndex++;
-  } else {
-    Serial.println(F("Sensor storage full!"));
-  }
-} */
-
-bool MainProgram::isWiFiAvailable(){
+/**
+ * @brief Check if WiFi connection is available
+ * @return True if WiFi is connected and has IP address
+ */
+bool MainProgram::isWiFiAvailable() {
   return wifi.getIPAddress().length() > 0;
 }
 
-void MainProgram::prepareMode(int mode){
-  switch(mode){
-    case 0: // idle, waiting for door sensor
+/**
+ * @brief Prepare and transition to a new program mode
+ * @param mode Target program mode to transition to
+ */
+void MainProgram::prepareMode(int mode) {
+  switch(mode) {
+    case 0: // IDLE - waiting for door sensor
       delayTime = 5000;
       programmode = 0;
       break;
-    case 5: // awaiting motion
+    case 5: // AWAITING_MOTION
       activeLed = 0;
       delayTime = 200;
       programmode = 5;
       break;
-    case 1: // awaiting detection
+    case 1: // AWAITING_DETECTION
       activeLed = 1;
       delayTime = 50;
       programmode = 1;
       break;
-    case 2: // entrance detected, awaiting confirmation
+    case 2: // ENTRANCE_CONFIRMATION
       delayTime = 20;
       sensorTimer = 0;
       programmode = 2;
       break;
-    case 3: // exit detected, awaiting confirmation
+    case 3: // EXIT_CONFIRMATION
       delayTime = 20;
       sensorTimer = 0;
       programmode = 3;
       break;
-    case 4: // detection completion
+    case 4: // DETECTION_COMPLETION
       delayTime = 20;
       programmode = 4;
       break;
@@ -308,14 +333,22 @@ void MainProgram::prepareMode(int mode){
   }
 }
 
-void MainProgram::updateLed(){
-  if (activeLed != 0){
+/**
+ * @brief Update LED state based on current program mode
+ */
+void MainProgram::updateLed() {
+  if (activeLed != 0) {
     leds.setGreen(activeLed == 1 ? true : false);
   } else {
     leds.setGreen(false);
   }
 }
 
+/**
+ * @brief Publish message to MQTT broker if connected
+ * @param topic MQTT topic to publish to
+ * @param payload Message payload to send
+ */
 void MainProgram::publishMQTT(const char* topic, const char* payload) {
   if (mqtt.isConnected()) {
     mqtt.publish(topic, payload);
@@ -325,6 +358,10 @@ void MainProgram::publishMQTT(const char* topic, const char* payload) {
   }
 }
 
+/**
+ * @brief Set entrance/exit inversion and save to preferences
+ * @param invert True to invert entrance/exit detection logic
+ */
 void MainProgram::setInvertEntranceExit(bool invert) {
   invertEntranceExit = invert;
   prefs.begin("lcmain", false);

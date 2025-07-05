@@ -1,10 +1,17 @@
+/**
+ * @file MainProgram.h
+ * @brief Main program controller for LabCheck entrance/exit detection system
+ * 
+ * This class manages the complete entrance/exit detection workflow using
+ * PIR sensors, Time-of-Flight sensors, and magnetic door sensors.
+ */
+
 #ifndef MAINPROGRAM_H
 #define MAINPROGRAM_H
 
 #include <Arduino.h>
 #include "PinConfig.h"
 #include "LED.h"
-//#include "Button.h"
 #include "MagneticSensor.h"
 #include "Speaker.h"
 #include "WiFiConfig.h"
@@ -12,22 +19,44 @@
 #include "PIRSensor.h"
 #include "Preferences.h"
 
-class MainProgram{
+/**
+ * @class MainProgram
+ * @brief Main program controller for entrance/exit detection
+ * 
+ * Manages the complete detection workflow:
+ * - Door state monitoring via magnetic sensor
+ * - Motion detection via PIR sensor
+ * - Distance measurement via dual ToF sensors
+ * - Audio feedback via speaker
+ * - MQTT communication for status updates
+ */
+class MainProgram {
 public:
   MainProgram();
-  // Initialize the main program
+  
+  /**
+   * @brief Initialize all hardware components and prepare for operation
+   */
   void begin();
   
-  // Update loop for the main program
+  /**
+   * @brief Main update loop - processes sensor data and state machine
+   */
   void update();
 
-  // Set the entrance/exit inversion state
+  /**
+   * @brief Configure entrance/exit direction inversion
+   * @param invert True to invert entrance/exit detection logic
+   */
   void setInvertEntranceExit(bool invert);
   
-  // Stop the main program
+  /**
+   * @brief Stop the main program (placeholder for future use)
+   */
   void stop();
 
 private:
+  // Hardware components
   LED leds;
   MagneticSensor magneticSensor;
   Speaker speaker;
@@ -37,24 +66,29 @@ private:
   PIRSensor pirSensor;
   Preferences prefs;
 
-  int programmode;
-  int sensorStorage[128][2];
-  int sensorStorageIndex;
-  int millis;
-  int delayTime;
-  int activeLed;
-  bool invertEntranceExit; // true if entrance/exit is inverted
-  int calibratedDistance1;
-  int calibratedDistance2;
-  int calibratedMax; // maximum distance for calibration based on sensor capabilities
-  int tofDetectionTolerance; // tolerance for ToF sensor detection in mm
-  int tofTolerancePercentage; // percentage of tolerance for ToF sensor detection
-  bool firstTimeSending; // prevent sending door status on restart
+  // State machine variables
+  int programmode;                    ///< Current program mode (see ProgramMode enum)
+  int sensorStorageIndex;             ///< Index for sensor data storage (unused)
+  int millis;                         ///< Internal millisecond counter
+  int delayTime;                      ///< Current delay time between updates
+  int activeLed;                      ///< Currently active LED indicator
+  int sensorTimer;                    ///< Timer for sensor confirmation phases
+  
+  // Configuration variables
+  bool invertEntranceExit;            ///< Inverts entrance/exit detection logic
+  int calibratedDistance1;            ///< Calibrated baseline distance for sensor 1
+  int calibratedDistance2;            ///< Calibrated baseline distance for sensor 2
+  int calibratedMax;                  ///< Maximum calibration distance (sensor limit)
+  int tofDetectionTolerance;          ///< Detection tolerance in millimeters
+  int tofTolerancePercentage;         ///< Tolerance percentage for detection
+  bool firstTimeSending;              ///< Prevents door status on first boot
+  
+  // Sensor state tracking
+  bool sensor1Active;                 ///< Sensor 1 detection state
+  bool sensor2Active;                 ///< Sensor 2 detection state
+  int sensorStorage[128][2];          ///< Sensor data storage array (unused)
 
-  bool sensor1Active;
-  bool sensor2Active;
-  int sensorTimer;
-
+  // Private methods
   bool isWiFiAvailable();
   void prepareMode(int mode);
   void updateLed();

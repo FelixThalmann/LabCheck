@@ -1,21 +1,31 @@
+/**
+ * @file PinConfig.h
+ * @brief Pin configuration definitions for LabCheck hardware components
+ * 
+ * Centralizes all GPIO pin assignments for the ESP32-based LabCheck device.
+ * Modify these definitions to match your hardware configuration.
+ */
+
 #ifndef PIN_CONFIG_H
 #define PIN_CONFIG_H
 
-// Pin definitions for various hardware components
-#define MAGNETIC 22    // Magnetic door sensor
+// Sensor pins
+#define MAGNETIC 22         ///< Magnetic door sensor input pin
+#define PIR_SENSOR 19       ///< PIR motion sensor input pin
 
-#define SIGNALLED 18    // Signal output
-#define LEDGREEN 23    // Green LED
+// Output pins
+#define SIGNALLED 18        ///< Signal LED output pin
+#define LEDGREEN 23         ///< Green status LED output pin
+#define SPEAKER 16          ///< Speaker/buzzer output pin
 
-#define SPEAKER 16     // Speaker output
+// ToF Sensor 1 pins (entrance side)
+#define TOF1_SCL 2          ///< ToF sensor 1 I2C clock pin
+#define TOF1_SDA 15         ///< ToF sensor 1 I2C data pin
+#define TOF1_XSHUT 5        ///< ToF sensor 1 shutdown control pin
 
-#define PIR_SENSOR 19   // PIR sensor input
-
-#define TOF1_SCL 2  // TOF sensor I2C SCL pin
-#define TOF1_SDA 15  // TOF sensor I2C SDA pin
-#define TOF1_XSHUT 5  // TOF sensor XSHUT pin
-#define TOF2_SCL 4  // Second TOF sensor I2C SCL pin
-#define TOF2_SDA 0  // Second TOF sensor I2C SDA pin
-#define TOF2_XSHUT 17  // Second TOF sensor XSHUT pin
+// ToF Sensor 2 pins (exit side)
+#define TOF2_SCL 4          ///< ToF sensor 2 I2C clock pin
+#define TOF2_SDA 0          ///< ToF sensor 2 I2C data pin
+#define TOF2_XSHUT 17       ///< ToF sensor 2 shutdown control pin
 
 #endif // PIN_CONFIG_H

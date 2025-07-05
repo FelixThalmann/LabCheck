@@ -1,3 +1,8 @@
+/**
+ * @file LED.cpp
+ * @brief Implementation of LED control functions
+ */
+
 #include "LED.h"
 
 LED::LED() {}
@@ -25,7 +30,7 @@ void LED::testSequence() {
     Serial.print(F("Signal LED..."));
     blinkLED(SIGNALLED);
     
-    Serial.print(F("Green..."));
+    Serial.print(F("Green LED..."));
     blinkLED(LEDGREEN);
 }
 

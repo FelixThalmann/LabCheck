@@ -1,9 +1,20 @@
+/**
+ * @file main.cpp
+ * @brief Main application entry point with test interface
+ * 
+ * Provides a 15-second window for entering test mode, otherwise starts the main program.
+ * Test mode allows individual component testing and configuration.
+ */
+
 #include "main.h"
 
 // MQTT Configuration
 const char* MQTT_CLIENT_ID = "LabCheckESP32";
 const char* MQTT_TOPIC = "labcheck/status";
 
+/**
+ * @brief Setup function - waits for test mode input or starts main program
+ */
 void setup() {
     Serial.begin(115200);
     while(!Serial);
@@ -21,12 +32,15 @@ void setup() {
         }
     }
     
-    // No input received within 10 seconds
+    // No input received - start main program
     Serial.println(F("\nStarting Main Program..."));
     isMainProgramActive = true;
     mainProgram.begin();
 }
 
+/**
+ * @brief Main loop - handles menu input and component updates
+ */
 void loop() {
     // Check for serial input
     if (Serial.available()) {
@@ -42,19 +56,19 @@ void loop() {
         // Process menu options
         switch(option) {
             case '1':
-                Serial.println(F("Testing 'Magnetic door sensor set'."));
+                Serial.println(F("Testing Magnetic door sensor..."));
                 isMagneticActive = true;
                 break;
                 
             case '2':
-                Serial.println(F("Spiele nun Tales Song..."));
+                Serial.println(F("Playing Tales song..."));
                 speaker.playTalesSong();
                 isSongPlaying = true;
                 break;
                 
             case '3':
-                Serial.println(F("WiFi Verbindung"));
-                if (wifi.connect()){
+                Serial.println(F("Testing WiFi connection..."));
+                if (wifi.connect()) {
                     speaker.playSuccess();
                 } else {
                     speaker.playFailure();
@@ -69,41 +83,41 @@ void loop() {
                 while(!Serial.available());
                 ssid = readStringUntilMulti("\r\n\t");
                 while (Serial.available()) {Serial.read();};
-                Serial.println(F(ssid.c_str()));
+                Serial.println(ssid.c_str());
                 Serial.print(F("Input password: "));
                 while(!Serial.available());
                 password = readStringUntilMulti("\r\n\t");
                 while (Serial.available()) {Serial.read();};
                 wifi.setCredentials(ssid, password);
-                Serial.println(F("Setup completed."));
+                Serial.println(F("WiFi setup completed."));
                 Serial.setTimeout(1000);
                 showMenu();
                 break;
                 
             case '5':
-                Serial.println(F("LED Test"));
+                Serial.println(F("Testing LEDs..."));
                 leds.testSequence();
                 showMenu();
                 break;
                 
             case '6':
-                Serial.println(F("Button Test"));
+                Serial.println(F("Button Test (not implemented)"));
                 isButtonTestActive = true;
                 break;
                 
             case '7':
-                Serial.println(F("MQTT Test"));
+                Serial.println(F("Testing MQTT..."));
                 testMQTT();
                 showMenu();
                 break;
 
             case '8':
-                Serial.println(F("PIR Sensor Test"));
+                Serial.println(F("Testing PIR sensor..."));
                 isPIRActive = true;
                 break;
 
             case '9':
-                Serial.println(F("Start Main Program"));
+                Serial.println(F("Starting Main Program..."));
                 isMainProgramActive = true;
                 mainProgram.begin();
                 break;
@@ -135,7 +149,7 @@ void loop() {
                 break;
 
             case 't':
-                Serial.println(F("Testing ToF Sensors"));
+                Serial.println(F("Testing ToF Sensors..."));
                 testToFSensors();
                 showMenu();
                 break;
@@ -159,7 +173,7 @@ void loop() {
                 break;
                 
             default:
-                Serial.println(F("Ungueltiger Input!"));
+                Serial.println(F("Invalid input!"));
                 showMenu();
                 break;
         }
@@ -169,6 +183,9 @@ void loop() {
     mqtt.update();  // Handle MQTT communication
 }
 
+/**
+ * @brief Initialize all hardware components and set up callbacks
+ */
 void setupComponents() {
     leds.begin();
     magneticSensor.begin();
@@ -176,8 +193,6 @@ void setupComponents() {
     speaker.begin();
     wifi.begin();
     mqtt.begin();
-    //tof1.begin();
-    //tof2.begin();
     
     // Setup magnetic sensor callbacks
     magneticSensor.onMagnetDetected([]() {
@@ -202,6 +217,9 @@ void setupComponents() {
     });
 }
 
+/**
+ * @brief Display the test menu options
+ */
 void showMenu() {
     Serial.println(F("\nWhich component should be tested?"));
     Serial.println(F("(1) Magnetic Door Sensor Set"));
@@ -220,6 +238,9 @@ void showMenu() {
     Serial.print(F("Input option: "));
 }
 
+/**
+ * @brief Update all active components based on their flags
+ */
 void updateActiveComponents() {
     if (isMagneticActive) {
         magneticSensor.update();
@@ -235,6 +256,9 @@ void updateActiveComponents() {
     }
 }
 
+/**
+ * @brief Stop all active test components
+ */
 void stopActiveComponents() {
     isMagneticActive = false;
     isPIRActive = false;
@@ -244,6 +268,12 @@ void stopActiveComponents() {
     speaker.stop();
 }
 
+/**
+ * @brief MQTT message callback function
+ * @param topic Topic the message was received on
+ * @param payload Message payload
+ * @param length Length of the payload
+ */
 void mqttCallback(char* topic, uint8_t* payload, unsigned int length) {
     char message[length + 1];
     memcpy(message, payload, length);
@@ -253,12 +283,17 @@ void mqttCallback(char* topic, uint8_t* payload, unsigned int length) {
     Serial.println(message);
 }
 
+/**
+ * @brief Read string from Serial until one of the specified terminators
+ * @param terminators String containing terminator characters
+ * @return The read string without the terminator
+ */
 String readStringUntilMulti(const char* terminators) {
   String result = "";
   while (true) {
     while (!Serial.available()) delay(1);
     char c = Serial.read();
-    // Prüfe, ob das Zeichen einer der Terminatoren ist
+    // Check if character is one of the terminators
     for (const char* t = terminators; *t; ++t) {
       if (c == *t) return result;
     }
@@ -266,6 +301,9 @@ String readStringUntilMulti(const char* terminators) {
   }
 }
 
+/**
+ * @brief Test MQTT connection and messaging
+ */
 void testMQTT() {
     if (!wifi.getIPAddress().length()) {
         Serial.println(F("Please connect to WiFi first"));
@@ -285,6 +323,9 @@ void testMQTT() {
     }
 }
 
+/**
+ * @brief Test both ToF sensors by reading their distances
+ */
 void testToFSensors() {
     Serial.println(F("Testing ToF Sensors..."));
     

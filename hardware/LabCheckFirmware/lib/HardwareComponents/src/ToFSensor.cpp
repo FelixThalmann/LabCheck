@@ -1,28 +1,37 @@
+/**
+ * @file ToFSensor.cpp
+ * @brief Implementation of ToF sensor wrapper class
+ */
+
 #include "ToFSensor.h"
 
 ToFSensor::ToFSensor(uint8_t xshutPin, uint8_t i2cSdaPin, uint8_t i2cSclPin)
     : xshutPin(xshutPin), sdaPin(i2cSdaPin), sclPin(i2cSclPin), initialized(false) {
     // Create a new TwoWire instance for this sensor
-    // Use different bus numbers for different sensors
+    // Use different bus numbers for different sensors to avoid conflicts
     static uint8_t busNumber = 0;
     i2cBus = new TwoWire(busNumber++);
 }
 
 bool ToFSensor::begin() {
+    // Configure shutdown pin and wake sensor
     pinMode(xshutPin, OUTPUT);
-    digitalWrite(xshutPin, HIGH); // Wake up sensor
+    digitalWrite(xshutPin, HIGH);
     delay(10);
     
-    // Initialize I2C bus with specific pins
+    // Initialize I2C bus with dedicated pins
     i2cBus->begin(sdaPin, sclPin);
     
-    // Set the I2C bus for the sensor
+    // Assign I2C bus to sensor
     sensor.setBus(i2cBus);
     
+    // Initialize VL53L0X sensor
     if (!sensor.init()) {
         initialized = false;
         return false;
     }
+    
+    // Configure sensor for continuous ranging
     sensor.setTimeout(500);
     sensor.startContinuous();
     initialized = true;
@@ -42,7 +51,7 @@ void ToFSensor::shutdown() {
 void ToFSensor::wake() {
     digitalWrite(xshutPin, HIGH);
     delay(10);
-    // No need to reinitialize - the sensor keeps its I2C bus assignment
+    // Sensor retains I2C bus assignment after wake
 }
 
 bool ToFSensor::isInitialized() const {
