@@ -9,10 +9,9 @@ import { EventsGateway } from '../../events/events/events.gateway';
 import { OccupancyStatusDto } from '../../door/models/occupancy-status.dto';
 
 /**
- * @class OccupancyService
- * @description Service für die Verwaltung der Raumbelegung basierend auf Sensor-Events.
- * Verwaltet die automatische Aktualisierung der aktuellen Belegung (capacity)
- * in der Room-Tabelle basierend auf eingehenden PassageEvents.
+ * Service for managing room occupancy based on sensor events
+ * Handles automatic updates of current occupancy (capacity)
+ * in the Room table based on incoming passage events
  */
 @Injectable()
 export class OccupancyService {
@@ -20,24 +19,22 @@ export class OccupancyService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly eventsGateway?: EventsGateway, // Optional für WebSocket-Updates
+    private readonly eventsGateway?: EventsGateway, // Optional for WebSocket updates
   ) {}
 
   /**
-   * @method updateRoomOccupancy
-   * @description Aktualisiert die Raumbelegung basierend auf einem Passage-Event.
-   * Verwendet Transaktionen für atomare Operationen und verhindert Race Conditions.
+   * Updates room occupancy based on a passage event
+   * Uses transactions for atomic operations and prevents race conditions
    *
-   * Technischer Ablauf:
-   * 1. Sensor mit zugehörigem Raum laden
-   * 2. Aktuelle Raumbelegung in einer Transaktion lesen und aktualisieren
-   * 3. Validierung: Belegung darf nicht negativ oder über maxCapacity sein
-   * 4. WebSocket-Update an alle verbundenen Clients senden
+   * Technical flow:
+   * 1. Load sensor with associated room
+   * 2. Read and update current room occupancy in a transaction
+   * 3. Validation: occupancy must not be negative or exceed maxCapacity
+   * 4. Send WebSocket update to all connected clients
    *
-   * @param {string} sensorId - Die Datenbank-ID des Sensors
-   * @param {PassageDirection} direction - Die Richtung des Passage-Events (IN oder OUT)
-   * @param {Date} eventTimestamp - Zeitstempel des Events für Logging
-   * @returns {Promise<{ newOccupancy: number; roomId: string } | null>} Neue Belegung und Raum-ID oder null bei Fehlern
+   * @param sensorId - The database ID of the sensor
+   * @param direction - The direction of the passage event (IN or OUT)
+   * @returns Promise with new occupancy and room ID or null on errors
    */
   async updateRoomOccupancy(
     sensorId: string,
@@ -48,9 +45,9 @@ export class OccupancyService {
     );
 
     try {
-      // Verwende eine Prisma-Transaktion für atomare Operationen
+      // Use a Prisma transaction for atomic operations
       const result = await this.prisma.$transaction(async (tx) => {
-        // 1. Sensor mit zugehörigem Raum laden
+        // 1. Load sensor with associated room
         const sensor = await tx.sensor.findUnique({
           where: { id: sensorId },
           include: { room: true },
@@ -68,19 +65,30 @@ export class OccupancyService {
           return null;
         }
 
-        // 2. Aktuelle Raumbelegung berechnen
-        const capacityChange = direction === 'IN' ? 1 : -1;
+        // 2. Calculate current room occupancy based on entrance direction
+        const entranceDirection = sensor.room.entranceDirection ?? 'left';
+        this.logger.debug(`Room entrance direction: ${entranceDirection}, Passage direction: ${direction}, Current capacity: ${sensor.room.capacity}`);
+        
+        let capacityChange: number;
+        if (entranceDirection === 'left') {
+          capacityChange = direction === 'IN' ? 1 : -1;
+          this.logger.debug(`Left entrance logic: ${direction} = ${direction === 'IN' ? '+' : '-'}1`);
+        } else {
+          capacityChange = direction === 'IN' ? -1 : 1;
+          this.logger.debug(`Right entrance logic: ${direction} = ${direction === 'IN' ? '-' : '+'}1`);
+        }
+        
         const currentCapacity = sensor.room.capacity;
         const maxCapacity = sensor.room.maxCapacity;
         const newCapacity = currentCapacity + capacityChange;
 
-        // 3. Validierung der neuen Belegung
+        // 3. Validate new occupancy
         if (newCapacity < 0) {
           this.logger.warn(
             `Attempted to set negative occupancy for room ${sensor.room.name} (ID: ${sensor.room.id}). ` +
               `Current: ${currentCapacity}, Change: ${capacityChange}. Setting to 0 instead.`,
           );
-          // Setze auf 0 statt negativen Wert
+          // Set to 0 instead of negative value
           await tx.room.update({
             where: { id: sensor.room.id },
             data: {
@@ -96,7 +104,7 @@ export class OccupancyService {
             `Attempted to exceed maximum capacity for room ${sensor.room.name} (ID: ${sensor.room.id}). ` +
               `New: ${newCapacity}, Max: ${maxCapacity}. Setting to maximum instead.`,
           );
-          // Setze auf maximale Kapazität
+          // Set to maximum capacity
           await tx.room.update({
             where: { id: sensor.room.id },
             data: {
@@ -107,7 +115,7 @@ export class OccupancyService {
           return { newOccupancy: maxCapacity, roomId: sensor.room.id };
         }
 
-        // 4. Normale Aktualisierung der Belegung
+        // 4. Normal occupancy update
         await tx.room.update({
           where: { id: sensor.room.id },
           data: {
@@ -118,13 +126,13 @@ export class OccupancyService {
 
         this.logger.log(
           `Successfully updated occupancy for room ${sensor.room.name} (ID: ${sensor.room.id}): ` +
-            `${currentCapacity} → ${newCapacity} (${direction === 'IN' ? '+1' : '-1'})`,
+            `${currentCapacity} → ${newCapacity} (${direction === 'IN' ? '+1' : '-1'}) [entrance: ${entranceDirection}]`,
         );
 
         return { newOccupancy: newCapacity, roomId: sensor.room.id };
       });
 
-      // 5. WebSocket-Update senden (außerhalb der Transaktion)
+      // 5. Send WebSocket update (outside transaction)
       if (result && this.eventsGateway) {
         await this.sendOccupancyUpdate(result.roomId, result.newOccupancy);
       }

@@ -22,90 +22,68 @@ const DYNAMIC_TOPIC_PATTERNS = {
 };
 
 /**
- * @class MqttIngestionService
- * @description Service responsible for connecting to an MQTT broker, subscribing to topics,
+ * Service responsible for connecting to an MQTT broker, subscribing to topics,
  * ingesting messages, validating them, processing them, and storing relevant data.
  * It also forwards events to other parts of the application, like WebSockets.
  * Implements NestJS lifecycle hooks for initialization and destruction.
  */
 @Injectable()
 export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
-  /**
-   * @private
-   * @readonly
-   * @type {Logger}
-   * @description Logger instance for this service.
-   */
   private readonly logger = new Logger(MqttIngestionService.name);
-  /**
-   * @private
-   * @type {MqttClient}
-   * @description The MQTT client instance used to connect to the broker.
-   */
   private client: MqttClient;
 
-  /**
-   * @constructor
-   * @param {ConfigService} configService - Service for accessing configuration variables.
-   * @param {PrismaService} prismaService - Service for database interactions.
-   * @param {EventsGateway} eventsGateway - Gateway for sending real-time updates via WebSockets.
-   * @param {OccupancyService} occupancyService - Service for room occupancy management.
-   * @param {RoomManagementService} roomManagementService - Service for automatic room assignment.
-   */
   constructor(
     private readonly configService: ConfigService,
     private readonly prismaService: PrismaService,
-    private readonly eventsGateway: EventsGateway, // Injected
-    private readonly occupancyService: OccupancyService, // Injected for room occupancy management
-    private readonly roomManagementService: RoomManagementService, // Injected for automatic room assignment
+    private readonly eventsGateway: EventsGateway,
+    private readonly occupancyService: OccupancyService,
+    private readonly roomManagementService: RoomManagementService,
   ) {}
 
   /**
-   * @method onModuleInit
-   * @description NestJS lifecycle hook. Called once the host module has been initialized.
+   * NestJS lifecycle hook. Called once the host module has been initialized.
    * Initializes the MQTT client, connects to the broker, and subscribes to relevant topics.
    * Sets up event handlers for 'connect', 'message', 'error', and 'close'.
-   * @returns {void}
    */
   onModuleInit(): void {
-    // Hole die Broker-URL und baue die MQTT-Options zusammen (inkl. zufälliger Client-ID)
+    // Get broker URL and build MQTT options (including random client ID)
     const brokerUrl = this.configService.get<string>('MQTT_BROKER_URL');
     const mqttOptions: IClientOptions = {
       clientId: `nest-mqtt-ingestion-client-${Math.random().toString(16).substring(2, 8)}`,
-      // Weitere Standardoptionen bei Bedarf:
+      // Additional standard options if needed:
       // keepalive: 60,
-      // reconnectPeriod: 1000, // Millisekunden bis zum nächsten Verbindungsversuch
-      // connectTimeout: 30 * 1000, // Millisekunden
-      // clean: true, // Bei false werden Subscriptions und Offline-Nachrichten (QoS > 0) beibehalten
+      // reconnectPeriod: 1000, // milliseconds until next connection attempt
+      // connectTimeout: 30 * 1000, // milliseconds
+      // clean: true, // if false, subscriptions and offline messages (QoS > 0) are retained
     };
     const username = this.configService.get<string>('MQTT_USERNAME');
     const password = this.configService.get<string>('MQTT_PASSWORD');
 
-    // Setze Username/Passwort, falls vorhanden
+    // Set username/password if available
     if (username) mqttOptions.username = username;
     if (password) mqttOptions.password = password;
 
-    // Falls keine Broker-URL konfiguriert ist, beende Initialisierung
+    // If no broker URL is configured, end initialization
     if (!brokerUrl) {
       this.logger.error('MQTT_BROKER_URL is not defined. MQTT ingestion service will not start.');
       return;
     }
 
     this.logger.log(`Attempting to connect to MQTT broker at ${brokerUrl} with client ID ${mqttOptions.clientId}`);
-    // Verbindungsaufbau zum MQTT-Broker
+    // Connect to MQTT broker
     this.client = mqtt.connect(brokerUrl, mqttOptions);
    
 
-    // Event-Handler: Verbindung erfolgreich aufgebaut
+    // Event handler: Connection successfully established
     this.client.on('connect', () => {
       this.logger.log(`Successfully connected to MQTT broker at ${brokerUrl}`);
-      // Definiere die zu abonnierenden Topics (mit Beschreibung)
+      // Define topics to subscribe to (with description)
       const topicsToSubscribe = [
         { name: DYNAMIC_TOPIC_PATTERNS.DOOR, description: 'Door sensor events with ESP32 ID' },
         { name: DYNAMIC_TOPIC_PATTERNS.ENTRANCE, description: 'Entrance sensor events with ESP32 ID' },
       ];
 
-      // Abonniere alle Topics aus obiger Liste
+      // Subscribe to all topics from the above list
       topicsToSubscribe.forEach(topicInfo => {
         this.client.subscribe(topicInfo.name, (err) => {
           if (err) {
@@ -118,7 +96,7 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
     });
 
     
-    // Event-Handler: Nachricht empfangen
+    // Event handler: Message received
     this.client.on('message', async (topic: string, payload: Buffer) => {
       const messageContent = payload.toString();
       this.logger.debug(`Received raw message on topic '${topic}': "${messageContent}"`);
@@ -157,32 +135,30 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
       this.logger.warn(`Message received on unhandled topic: '${topic}'. Message: "${messageContent}". Message ignored.`);
     });
 
-    // Fehler-Handler für den MQTT-Client
+    // Error handler for MQTT client
     this.client.on('error', (error: Error) => {
       this.logger.error(`MQTT client error: ${error.message}`, error.stack);
     });
 
-    // Reconnect-Handler
+    // Reconnect handler
     this.client.on('reconnect', () => {
       this.logger.log('MQTT client is attempting to reconnect...');
     });
 
-    // Offline-Handler
+    // Offline handler
     this.client.on('offline', () => {
       this.logger.warn('MQTT client went offline.');
     });
 
-    // Verbindungsabbruch-Handler
+    // Connection close handler
     this.client.on('close', () => {
-      this.logger.log('MQTT client disconnected.'); // Reconnect-Logik wird meist von mqtt.js selbst übernommen
+      this.logger.log('MQTT client disconnected.'); // Reconnect logic is usually handled by mqtt.js itself
     });
   }
 
   /**
-   * @method onModuleDestroy
-   * @description NestJS lifecycle hook. Called once the host module will be destroyed.
+   * NestJS lifecycle hook. Called once the host module will be destroyed.
    * Closes the MQTT client connection if it exists.
-   * @returns {void}
    */
   onModuleDestroy(): void {
     if (this.client) {
@@ -458,13 +434,16 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
 
       // Get entrance direction
       const entranceDirection = sensor.room?.entranceDirection ?? 'left';
+      this.logger.debug(`Room entrance direction: ${entranceDirection}, Passage direction: ${direction}, Current person count: ${personCount}`);
 
       // Update personCount based on direction
       let newPersonCount = personCount;
       if (entranceDirection === 'left') {
         newPersonCount = direction === 'IN' ? personCount + 1 : personCount - 1;
+        this.logger.debug(`Left entrance logic: ${direction} = ${direction === 'IN' ? '+' : '-'}1, New count: ${newPersonCount}`);
       } else {
         newPersonCount = direction === 'IN' ? personCount - 1 : personCount + 1;
+        this.logger.debug(`Right entrance logic: ${direction} = ${direction === 'IN' ? '-' : '+'}1, New count: ${newPersonCount}`);
       }
 
       const createdEvent = await this.prismaService.event.create({
