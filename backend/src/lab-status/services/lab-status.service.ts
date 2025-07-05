@@ -11,6 +11,7 @@ import {
 } from '../dto';
 import { PrismaService } from '../../prisma.service';
 import { EventsGateway } from '../../events/events/events.gateway';
+import { DemoDateService } from '../../core/services/demo-date.service';
 
 /**
  * @class LabStatusService
@@ -27,6 +28,7 @@ export class LabStatusService {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => EventsGateway))
     private readonly eventsGateway: EventsGateway,
+    private readonly demoDateService: DemoDateService,
   ) {}
 
   /**
@@ -54,7 +56,7 @@ export class LabStatusService {
   async getCombinedLabStatus(): Promise<LabStatusResponseDto> {
     this.logger.debug('Sammle kombinierten Laborstatus (Kapazität direkt aus Room-Tabelle)');
 
-    const currentTime = new Date();
+    const currentTime = this.demoDateService.getCurrentDate();
 
     try {
       // Kapazität direkt aus Room-Tabelle holen
@@ -137,7 +139,7 @@ export class LabStatusService {
 
       return { 
         capacity: mainRoom.maxCapacity, 
-        lastUpdated: new Date().toISOString() 
+        lastUpdated: this.demoDateService.getCurrentTimestamp() 
       };
     } catch (error) {
       this.logger.error('Fehler beim Abrufen der maxCapacity des Labors', error.stack);

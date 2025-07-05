@@ -8,6 +8,37 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+
+  // Demo-Modus Konfiguration und Logging
+  const isDemoMode = configService.get<boolean>('DEMO_MODE', false);
+  
+  if (isDemoMode) {
+    const demoDay = configService.get<string>('DEMO_DAY');
+    if (demoDay) {
+      const demoDate = new Date(demoDay);
+      if (!isNaN(demoDate.getTime())) {
+        const currentDate = new Date();
+        const demoDateWithCurrentTime = new Date(demoDate);
+        demoDateWithCurrentTime.setHours(currentDate.getHours(), currentDate.getMinutes(), currentDate.getSeconds(), currentDate.getMilliseconds());
+        
+        console.log('========================================');
+        console.log('LABCHECK DEMO MODE ACTIVATED');
+        console.log(`Demo Date: ${demoDateWithCurrentTime.toISOString().split('T')[0]}`);
+        console.log(`Demo Timestamp: ${demoDateWithCurrentTime.toISOString()}`);
+        console.log('All services will use this date instead of current date');
+        console.log('========================================');
+      } else {
+        console.warn(`⚠️  Invalid DEMO_DAY format: ${demoDay}, falling back to current date`);
+        console.log('📅 LabCheck running in normal mode (current date)');
+      }
+    } else {
+      console.warn('⚠️  DEMO_MODE is true but DEMO_DAY is not set, falling back to current date');
+      console.log('📅 LabCheck running in normal mode (current date)');
+    }
+  } else {
+    console.log('📅 LabCheck running in normal mode (current date)');
+  }
 
   // MQTT Microservice Konfiguration
   const mqttBrokerUrl = app
@@ -105,7 +136,6 @@ async function bootstrap() {
     }),
   );
 
-  const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') || 3001;
 
   await app.startAllMicroservices(); // Startet alle Microservices (inkl. MQTT)

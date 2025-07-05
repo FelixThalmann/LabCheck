@@ -66,6 +66,8 @@ services:
      - PORT=${PORT_BACKEND}
      - STATIC_API_KEY=${STATIC_API_KEY}
      - PREDICTION_SERVICE_URL=http://prediction:${PORT_PREDICTION}
+     - DEMO_MODE=${DEMO_MODE}
+     - DEMO_DAY=${DEMO_DAY}
    ports:
      - "${PORT_BACKEND}:${PORT_BACKEND}"
    depends_on:

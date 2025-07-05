@@ -15,7 +15,7 @@ export class SetLabCapacityDto {
   })
   @IsInt()
   @Min(1)
-  @Max(1000)
+  @Max(100)
   capacity: number;
 
   @ApiProperty({

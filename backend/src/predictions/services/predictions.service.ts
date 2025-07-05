@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
+import { DemoDateService } from '../../core/services/demo-date.service';
 import { PredictionCalculationService } from './prediction-calculation.service';
 import { PredictionApiService } from './prediction-api.service';
 import { HolidayService } from './holiday.service';
@@ -25,6 +26,7 @@ export class PredictionsService {
     private readonly prisma: PrismaService, 
     private readonly predictionApiService: PredictionApiService,
     private readonly holidayService: HolidayService,
+    private readonly demoDateService: DemoDateService,
   ) {}
 
   /**
@@ -41,7 +43,7 @@ export class PredictionsService {
     );
 
     try {
-      const date = dateString ? new Date(dateString) : new Date();
+      const date = dateString ? new Date(dateString) : this.demoDateService.getCurrentDate();
       if (isNaN(date.getTime())) {
         throw new Error('Invalid date provided');
       }
@@ -60,7 +62,7 @@ export class PredictionsService {
             time,
             color: 'red',
           })),
-          lastUpdated: new Date().toISOString(),
+          lastUpdated: this.demoDateService.getCurrentTimestamp(),
         };
       }
 
@@ -79,7 +81,7 @@ export class PredictionsService {
             time: p.time,
             color: p.color,
           })),
-          lastUpdated: new Date().toISOString(),
+          lastUpdated: this.demoDateService.getCurrentTimestamp(),
         };
       }
 
@@ -95,7 +97,7 @@ export class PredictionsService {
           time: p.time,
           color: p.color,
         })),
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: this.demoDateService.getCurrentTimestamp(),
       };
     } catch (error) {
       this.logger.error('Error fetching ML day predictions', error.stack);
@@ -149,7 +151,7 @@ export class PredictionsService {
             color: p.color,
             date: p.weekStart.toISOString().split('T')[0],
           })),
-          lastUpdated: new Date().toISOString(),
+          lastUpdated: this.demoDateService.getCurrentTimestamp(),
         };
       }
 
@@ -168,7 +170,7 @@ export class PredictionsService {
       return {
         currentWeek: currentWeekPredictions,
         nextWeek: nextWeekPredictions,
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: this.demoDateService.getCurrentTimestamp(),
       };
       
     } catch (error) {
@@ -201,7 +203,7 @@ export class PredictionsService {
         predictionTimestamp: mlResponse.prediction_for_timestamp,
         color,
         lastTrainedAt: mlResponse.last_trained_at,
-        responseTimestamp: new Date().toISOString(),
+        responseTimestamp: this.demoDateService.getCurrentTimestamp(),
       };
     } catch (error) {
       this.logger.error(
@@ -276,7 +278,7 @@ export class PredictionsService {
    * @description Berechnet Start- und Enddatum der aktuellen Woche (Montag-Freitag)
    */
   private getCurrentWeekRange(): { start: Date; end: Date } {
-    const now = new Date();
+    const now = this.demoDateService.getCurrentDate();
     const currentWeekStart = this.getWeekStart(now);
     const currentWeekEnd = new Date(currentWeekStart);
     currentWeekEnd.setDate(currentWeekStart.getDate() + 4); // Freitag
