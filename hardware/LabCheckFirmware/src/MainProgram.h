@@ -81,7 +81,6 @@ private:
   int calibratedMax;                  ///< Maximum calibration distance (sensor limit)
   int tofDetectionTolerance;          ///< Detection tolerance in millimeters
   int tofTolerancePercentage;         ///< Tolerance percentage for detection
-  bool firstTimeSending;              ///< Prevents door status on first boot
   
   // Sensor state tracking
   bool sensor1Active;                 ///< Sensor 1 detection state

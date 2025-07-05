@@ -26,7 +26,6 @@ MainProgram::MainProgram() : tofSensor1{TOF1_XSHUT, TOF1_SDA, TOF1_SCL}, tofSens
   calibratedMax = 900;
   tofDetectionTolerance = 10;
   tofTolerancePercentage = 30;
-  firstTimeSending = true;
 }
 
 /**
@@ -133,12 +132,7 @@ void MainProgram::update() {
   if (programmode != ProgramMode::IDLE) {
     if (magneticSensor.isActive()) {
       Serial.println(F("Door closed! Idling..."));
-      if (firstTimeSending) {
-        Serial.println(F("First time sending door status, skipping MQTT publish."));
-        firstTimeSending = false;
-      } else {
-        publishMQTT("labcheck/esp32/door", "0");
-      }
+      publishMQTT("labcheck/esp32/door", "0");
       prepareMode(ProgramMode::IDLE);
     }
   }
@@ -185,12 +179,7 @@ void MainProgram::update() {
       // Wait for door to open
       if (!magneticSensor.isActive()) {
         Serial.println(F("Door opened!"));
-        if (firstTimeSending) {
-          Serial.println(F("First time sending door status, skipping MQTT publish."));
-          firstTimeSending = false;
-        } else {
-          publishMQTT("labcheck/esp32/door", "1");
-        }
+        publishMQTT("labcheck/esp32/door", "1");
         prepareMode(ProgramMode::AWAITING_MOTION);
       }
       break;
@@ -300,6 +289,7 @@ bool MainProgram::isWiFiAvailable() {
 void MainProgram::prepareMode(int mode) {
   switch(mode) {
     case 0: // IDLE - waiting for door sensor
+      activeLed = 0;
       delayTime = 5000;
       programmode = 0;
       break;
