@@ -60,12 +60,6 @@ void loop() {
                 isMagneticActive = true;
                 break;
                 
-            case '2':
-                Serial.println(F("Playing Tales song..."));
-                speaker.playTalesSong();
-                isSongPlaying = true;
-                break;
-                
             case '3':
                 Serial.println(F("Testing WiFi connection..."));
                 if (wifi.connect()) {
@@ -98,11 +92,6 @@ void loop() {
                 Serial.println(F("Testing LEDs..."));
                 leds.testSequence();
                 showMenu();
-                break;
-                
-            case '6':
-                Serial.println(F("Button Test (not implemented)"));
-                isButtonTestActive = true;
                 break;
                 
             case '7':
@@ -223,12 +212,10 @@ void setupComponents() {
 void showMenu() {
     Serial.println(F("\nWhich component should be tested?"));
     Serial.println(F("(1) Magnetic Door Sensor Set"));
-    Serial.println(F("(2) Secret Song"));
     Serial.println(F("(3) WiFi Test: Connect and print IP address"));
     Serial.println(F("(4) WiFi Setup: Set SSID and Password"));
     Serial.println(F("(m) MQTT Setup: Set Broker and Port"));
     Serial.println(F("(5) Test LEDs"));
-    Serial.println(F("(6) Test Buttons"));
     Serial.println(F("(7) Test MQTT Connection"));
     Serial.println(F("(8) Test PIR Sensor"));
     Serial.println(F("(t) Test ToF Sensors"));
