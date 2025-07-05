@@ -9,8 +9,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      # - "5432:5432" # TODO: Production: Remove this to prohibit access to the outside world
-      - "6718:5432" # TODO: Development: Use this port to allow access to the outside world by port 6718
+      - "5432:5432" # TODO: Production: Remove this to prohibit access to the outside world
+      # - "6718:5432" # TODO: Development: Use this port to allow access to the outside world by port 6718
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     restart: unless-stopped

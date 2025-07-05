@@ -204,10 +204,10 @@ export class LabStatusService {
         const currentOccupancy = mainRoom.capacity; // Aktuelle Belegung
         
         // Hole aktuellen Türstatus
-        const latestDoorEvent = await this.prisma.doorEvent.findFirst({
-          orderBy: { eventTimestamp: 'desc' },
+        const latestDoorEvent = await this.prisma.event.findFirst({
+          orderBy: { timestamp: 'desc' },
         });
-        const isOpen = latestDoorEvent?.doorIsOpen ?? true;
+        const isOpen = latestDoorEvent?.isDoorOpen ?? true;
 
         // Sende WebSocket-Event mit neuer Kapazität
         await this.eventsGateway.sendCapacityUpdate(

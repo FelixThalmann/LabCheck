@@ -1,6 +1,7 @@
 import os
 import joblib
 import pandas as pd
+import numpy as np
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Depends, Body, Header
 from pydantic import BaseModel
@@ -194,17 +195,20 @@ def predict(request: PredictionRequest, api_key: str = Depends(verify_api_key)):
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid timestamp format. Please use ISO format (YYYY-MM-DDTHH:MM:SS).")
 
-    # 1. Create time-based features from the target date (only time features)
+    # 1. Create time-based features from the target date
+    hour = prediction_date.hour
+    
     features = {
-        'hour': prediction_date.hour,
-        'minute': prediction_date.minute,
+        'hour_sin': np.sin(2 * np.pi * hour / 24),
+        'hour_cos': np.cos(2 * np.pi * hour / 24),
         'day_of_week': prediction_date.weekday(),
         'is_weekend': int(prediction_date.weekday() >= 5),
+        'is_business_hours': int((hour >= 8) & (hour < 18)),
     }
 
     # 2. Convert features to a pandas DataFrame (used for both models)
     # IMPORTANT: The column order must exactly match that used during training!
-    feature_order = ['hour', 'minute', 'day_of_week', 'is_weekend']
+    feature_order = ['hour_sin', 'hour_cos', 'day_of_week', 'is_weekend', 'is_business_hours']
     df_predict = pd.DataFrame([features], columns=feature_order)
 
     # 3. Make predictions with BOTH models

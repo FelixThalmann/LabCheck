@@ -2,8 +2,8 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-function generateOccupancyEvents(startDate: Date, days: number, intervalHours: number) {
-  const events: { timestamp: Date; personCount: number; isDoorOpen: boolean }[] = [];
+function generateOccupancyEvents(startDate: Date, days: number, intervalHours: number, sensorId: string, roomId: string) {
+  const events: { timestamp: Date; personCount: number; isDoorOpen: boolean; eventType: any; sensorId: string; roomId: string }[] = [];
   for (let day = 0; day < days; day++) {
     for (let hour = 0; hour < 24; hour += intervalHours) {
       const currentDate = new Date(startDate);
@@ -47,6 +47,9 @@ function generateOccupancyEvents(startDate: Date, days: number, intervalHours: n
         timestamp: currentDate,
         personCount: personCount,
         isDoorOpen: isDoorOpen,
+        eventType: 'DOOR_EVENT', // Hardcoded for test data
+        sensorId: sensorId,
+        roomId: roomId,
       });
     }
   }
@@ -55,8 +58,9 @@ function generateOccupancyEvents(startDate: Date, days: number, intervalHours: n
 
 async function main() {
   // Clear database
-  await prisma.occupancyEvent.deleteMany();
+  await prisma.event.deleteMany();
   await prisma.room.deleteMany();
+  await prisma.sensor.deleteMany();
 
   // Create room
   const room = await prisma.room.create({
@@ -69,12 +73,22 @@ async function main() {
     },
   });
 
+  // Create sensor
+  const sensor = await prisma.sensor.create({
+    data: {
+      esp32Id: '1',
+      roomId: room.id,
+      sensorType: 'multi',
+      isActive: true,
+    },
+  });
+
   // Trainingsdata for 3 weeks (Startdate z.B. today)
   const startDate = new Date('2025-04-01T00:00:00Z');
-  const occupancyEvents = generateOccupancyEvents(startDate, 56, 2); // 8 Weeks = 56 Days, every 2 hours
+  const occupancyEvents = generateOccupancyEvents(startDate, 56, 2, sensor.id, room.id); // 8 Weeks = 56 Days, every 2 hours
 
-  // Create OccupancyEvents
-  await prisma.occupancyEvent.createMany({
+  // Create Events
+  await prisma.event.createMany({
     data: occupancyEvents,
   });
 

@@ -9,7 +9,7 @@ import {
   OnGatewayInit,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { DoorEvent } from '@prisma/client';
+import { Event } from '@prisma/client';
 import { OccupancyStatusDto } from 'src/door/models';
 import { LabStatusService } from '../../lab-status/services/lab-status.service';
 
@@ -124,17 +124,17 @@ export class EventsGateway
    * @method sendDoorStatusUpdate
    * @description Broadcasts a door status update to all connected clients using LabStatusService.
    * Uses centralized business logic for consistent data across REST API and WebSocket updates.
-   * @param {DoorEvent} doorEvent - The door event data to send.
+   * @param {Event} event - The door event data to send.
    */
-  public async sendDoorStatusUpdate(doorEvent: DoorEvent): Promise<void> {
-    this.logger.log('Sending door status update:', doorEvent);
+    public async sendDoorStatusUpdate(event: Event): Promise<void> {
+    this.logger.log('Sending door status update:', event);
     
     try {
       // Get current lab status from centralized service (Single Source of Truth)
       const labStatus = await this.labStatusService.getCombinedLabStatus();
       
       // Override door status with the actual event status
-      const isOpen = doorEvent.doorIsOpen;
+      const isOpen = event.isDoorOpen;
       
       // Determine color based on door status and occupancy using consistent logic
       let color = labStatus.color;
@@ -149,13 +149,13 @@ export class EventsGateway
         currentOccupancy: labStatus.currentOccupancy,
         maxOccupancy: labStatus.maxOccupancy,
         color,
-        currentDate: doorEvent.eventTimestamp,
-        lastUpdated: doorEvent.eventTimestamp,
-        sensorId: doorEvent.sensorId,
-        eventId: doorEvent.id,
+        currentDate: event.timestamp,
+        lastUpdated: event.timestamp,
+        sensorId: event.sensorId,
+        eventId: event.id,
       });
     } catch (error) {
-      this.logger.error(`Failed to send door status update for event ${doorEvent.id}:`, error);
+      this.logger.error(`Failed to send door status update for event ${event.id}:`, error);
     }
   }
 

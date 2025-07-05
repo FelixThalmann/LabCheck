@@ -5,7 +5,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
-import { PassageDirection } from '@prisma/client';
 import { EventsGateway } from '../../events/events/events.gateway';
 import { OccupancyStatusDto } from '../../door/models/occupancy-status.dto';
 
@@ -42,7 +41,7 @@ export class OccupancyService {
    */
   async updateRoomOccupancy(
     sensorId: string,
-    direction: PassageDirection,
+    direction: string,
   ): Promise<{ newOccupancy: number; roomId: string } | null> {
     this.logger.verbose(
       `Updating room occupancy for sensor ${sensorId}, direction: ${direction}`,
@@ -70,7 +69,7 @@ export class OccupancyService {
         }
 
         // 2. Aktuelle Raumbelegung berechnen
-        const capacityChange = direction === PassageDirection.IN ? 1 : -1;
+        const capacityChange = direction === 'IN' ? 1 : -1;
         const currentCapacity = sensor.room.capacity;
         const maxCapacity = sensor.room.maxCapacity;
         const newCapacity = currentCapacity + capacityChange;
@@ -119,7 +118,7 @@ export class OccupancyService {
 
         this.logger.log(
           `Successfully updated occupancy for room ${sensor.room.name} (ID: ${sensor.room.id}): ` +
-            `${currentCapacity} → ${newCapacity} (${direction === PassageDirection.IN ? '+1' : '-1'})`,
+            `${currentCapacity} → ${newCapacity} (${direction === 'IN' ? '+1' : '-1'})`,
         );
 
         return { newOccupancy: newCapacity, roomId: sensor.room.id };

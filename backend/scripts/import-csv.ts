@@ -29,6 +29,9 @@ interface OccupancyEvent {
   timestamp: Date;
   personCount: number;
   isDoorOpen: boolean;
+  eventType: any;
+  sensorId: string;
+  roomId: string;
 }
 
 /**
@@ -176,6 +179,9 @@ async function importCsvTrainingData(
           timestamp,
           personCount: row.occupancy,
           isDoorOpen: row.door_is_open === 1,
+          eventType: 'DOOR_EVENT',
+          sensorId: '1',
+          roomId: targetRoom.id,
         });
       } catch (error) {
         console.warn(`⚠️  Error processing row:`, row, error);
@@ -185,8 +191,7 @@ async function importCsvTrainingData(
 
     // Insert batch
     if (batchData.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      await prisma.occupancyEvent.createMany({
+      await prisma.event.createMany({
         data: batchData,
         skipDuplicates: true,
       });
@@ -207,8 +212,7 @@ async function importCsvTrainingData(
   console.log(`   CSV file: ${csvFilePath}`);
 
   // Show sample imported data
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  const sampleData = await prisma.occupancyEvent.findMany({
+  const sampleData = await prisma.event.findMany({
     orderBy: { timestamp: 'asc' },
     take: 3,
   });

@@ -8,12 +8,10 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma.service';
 import * as mqtt from 'mqtt';
 import { MqttClient, IClientOptions } from 'mqtt';
-import { MqttDoorDataDto, MqttPassageDataDto, MqttMotionDataDto } from '../dto';
 import { plainToClass } from 'class-transformer';
 import { validate, ValidationError } from 'class-validator';
 import { EventsGateway } from '../../events/events/events.gateway';
-
-import { Sensor } from '@prisma/client';
+import { EventType, Sensor, Event } from '@prisma/client';
 import { OccupancyService } from '../../occupancy/services/occupancy.service';
 import { RoomManagementService } from '../../occupancy/services/room-management.service';
 
@@ -351,11 +349,22 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
     try {
       // 1. Speichere das DoorEvent in der Datenbank
       this.logger.verbose(`Attempting to store DoorEvent for sensor '${sensor.esp32Id}' (DB ID: ${sensor.id}), isOpen: ${isOpen}.`);
-      const createdEvent = await this.prismaService.doorEvent.create({
+      
+      // Get last event for this sensor to get the personCount
+      const lastEvent = await this.prismaService.event.findFirst({
+        where: { sensorId: sensor.id },
+        orderBy: { timestamp: 'desc' },
+      });
+      const personCount = lastEvent?.personCount ?? 0;
+      
+      const createdEvent = await this.prismaService.event.create({
         data: {
+          timestamp: new Date(),
+          personCount: personCount,
+          isDoorOpen: isOpen,
+          eventType: EventType.DOOR_EVENT,
           sensorId: sensor.id,
-          eventTimestamp: new Date(),
-          doorIsOpen: isOpen,
+          roomId: sensor.roomId,
         },
       });
       
@@ -439,13 +448,28 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
     try {
       // Versuche, das PassageEvent in der Datenbank zu speichern
       this.logger.verbose(`Attempting to store PassageEvent for sensor '${sensor.esp32Id}' (DB ID: ${sensor.id}), direction: ${direction}.`);
-      const createdEvent = await this.prismaService.passageEvent.create({
+
+      // Get last event for this sensor to get the personCount
+      const lastEvent = await this.prismaService.event.findFirst({
+        where: { sensorId: sensor.id },
+        orderBy: { timestamp: 'desc' },
+      });
+      const personCount = lastEvent?.personCount ?? 0;
+
+      // Update personCount based on direction
+      const newPersonCount = direction === 'IN' ? personCount + 1 : personCount - 1;
+
+      const createdEvent = await this.prismaService.event.create({
         data: {
+          timestamp: new Date(),  // Aktueller Zeitstempel
+          personCount: newPersonCount,
+          eventType: EventType.PASSAGE_EVENT,
+          isDoorOpen: lastEvent?.isDoorOpen ?? false,
           sensorId: sensor.id,         // Referenz auf den Sensor
-          eventTimestamp: new Date(),  // Aktueller Zeitstempel
-          direction: direction         // Richtung: IN oder OUT
+          roomId: sensor.roomId,
         },
       });
+      
       // Logge, dass das Event erfolgreich gespeichert wurde
       this.logger.log(`Successfully stored PassageEvent: ID ${createdEvent.id} (direction: ${direction}) for sensor ${sensor.esp32Id}.`);
 

@@ -27,25 +27,8 @@ model Room {
   sensors     Sensor[]
   dayPredictions  DayPrediction[]
   weekPredictions WeekPrediction[]
-  occupancyHistory RoomOccupancyHistory[]
+  events         Event[] 
   @@map("rooms")
-}
-
-// Raumbelegungshistorie - verfolgt jede Kapazitätsänderung über Zeit
-model RoomOccupancyHistory {
-  id                String           @id @default(cuid())
-  roomId            String
-  occupancy         Int              // Aktuelle Belegung nach dem Event
-  previousOccupancy Int?             // Belegung vor dem Event (null für ersten Eintrag)
-  eventType         PassageDirection // IN oder OUT Event das die Änderung verursacht hat
-  eventTimestamp    DateTime         // Wann das ursprüngliche Event stattfand
-  createdAt         DateTime         @default(now()) // Wann dieser History-Eintrag erstellt wurde
-
-  // Beziehung zum Raum
-  room              Room             @relation(fields: [roomId], references: [id], onDelete: Cascade)
-
-  @@index([roomId, eventTimestamp])
-  @@map("room_occupancy_history")
 }
 
 model Sensor {
@@ -61,40 +44,29 @@ model Sensor {
   room   Room?   @relation(fields: [roomId], references: [id])
   roomId String?
 
-  // Bestehende Event-Beziehungen
-  doorEvents         DoorEvent[]
-  passageEvents      PassageEvent[]
+  // Bestehende Event-Beziehung
+  events         Event[] 
 
   @@map("sensors")
 }
 
-model DoorEvent {
-  id               String   @id @default(cuid())
-  eventTimestamp   DateTime // Zeitstempel vom Sensor oder Backend-Eingang
-  doorIsOpen       Boolean  // true wenn Tür offen, false wenn geschlossen
-  createdAt        DateTime @default(now()) // Backend Zeitstempel der Erfassung
-
-  sensor   Sensor @relation(fields: [sensorId], references: [id])
-  sensorId String
-
-  @@map("door_events")
+enum EventType {
+  DOOR_EVENT
+  PASSAGE_EVENT
 }
 
-enum PassageDirection {
-  IN
-  OUT
-}
+model Event {
+  id          Int      @id @default(autoincrement())
+  timestamp   DateTime @default(now())
+  personCount Int
+  isDoorOpen  Boolean
+  eventType   EventType
+  sensor      Sensor @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+  sensorId    String
+  room        Room?   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomId      String?
 
-// PassageEvent: Repräsentiert die Messwerte des ToF-Sensors (Time-of-Flight) für Personenbewegungen (Ein-/Austritt)
-model PassageEvent {
-  id               String           @id @default(cuid())
-  eventTimestamp   DateTime         // Zeitstempel des ToF-Sensor-Ereignisses
-  direction        PassageDirection // Rein oder Raus (vom ToF-Sensor erkannt)
-  createdAt        DateTime         @default(now())
-  sensor   Sensor @relation(fields: [sensorId], references: [id])
-  sensorId String
-
-  @@map("passage_events")
+  @@map("events")
 }
 
 // Tagesvorhersagen
@@ -133,11 +105,4 @@ model WeekPrediction {
 
   @@unique([roomId, weekStart, day])
   @@map("week_predictions")
-}
-
-model OccupancyEvent {
-  id          Int      @id @default(autoincrement())
-  timestamp   DateTime @default(now())
-  personCount Int
-  isDoorOpen  Boolean
 }
