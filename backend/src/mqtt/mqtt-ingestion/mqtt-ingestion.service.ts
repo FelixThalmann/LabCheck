@@ -464,7 +464,7 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
       if (entranceDirection === 'left') {
         newPersonCount = direction === 'IN' ? personCount + 1 : personCount - 1;
       } else {
-        newPersonCount = direction === 'OUT' ? personCount - 1 : personCount + 1;
+        newPersonCount = direction === 'IN' ? personCount - 1 : personCount + 1;
       }
 
       const createdEvent = await this.prismaService.event.create({
