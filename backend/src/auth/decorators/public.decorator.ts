@@ -1,13 +1,13 @@
 import { SetMetadata } from '@nestjs/common';
 
 /**
- * Schlüssel für die Metadaten, um öffentliche Routen zu identifizieren.
+ * Metadata key to identify public routes
  */
 export const IS_PUBLIC_KEY = 'isPublic';
 
 /**
- * Decorator, um einen Endpunkt als öffentlich zu markieren.
- * Öffentliche Endpunkte umgehen die globale JWT-Authentifizierung.
- * @returns Ein Metadaten-Decorator.
+ * Decorator to mark an endpoint as public
+ * Public endpoints bypass global JWT authentication
+ * @returns A metadata decorator
  */
 export const Public = () => SetMetadata(IS_PUBLIC_KEY, true); 

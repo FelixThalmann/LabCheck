@@ -3,9 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { DemoDateService } from './services/demo-date.service';
 
 /**
- * @class CoreModule
- * @description Globales Core-Modul für zentrale Services
- * Stellt den DemoDateService global zur Verfügung
+ * Global core module for central services
+ * Provides the DemoDateService globally throughout the application
  */
 @Global()
 @Module({

@@ -1,6 +1,10 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
+/**
+ * Prisma service for database operations
+ * Handles database connection lifecycle and provides Prisma client functionality
+ */
 @Injectable()
 export class PrismaService
   extends PrismaClient
@@ -8,21 +12,25 @@ export class PrismaService
 {
   constructor() {
     super({
-      // Optional: Konfigurationen für den PrismaClient, z.B. Logging
+      // Optional: PrismaClient configuration, e.g., logging
       // log: ['query', 'info', 'warn', 'error'],
     });
   }
 
+  /**
+   * Establishes database connection when the module initializes
+   */
   async onModuleInit() {
-    // Stellt sicher, dass beim Start des Moduls eine Verbindung zur DB aufgebaut wird.
     await this.$connect();
   }
 
+  /**
+   * Closes database connection when the application shuts down
+   */
   async onModuleDestroy() {
-    // Schließt die DB-Verbindung, wenn die Anwendung herunterfährt.
     await this.$disconnect();
   }
 
-  // Optional: Clean-Up Logik für Test-Datenbanken etc. könnte hier implementiert werden
+  // Optional: Clean-up logic for test databases could be implemented here
   // async cleanDatabase() { ... }
 }

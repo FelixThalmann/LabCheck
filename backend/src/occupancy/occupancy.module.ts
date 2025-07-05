@@ -5,10 +5,8 @@ import { PrismaService } from '../prisma.service';
 import { EventsModule } from '../events/events.module';
 
 /**
- * @module OccupancyModule
- * @description Modul für die Verwaltung der Raumbelegung.
- * Stellt Services für die automatische Aktualisierung der Belegung
- * basierend auf Sensor-Events zur Verfügung.
+ * Module for managing room occupancy
+ * Provides services for automatic occupancy updates based on sensor events
  */
 @Module({
   imports: [EventsModule],

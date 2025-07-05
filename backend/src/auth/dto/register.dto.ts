@@ -1,17 +1,21 @@
 import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 
+/**
+ * Data transfer object for user registration
+ * Validates username, email, and password for new user creation
+ */
 export class RegisterDto {
-  @IsString({ message: 'Der Benutzername muss eine Zeichenkette sein.' })
-  @IsNotEmpty({ message: 'Das Benutzernamen-Feld darf nicht leer sein.' })
-  @MinLength(3, { message: 'Der Benutzername muss mindestens 3 Zeichen lang sein.' })
+  @IsString({ message: 'Username must be a string.' })
+  @IsNotEmpty({ message: 'Username field cannot be empty.' })
+  @MinLength(3, { message: 'Username must be at least 3 characters long.' })
   username!: string;
 
-  @IsEmail({}, { message: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.' })
-  @IsNotEmpty({ message: 'Das E-Mail-Feld darf nicht leer sein.' })
+  @IsEmail({}, { message: 'Please provide a valid email address.' })
+  @IsNotEmpty({ message: 'Email field cannot be empty.' })
   email!: string;
 
-  @IsString({ message: 'Das Passwort muss eine Zeichenkette sein.' })
-  @IsNotEmpty({ message: 'Das Passwort-Feld darf nicht leer sein.' })
-  @MinLength(8, { message: 'Das Passwort muss mindestens 8 Zeichen lang sein.' })
+  @IsString({ message: 'Password must be a string.' })
+  @IsNotEmpty({ message: 'Password field cannot be empty.' })
+  @MinLength(8, { message: 'Password must be at least 8 characters long.' })
   password!: string;
 } 

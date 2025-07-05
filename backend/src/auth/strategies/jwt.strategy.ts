@@ -4,25 +4,28 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 /**
- * Definiert die Struktur des Payloads, der im JWT gespeichert und nach der Validierung zurückgegeben wird.
+ * Defines the structure of the payload stored in JWT and returned after validation
  */
 export interface JwtPayload {
   email: string;
-  sub: string; // User ID (Subject des Tokens)
-  // Hier könnten weitere Daten aus dem Token hinzukommen, z.B. Rollen
+  sub: string; // User ID (Token subject)
+  // Additional data could be added here, e.g., roles
   // roles: string[];
 }
 
+/**
+ * JWT strategy for Passport authentication
+ * Handles JWT token validation and user extraction
+ */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly configService: ConfigService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), // Extrahiert das Token aus dem 'Authorization: Bearer <token>' Header
-      ignoreExpiration: false, // Wichtig: Abgelaufene Tokens werden als ungültig betrachtet
-      secretOrKey: configService.get<string>('JWT_SECRET'), // Holt das Secret aus der Konfiguration (.env)
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), // Extracts token from 'Authorization: Bearer <token>' header
+      ignoreExpiration: false, // Important: Expired tokens are considered invalid
+      secretOrKey: configService.get<string>('JWT_SECRET'), // Gets secret from configuration (.env)
     });
   }
-
 } 

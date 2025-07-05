@@ -16,24 +16,20 @@ import { LabStatusService } from '../../lab-status/services/lab-status.service';
 
 // WebSocket events emitted by the server
 /**
- * @constant WS_EVENT_DOOR_STATUS_UPDATE
- * @description WebSocket event name for door status updates.
+ * WebSocket event name for door status updates
  */
 export const WS_EVENT_DOOR_STATUS_UPDATE = 'doorStatusUpdate';
 /**
- * @constant WS_EVENT_OCCUPANCY_UPDATE
- * @description WebSocket event name for occupancy updates.
+ * WebSocket event name for occupancy updates
  */
 export const WS_EVENT_OCCUPANCY_UPDATE = 'occupancyUpdate';
 /**
- * @constant WS_EVENT_CAPACITY_UPDATE
- * @description WebSocket event name for capacity updates.
+ * WebSocket event name for capacity updates
  */
 export const WS_EVENT_CAPACITY_UPDATE = 'capacityUpdate';
 
 /**
- * @class EventsGateway
- * @description Handles WebSocket connections and real-time event broadcasting for door status and occupancy.
+ * Handles WebSocket connections and real-time event broadcasting for door status and occupancy.
  * Implements NestJS WebSocket lifecycle hooks: OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect.
  * The `@WebSocketGateway()` decorator marks this class as a WebSocket gateway,
  * enabling real-time, bidirectional communication between clients and the server.
@@ -48,42 +44,27 @@ export const WS_EVENT_CAPACITY_UPDATE = 'capacityUpdate';
 export class EventsGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
-  /**
-   * @private
-   * @readonly
-   * @type {Logger}
-   * @description Logger instance for this gateway, used for logging messages.
-   */
   private readonly logger = new Logger(EventsGateway.name);
 
-  /**
-   * @private
-   * @type {Server}
-   * @description The Socket.IO server instance.
-   * The `@WebSocketServer()` decorator injects the native Socket.IO server instance.
-   * This allows direct access to the server's API for emitting events, managing rooms, etc.
-   */
   @WebSocketServer()
-  private server: Server; // Type Server from socket.io
+  private server: Server;
 
   constructor(@Inject(forwardRef(() => LabStatusService)) private readonly labStatusService: LabStatusService) {}
 
   /**
-   * @method afterInit
-   * @description Lifecycle hook called after the gateway has been initialized.
-   * @param {Server} _server - The Socket.IO server instance.
+   * Lifecycle hook called after the gateway has been initialized
+   * @param _server - The Socket.IO server instance
    */
   afterInit(_server: Server): void {
     // The '_server' parameter here is the same instance as 'this.server'
-    // It's provided by NestJS for convenience within this lifecycle hook.
+    // It's provided by NestJS for convenience within this lifecycle hook
     this.logger.log('WebSocket Gateway initialized');
   }
 
   /**
-   * @method handleConnection
-   * @description Lifecycle hook called when a new client connects.
-   * @param {Socket} client - The connected client socket.
-   * @param {any[]} _args - Additional arguments passed during connection (rarely used).
+   * Lifecycle hook called when a new client connects
+   * @param client - The connected client socket
+   * @param _args - Additional arguments passed during connection (rarely used)
    */
   handleConnection(client: Socket, ..._args: any[]): void {
     this.logger.log(
@@ -94,20 +75,18 @@ export class EventsGateway
   }
 
   /**
-   * @method handleDisconnect
-   * @description Lifecycle hook called when a client disconnects.
-   * @param {Socket} client - The disconnected client socket.
+   * Lifecycle hook called when a client disconnects
+   * @param client - The disconnected client socket
    */
   handleDisconnect(client: Socket): void {
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 
   /**
-   * @method handleRequestInitialStatus
-   * @description Handles messages from clients subscribed to the 'requestInitialStatus' event.
-   * The `@SubscribeMessage()` decorator marks this method as a handler for a specific WebSocket message.
-   * @param {Socket} client - The client socket that sent the message.
-   * @param {any} payload - The data sent by the client with the message.
+   * Handles messages from clients subscribed to the 'requestInitialStatus' event
+   * The `@SubscribeMessage()` decorator marks this method as a handler for a specific WebSocket message
+   * @param client - The client socket that sent the message
+   * @param payload - The data sent by the client with the message
    */
   @SubscribeMessage('requestInitialStatus')
   handleRequestInitialStatus(client: Socket, payload: any): void {
@@ -121,10 +100,9 @@ export class EventsGateway
   }
 
   /**
-   * @method sendDoorStatusUpdate
-   * @description Broadcasts a door status update to all connected clients using LabStatusService.
-   * Uses centralized business logic for consistent data across REST API and WebSocket updates.
-   * @param {Event} event - The door event data to send.
+   * Broadcasts a door status update to all connected clients using LabStatusService
+   * Uses centralized business logic for consistent data across REST API and WebSocket updates
+   * @param event - The door event data to send
    */
     public async sendDoorStatusUpdate(event: Event): Promise<void> {
     this.logger.log('Sending door status update:', event);
@@ -160,10 +138,9 @@ export class EventsGateway
   }
 
   /**
-   * @method sendOccupancyUpdate
-   * @description Broadcasts an occupancy status update to all connected clients using LabStatusService.
-   * Uses centralized business logic for consistent data across REST API and WebSocket updates.
-   * @param {OccupancyStatusDto} occupancyStatus - The occupancy status data to send.
+   * Broadcasts an occupancy status update to all connected clients using LabStatusService
+   * Uses centralized business logic for consistent data across REST API and WebSocket updates
+   * @param occupancyStatus - The occupancy status data to send
    */
   public async sendOccupancyUpdate(occupancyStatus: OccupancyStatusDto): Promise<void> {
     this.logger.log('Sending occupancy update:', occupancyStatus);
@@ -191,12 +168,11 @@ export class EventsGateway
   }
 
   /**
-   * @method sendCapacityUpdate
-   * @description Broadcasts a capacity update to all connected clients using LabStatusService.
-   * Uses centralized business logic for consistent data across REST API and WebSocket updates.
-   * @param newMaxCapacity - Die neue maximale Kapazität
-   * @param currentOccupancy - Die aktuelle Belegung
-   * @param isOpen - Türstatus
+   * Broadcasts a capacity update to all connected clients using LabStatusService
+   * Uses centralized business logic for consistent data across REST API and WebSocket updates
+   * @param newMaxCapacity - The new maximum capacity
+   * @param currentOccupancy - The current occupancy
+   * @param isOpen - Door status
    */
   public async sendCapacityUpdate(
     newMaxCapacity: number,

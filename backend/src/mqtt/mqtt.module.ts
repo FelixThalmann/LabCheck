@@ -4,6 +4,10 @@ import { PrismaService } from '../prisma.service';
 import { EventsModule } from '../events/events.module';
 import { OccupancyModule } from '../occupancy/occupancy.module';
 
+/**
+ * MQTT module for handling IoT device communication
+ * Processes door events and motion events from hardware sensors
+ */
 @Module({
   imports: [EventsModule, OccupancyModule],
   providers: [MqttIngestionService, PrismaService],

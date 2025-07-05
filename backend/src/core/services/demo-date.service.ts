@@ -2,9 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 /**
- * @class DemoDateService
- * @description Zentraler Service für Demo-Modus Datum und Zeitstempel
- * Stellt konsistente Demo-Datum-Funktionalität für alle Services bereit
+ * Central service for demo mode date and timestamp functionality
+ * Provides consistent demo date functionality for all services
  */
 @Injectable()
 export class DemoDateService {
@@ -13,9 +12,8 @@ export class DemoDateService {
   constructor(private readonly configService: ConfigService) {}
 
   /**
-   * @method getCurrentDate
-   * @description Gibt das aktuelle Datum oder Demo-Datum zurück basierend auf DEMO_MODE und der aktuellen Zeit
-   * @returns Date - Aktuelles Datum oder Demo-Datum
+   * Returns current date or demo date based on DEMO_MODE and current time
+   * @returns Date - Current date or demo date
    */
   getCurrentDate(): Date {
     const isDemoMode = this.configService.get<boolean>('DEMO_MODE', false);
@@ -46,27 +44,24 @@ export class DemoDateService {
   }
 
   /**
-   * @method getCurrentTimestamp
-   * @description Gibt den aktuellen Zeitstempel oder Demo-Zeitstempel zurück basierend auf DEMO_MODE
-   * @returns string - Aktueller Zeitstempel oder Demo-Zeitstempel im ISO-Format
+   * Returns current timestamp or demo timestamp based on DEMO_MODE
+   * @returns string - Current timestamp or demo timestamp in ISO format
    */
   getCurrentTimestamp(): string {
     return this.getCurrentDate().toISOString();
   }
 
   /**
-   * @method isDemoMode
-   * @description Prüft, ob der Demo-Modus aktiv ist
-   * @returns boolean - true wenn Demo-Modus aktiv, false sonst
+   * Checks if demo mode is active
+   * @returns boolean - true if demo mode is active, false otherwise
    */
   isDemoMode(): boolean {
     return this.configService.get<boolean>('DEMO_MODE', false);
   }
 
   /**
-   * @method getDemoDay
-   * @description Gibt das konfigurierte Demo-Datum zurück
-   * @returns string | undefined - Demo-Datum oder undefined
+   * Returns the configured demo date
+   * @returns string | undefined - Demo date or undefined
    */
   getDemoDay(): string | undefined {
     return this.configService.get<string>('DEMO_DAY');

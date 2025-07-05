@@ -1,12 +1,16 @@
 import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 
+/**
+ * Data transfer object for user login
+ * Validates email and password for authentication
+ */
 export class LoginDto {
-  @IsEmail({}, { message: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.' })
-  @IsNotEmpty({ message: 'Das E-Mail-Feld darf nicht leer sein.' })
+  @IsEmail({}, { message: 'Please provide a valid email address.' })
+  @IsNotEmpty({ message: 'Email field cannot be empty.' })
   email!: string;
 
-  @IsString({ message: 'Das Passwort muss eine Zeichenkette sein.' })
-  @IsNotEmpty({ message: 'Das Passwort-Feld darf nicht leer sein.' })
-  @MinLength(8, { message: 'Das Passwort muss mindestens 8 Zeichen lang sein.' })
+  @IsString({ message: 'Password must be a string.' })
+  @IsNotEmpty({ message: 'Password field cannot be empty.' })
+  @MinLength(8, { message: 'Password must be at least 8 characters long.' })
   password!: string;
 } 

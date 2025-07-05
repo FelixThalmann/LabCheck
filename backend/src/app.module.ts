@@ -10,25 +10,28 @@ import { LabStatusModule } from './lab-status/lab-status.module';
 import { PredictionsModule } from './predictions/predictions.module';
 import { OccupancyModule } from './occupancy/occupancy.module';
 
-
+/**
+ * Main application module that imports all feature modules
+ * Provides global configuration and orchestrates all application services
+ */
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
     }),
-    CoreModule, // Zentrale Services (Demo-Modus)
+    CoreModule, // Central services (demo mode)
     PrismaModule,
     MqttModule,
     EventsModule,
-    LabStatusModule, // Erweitert für REST API
-    PredictionsModule, // Neu für Vorhersagen
-    OccupancyModule, // Neu für Belegungsmanagement
+    LabStatusModule, // Extended for REST API
+    PredictionsModule, // ML predictions
+    OccupancyModule, // Occupancy management
   ],
   controllers: [AppController],
   providers: [
     AppService,
-    // Authentifizierung temporär deaktiviert
+    // Authentication temporarily disabled
     // {
     //   provide: APP_GUARD,
     //   useClass: ApiKeyAuthGuard,
