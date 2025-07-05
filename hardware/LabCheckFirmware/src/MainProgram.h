@@ -40,22 +40,22 @@ private:
   int programmode;
   int sensorStorage[128][2];
   int sensorStorageIndex;
-  int peopleCounter;
   int millis;
   int delayTime;
   int activeLed;
   bool invertEntranceExit; // true if entrance/exit is inverted
   int calibratedDistance1;
   int calibratedDistance2;
+  int calibratedMax; // maximum distance for calibration based on sensor capabilities
   int tofDetectionTolerance; // tolerance for ToF sensor detection in mm
+  int tofTolerancePercentage; // percentage of tolerance for ToF sensor detection
+  bool firstTimeSending; // prevent sending door status on restart
 
-  // testing. replace with real tof sensors
   bool sensor1Active;
   bool sensor2Active;
   int sensorTimer;
 
   bool isWiFiAvailable();
-  //void storeSensorData(int sensorValue, int duration);
   void prepareMode(int mode);
   void updateLed();
   void publishMQTT(const char* topic, const char* payload);
