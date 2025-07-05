@@ -2,15 +2,14 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsString, Min, Max } from 'class-validator';
 
 /**
- * @class SetLabCapacityDto
- * @description DTO für das Setzen der Laborkapazität via REST API
- * Entspricht der GraphQL setLabCapacity Mutation mit zusätzlichem Passwort-Schutz
+ * @class SetCurrentLabCapacityDto
+ * @description DTO für das Setzen der aktuellen Laborkapazität via REST API
  */
-export class SetLabCapacityDto {
+export class SetCurrentLabCapacityDto {
   @ApiProperty({
-    description: 'Die neue Laborkapazität',
+    description: 'Laborkapazität',
     example: 25,
-    minimum: 1,
+    minimum: 0,
     maximum: 100,
   })
   @IsInt()

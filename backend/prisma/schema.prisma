@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Raummodell für bessere Organisation und Skalierbarkeit
+// Room model for better organization and scalability
 model Room {
   id          String   @id @default(cuid())
   name        String   @unique 
@@ -23,6 +17,7 @@ model Room {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   maxCapacity Int      @default(20) 
+  entranceDirection String? @default("left") // "left", "right"
 
   sensors     Sensor[]
   dayPredictions  DayPrediction[]
@@ -33,18 +28,18 @@ model Room {
 
 model Sensor {
   id        String   @id @default(cuid())
-  esp32Id   String   @unique // Eindeutige ID des ESP32-Boards
-  location  String?  // Spezifische Position innerhalb des Raums, z.B. "Tür Nord", "Eingang Ost"
+  esp32Id   String   @unique // Unique ID of the ESP32 board
+  location  String?  // Specific position within the room, e.g. "North Door", "East Entrance"
   sensorType String  @default("multi") // "door", "motion", "passage", "light_barrier", "multi"
-  isActive  Boolean  @default(true) // Ob der Sensor aktiv ist
+  isActive  Boolean  @default(true) // Whether the sensor is active
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Beziehung zum Raum
+  // Relationship to room
   room   Room?   @relation(fields: [roomId], references: [id])
   roomId String?
 
-  // Bestehende Event-Beziehung
+  // Existing event relationship
   events         Event[] 
 
   @@map("sensors")
@@ -53,6 +48,7 @@ model Sensor {
 enum EventType {
   DOOR_EVENT
   PASSAGE_EVENT
+  TEST_EVENT
 }
 
 model Event {
@@ -69,18 +65,18 @@ model Event {
   @@map("events")
 }
 
-// Tagesvorhersagen
+// Daily predictions
 model DayPrediction {
   id          String   @id @default(cuid())
   time        String   // "8 AM", "10 AM", "12 PM", "2 PM", "4 PM", "6 PM"
   occupancy   Int      @default(0)
   color       String   // "green", "yellow", "red"
-  date        DateTime @db.Date // Datum für das die Vorhersage gilt
-  confidence  Float?   @default(0.0) // Konfidenz der Vorhersage (0.0 - 1.0)
+  date        DateTime @db.Date // Date for which the prediction applies
+  confidence  Float?   @default(0.0) // Confidence of the prediction (0.0 - 1.0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Beziehung zum Raum
+  // Relationship to room
   room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
   roomId String
 
@@ -88,18 +84,18 @@ model DayPrediction {
   @@map("day_predictions")
 }
 
-// Wochenvorhersagen
+// Weekly predictions
 model WeekPrediction {
   id          String   @id @default(cuid())
   day         String   // "Mon", "Tue", "Wed", "Thu", "Fri"
   occupancy   Int      @default(0)
   color       String   // "green", "yellow", "red"
-  weekStart   DateTime @db.Date // Montag der Woche (für Eindeutigkeit)
-  confidence  Float?   @default(0.0) // Konfidenz der Vorhersage (0.0 - 1.0)
+  weekStart   DateTime @db.Date // Monday of the week (for uniqueness)
+  confidence  Float?   @default(0.0) // Confidence of the prediction (0.0 - 1.0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Beziehung zum Raum
+  // Relationship to room
   room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
   roomId String
 

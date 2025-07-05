@@ -11,7 +11,7 @@ import { MqttClient, IClientOptions } from 'mqtt';
 import { plainToClass } from 'class-transformer';
 import { validate, ValidationError } from 'class-validator';
 import { EventsGateway } from '../../events/events/events.gateway';
-import { EventType, Sensor, Event } from '@prisma/client';
+import { EventType, Sensor, Room } from '@prisma/client';
 import { OccupancyService } from '../../occupancy/services/occupancy.service';
 import { RoomManagementService } from '../../occupancy/services/room-management.service';
 
@@ -204,10 +204,10 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
    * @description Retrieves a sensor from the database based on its ESP32 ID.
    * If the sensor is not found, a new sensor record is created with a default location.
    * @param {string} esp32Id - The ESP32 ID of the sensor.
-   * @returns {Promise<Sensor>} A promise that resolves to the sensor object.
+   * @returns {Promise<Sensor & { room: Room | null } | null>} A promise that resolves to the sensor object with room information.
    * @throws Error if database operation fails.
    */
-  private async getSensor(esp32Id: string): Promise<Sensor | null> {
+  private async getSensor(esp32Id: string): Promise<(Sensor & { room: Room | null }) | null> {
     if (!esp32Id || typeof esp32Id !== 'string' || esp32Id.trim() === '') {
         this.logger.error('Invalid esp32Id (empty or not a string) provided to getSensor. Cannot process sensor operation.');
         return null; // Return null instead of throwing to allow handler to decide
@@ -456,8 +456,16 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
       });
       const personCount = lastEvent?.personCount ?? 0;
 
+      // Get entrance direction
+      const entranceDirection = sensor.room?.entranceDirection ?? 'left';
+
       // Update personCount based on direction
-      const newPersonCount = direction === 'IN' ? personCount + 1 : personCount - 1;
+      let newPersonCount = personCount;
+      if (entranceDirection === 'left') {
+        newPersonCount = direction === 'IN' ? personCount + 1 : personCount - 1;
+      } else {
+        newPersonCount = direction === 'IN' ? personCount - 1 : personCount + 1;
+      }
 
       const createdEvent = await this.prismaService.event.create({
         data: {

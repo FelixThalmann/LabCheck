@@ -8,6 +8,8 @@ import {
   LabCapacityResponseDto, 
   LabSettingResponseDto,
   SetLabCapacityDto,
+  SetCurrentLabCapacityDto,
+  SetEntranceDirectionDto,
   LoginDto,
 } from '../dto';
 
@@ -98,6 +100,43 @@ export class LabStatusController {
     return this.labStatusService.setLabCapacity(
       setCapacityDto.capacity,
       setCapacityDto.password,
+    );
+  }
+
+  @Post('current-capacity')
+  @ApiOperation({
+    summary: 'Aktuelle Laborkapazität abrufen',
+    description: 'Liefert die aktuell konfigurierte Laborkapazität',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Aktuelle Laborkapazität erfolgreich abgerufen',
+    type: LabCapacityResponseDto,
+  })
+  async setCurrentCapacity(
+    @Body() setCapacityDto: SetCurrentLabCapacityDto,
+  ): Promise<{ success: boolean; message: string }> {
+    this.logger.debug(`REST API: POST /api/lab/current-capacity - capacity: ${setCapacityDto.capacity}`);
+    return this.labStatusService.setCurrentCapacity(
+      setCapacityDto.capacity,
+      setCapacityDto.password,
+    );
+  }
+
+  @Post('entrance-direction')
+  @ApiOperation({
+    summary: 'Eingangrichtung setzen',
+    description: 'Setzt die Eingangrichtung',
+  })
+  @ApiResponse({
+    status: 200,
+  })
+  async setEntranceDirection(
+    @Body() setEntranceDirectionDto: SetEntranceDirectionDto,
+  ): Promise<{ success: boolean; message: string }> {
+    this.logger.debug(`REST API: POST /api/lab/entrance-direction - password: ${setEntranceDirectionDto.password}`);
+    return this.labStatusService.setEntranceDirection(
+      setEntranceDirectionDto.password,
     );
   }
 

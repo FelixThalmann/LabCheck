@@ -11,7 +11,6 @@ import {
 } from '../dto';
 import { PrismaService } from '../../prisma.service';
 import { EventsGateway } from '../../events/events/events.gateway';
-import { HolidayService } from '../../predictions/services/holiday.service';
 
 /**
  * @class LabStatusService
@@ -28,7 +27,6 @@ export class LabStatusService {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => EventsGateway))
     private readonly eventsGateway: EventsGateway,
-    private readonly holidayService: HolidayService,
   ) {}
 
   /**
@@ -219,6 +217,99 @@ export class LabStatusService {
         'Fehler beim Setzen der Laborkapazität (Room)',
         errorStack || errorMessage,
       );
+      throw error;
+    }
+  }
+
+  /**
+   * @method setCurrentCapacity
+   * @description Setzt die aktuelle Laborkapazität
+   * @param capacity - Die neue Kapazität
+   * @param password - Das Administratorpasswort
+   */
+  async setCurrentCapacity(capacity: number, password: string): Promise<{ success: boolean; message: string }> {
+    this.logger.debug(`Setting current lab capacity to: ${capacity}`);
+    
+    // Passwort-Validierung
+    const adminPassword = this.configService.get<string>('ADMIN_PASSWORD', 'admin123');
+    if (password !== adminPassword) {
+      this.logger.warn('Ungültiger Passwortversuch für setCurrentCapacity');
+      throw new UnauthorizedException('Ungültiges Administratorpasswort');
+    }
+
+    try {
+      // Hole den ersten Laborraum (ältester zuerst)
+      const mainRoom = await this.prisma.room.findFirst({
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (!mainRoom) {
+        this.logger.error('Kein Laborraum gefunden.');
+        throw new BadRequestException('Kein Laborraum gefunden.');
+      }
+
+      // Update the room capacity using the PrismaService directly
+      await this.prisma.room.update({
+        where: { id: mainRoom.id },
+        data: { capacity: capacity },
+      });
+
+      this.logger.debug(`Aktuelle Laborkapazität erfolgreich auf ${capacity} gesetzt`);
+
+      return {
+        success: true,
+        message: `Aktuelle Laborkapazität erfolgreich auf ${capacity} gesetzt`,
+      };
+    } catch (error) {
+      this.logger.error('Fehler beim Setzen der aktuellen Laborkapazität', error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * @method setEntranceDirection
+   * @description Setzt die Eingangrichtung
+   * @param password - Das Administratorpasswort
+   */
+  async setEntranceDirection(password: string): Promise<{ success: boolean; message: string }> {
+    this.logger.debug(`Setting entrance direction`);
+    
+    // Passwort-Validierung
+    const adminPassword = this.configService.get<string>('ADMIN_PASSWORD', 'admin123');
+    if (password !== adminPassword) {
+      this.logger.warn('Ungültiger Passwortversuch für setEntranceDirection');
+      throw new UnauthorizedException('Ungültiges Administratorpasswort');
+    }
+
+    try {
+      // Hole den ersten Laborraum
+      const mainRoom = await this.prisma.room.findFirst({
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (!mainRoom) {
+        this.logger.error('Kein Laborraum gefunden.');
+        throw new BadRequestException('Kein Laborraum gefunden.');
+      }
+
+      // Get current entrance direction
+      const currentEntranceDirection = mainRoom.entranceDirection ?? 'left';
+      const newEntranceDirection = currentEntranceDirection === 'left' ? 'right' : 'left';
+
+      // Update the room entrance direction using the PrismaService directly
+      await this.prisma.room.update({
+        where: { id: mainRoom.id },
+        data: { entranceDirection: newEntranceDirection },
+      });
+
+      this.logger.debug(`Eingangrichtung erfolgreich auf ${newEntranceDirection} gesetzt`);
+
+      return {
+        success: true,
+        message: `Eingangrichtung erfolgreich auf ${newEntranceDirection} gesetzt`,
+      };
+    } catch (error) {
+      this.logger.error('Fehler beim Setzen der Eingangrichtung', error.stack);
       throw error;
     }
   }
