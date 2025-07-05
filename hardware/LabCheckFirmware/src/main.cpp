@@ -182,28 +182,6 @@ void setupComponents() {
     speaker.begin();
     wifi.begin();
     mqtt.begin();
-    
-    // Setup magnetic sensor callbacks
-    magneticSensor.onMagnetDetected([]() {
-        speaker.playAlert();
-        mqtt.publish(MQTT_TOPIC, "Door opened");
-    });
-    
-    magneticSensor.onMagnetRemoved([]() {
-        speaker.stop();
-        mqtt.publish(MQTT_TOPIC, "Door closed");
-    });
-
-    // Setup PIR sensor callbacks
-    pirSensor.onMotionDetected([]() {
-        speaker.playAlert();
-        mqtt.publish(MQTT_TOPIC, "Motion detected");
-    });
-
-    pirSensor.onMotionStopped([]() {
-        speaker.stop();
-        mqtt.publish(MQTT_TOPIC, "Motion stopped");
-    });
 }
 
 /**
