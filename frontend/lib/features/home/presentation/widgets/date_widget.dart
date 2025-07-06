@@ -3,12 +3,27 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:labcheck/core/theme/app_colors.dart';
 
+/// Widget displaying current lab status with door icon and occupancy information.
+///
+/// Shows door open/closed state, current occupancy vs maximum capacity,
+/// and current date. Uses color-coded background based on occupancy level.
 class DateWidget extends StatelessWidget {
+  /// Whether the lab door is currently open
   final bool isOpen;
+  
+  /// Current number of people in the lab
   final int currentOccupancy;
+  
+  /// Maximum capacity of the lab
   final int maxOccupancy;
+  
+  /// Color indicator for occupancy level (green, yellow, red)
   final String color;
+  
+  /// Current date to display
   final DateTime currentDate;
+  
+  /// Whether to show "No Data" state
   final bool noData;
 
   const DateWidget({

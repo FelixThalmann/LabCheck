@@ -2,10 +2,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:logging/logging.dart';
 
+/// Manages environment configuration for the LabCheck application.
+///
+/// Handles loading of environment variables from .env files and provides
+/// centralized access to configuration values like API URLs and environment settings.
 class EnvironmentConfig {
   static bool _initialized = false;
   static final _logger = Logger('EnvironmentConfig');
 
+  /// Initializes the environment configuration by loading .env file.
+  ///
+  /// Falls back to default values if no .env file is found.
   static Future<void> initialize() async {
     if (_initialized) return;
 
@@ -28,25 +35,29 @@ ENVIRONMENT=development
     _initialized = true;
   }
 
-  /// Base URL für die API
+  /// Base URL for the API endpoints
   static String get apiBaseUrl {
     return dotenv.env['DEV_API_BASE_URL'] ?? 'http://localhost:8080/api';
   }
 
-  /// Aktuelle Umgebung (development, staging, production)
+  /// Current environment (development, staging, production)
   static String get environment {
     return dotenv.env['ENVIRONMENT'] ?? 'development';
   }
 
+  /// Whether the app is running in demo mode
   static bool get isDemoMode {
     return dotenv.env['DEMO_MODE'] == 'true';
   }
 
+  /// API key for authentication
   static String get apiKey {
     return dotenv.env['STATIC_API_KEY'] ?? '0000000000';
   }
 
-  /// Alle verfügbaren Umgebungsvariablen ausgeben (nur im Debug-Modus)
+  /// Prints all available environment variables (debug mode only)
+  ///
+  /// Masks sensitive data like passwords, secrets, and keys for security.
   static void printAllVariables() {
     if (!kDebugMode) return;
 
@@ -58,7 +69,7 @@ ENVIRONMENT=development
     if (dotenv.env.isNotEmpty) {
       _logger.info('📝 All available variables:');
       dotenv.env.forEach((key, value) {
-        // Sensible Daten maskieren
+        // Mask sensitive data
         final maskedValue =
             key.toLowerCase().contains('password') ||
                     key.toLowerCase().contains('secret') ||

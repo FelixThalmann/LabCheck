@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+/// Widget displaying about information for the LabCheck application.
+///
+/// Shows project description and copyright information in a centered,
+/// transparent container with responsive sizing.
 class TextWidget extends StatelessWidget {
   const TextWidget({super.key});
 

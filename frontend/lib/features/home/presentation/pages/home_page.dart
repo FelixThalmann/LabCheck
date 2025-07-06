@@ -12,6 +12,11 @@ import '../../../../data/services/api_service.dart';
 import '../../../../data/models/lab_status_dto.dart';
 import '../../domain/home_domain.dart';
 
+/// Main home page of the LabCheck application.
+///
+/// Displays current lab status, daily and weekly occupancy predictions.
+/// Supports pull-to-refresh functionality and real-time updates via WebSocket.
+/// Features a gradient background and settings navigation.
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -46,7 +51,10 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  /// Handle real-time updates from WebSocket
+  /// Handles real-time updates from WebSocket connection.
+  ///
+  /// Updates the UI with new lab status data and shows a notification
+  /// to inform the user about the real-time update.
   void _handleWebSocketUpdate(LabStatusDto labStatus) {
     if (mounted) {
       setState(() {
@@ -61,7 +69,10 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// Manual refresh (pull-to-refresh)
+  /// Handles manual refresh triggered by pull-to-refresh gesture.
+  ///
+  /// Provides haptic feedback, fetches all data from the API,
+  /// and handles various types of errors with appropriate user notifications.
   Future<void> _onRefresh() async {
     // Haptic feedback for better user experience
     HapticFeedback.lightImpact();
@@ -122,6 +133,10 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// Refreshes only the lab status data.
+  ///
+  /// Used when returning from settings page to update lab status
+  /// without refreshing all prediction data.
   Future<void> _onRefreshLabStatus() async {
     final labStatus = await _homeDomain.getLabStatus();
     setState(() {

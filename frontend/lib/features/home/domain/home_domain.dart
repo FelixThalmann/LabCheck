@@ -6,16 +6,24 @@ import 'package:logging/logging.dart';
 import '../../../core/config/environment_config.dart';
 import '../../../data/services/websocket_service.dart';
 
+/// Domain layer for the home feature of LabCheck.
+///
+/// Manages data operations for lab status, predictions, and real-time updates
+/// through WebSocket connections. Handles API calls and provides fallback data
+/// for demo mode when the backend is unavailable.
 class HomeDomain {
   final _logger = Logger('HomeDomain');
   final WebSocketService _webSocketService = WebSocketService();
   Exception? lastException;
   bool isDemoMode = EnvironmentConfig.isDemoMode;
 
-  // Single callback for all lab status updates
+  /// Callback function for lab status updates
   Function(LabStatusDto)? _onLabStatusUpdate;
 
-  /// Initialize WebSocket connection and setup listeners
+  /// Initializes WebSocket connection and sets up event listeners.
+  ///
+  /// Configures real-time updates for lab status and connection status changes.
+  /// Requests initial status from the server after connection is established.
   void initializeWebSocket(Function(LabStatusDto) onLabStatusUpdate) {
     _onLabStatusUpdate = onLabStatusUpdate;
 
@@ -47,11 +55,15 @@ class HomeDomain {
     _webSocketService.requestInitialStatus();
   }
 
-  /// Cleanup WebSocket connection
+  /// Cleans up WebSocket connection and resources.
   void dispose() {
     _webSocketService.disconnect();
   }
 
+  /// Fetches current lab status from the API.
+  ///
+  /// Returns LabStatusDto or null if the request fails.
+  /// Falls back to demo data if in demo mode and API is unavailable.
   Future<LabStatusDto?> getLabStatus() async {
     try {
       final url = '/api/lab/status';
@@ -71,6 +83,10 @@ class HomeDomain {
     }
   }
 
+  /// Fetches daily occupancy predictions from the API.
+  ///
+  /// Returns DayPredictionDto or null if the request fails.
+  /// Falls back to demo data if in demo mode and API is unavailable.
   Future<DayPredictionDto?> getDayPredictions() async {
     try {
       final url = '/api/predictions/day';
@@ -90,6 +106,10 @@ class HomeDomain {
     }
   }
 
+  /// Fetches weekly occupancy predictions from the API.
+  ///
+  /// Returns WeekPredictionDto or null if the request fails.
+  /// Falls back to demo data if in demo mode and API is unavailable.
   Future<WeekPredictionDto?> getWeekPredictions() async {
     try {
       final url = '/api/predictions/week';
@@ -109,6 +129,9 @@ class HomeDomain {
     }
   }
 
+  /// Refreshes lab status and triggers the update callback.
+  ///
+  /// Fetches fresh data from the API and notifies listeners of the update.
   Future<LabStatusDto?> refreshLabStatus() async {
     final labStatus = await getLabStatus();
     if (labStatus != null) {
@@ -117,6 +140,10 @@ class HomeDomain {
     return labStatus;
   }
 
+  /// Refreshes all data (lab status, day predictions, week predictions).
+  ///
+  /// Returns a map containing all fetched data and error information.
+  /// Includes flags indicating which data sources failed to load.
   Future<Map<String, dynamic>> refreshAllData() async {
     Map<String, dynamic> result = {};
     result['labStatus'] = await getLabStatus();
@@ -138,7 +165,9 @@ class HomeDomain {
     return result;
   }
 
-  // Fallback for Demo-Data if error
+  /// Provides fallback lab status data for demo mode.
+  ///
+  /// Returns a LabStatusDto with sample data when the API is unavailable.
   LabStatusDto _getFallbackLabStatus() {
     return LabStatusDto(
       isOpen: true,
@@ -150,6 +179,9 @@ class HomeDomain {
     );
   }
 
+  /// Provides fallback daily predictions data for demo mode.
+  ///
+  /// Returns a DayPredictionDto with sample predictions when the API is unavailable.
   DayPredictionDto _getFallbackDayPredictions() {
     return DayPredictionDto(
       predictions: [
@@ -164,6 +196,9 @@ class HomeDomain {
     );
   }
 
+  /// Provides fallback weekly predictions data for demo mode.
+  ///
+  /// Returns a WeekPredictionDto with sample predictions when the API is unavailable.
   WeekPredictionDto _getFallbackWeekPredictions() {
     final fallbackPredictions = [
       WeekPrediction(occupancy: 1, day: 'Mon', color: 'green'),

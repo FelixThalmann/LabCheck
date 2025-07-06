@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 
-/// Zentrale Farbdefinitionen für die App
+/// Central color definitions for the LabCheck application.
+///
+/// Provides consistent color scheme across all UI components.
 class AppColors {
-  // primary
+  /// Primary brand color
   static const Color primary = Color(0xFF599CD1);
 
-  // secondary
+  /// Secondary accent color
   static const Color secondary = Colors.cyan;
 
-  // green
+  /// Green color for positive states (available, success)
   static const Color green = Color(0x7F82FFA7);
 
-  // yellow
+  /// Yellow color for warning states
   static const Color yellow = Color(0x7FEAFF82);
 
-  // red
+  /// Red color for negative states (occupied, error)
   static const Color red = Color(0x7FFF8282);
 }

@@ -2,8 +2,12 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:logging/logging.dart';
 import '../../core/config/environment_config.dart';
 
-/// WebSocket service for real-time updates from the LabCheck backend
+/// WebSocket service for real-time updates from the LabCheck backend.
+///
+/// Manages WebSocket connection and handles real-time events like door status
+/// updates and occupancy changes. Uses Socket.IO client for reliable connection.
 class WebSocketService {
+  /// Singleton instance of WebSocketService
   static final WebSocketService _instance = WebSocketService._internal();
   factory WebSocketService() => _instance;
   WebSocketService._internal();
@@ -12,13 +16,19 @@ class WebSocketService {
   io.Socket? _socket;
   bool _isConnected = false;
 
-  // Callbacks for real-time updates
+  /// Callback for door status updates
   Function(Map<String, dynamic>)? _onDoorStatusUpdate;
+  
+  /// Callback for connection status changes
   Function()? _onConnectionStatusChanged;
-  // Callback for all lab status updates
+  
+  /// Callback for all lab status updates (includes door and occupancy)
   Function(Map<String, dynamic>)? _onLabStatusUpdate;
 
-  /// Initialize WebSocket connection
+  /// Initializes WebSocket connection to the backend server.
+  ///
+  /// Sets up connection with automatic reconnection and configures
+  /// event listeners for real-time updates.
   void initialize() {
     final baseUrl = EnvironmentConfig.apiBaseUrl.replaceAll('/api', '');
     _logger.info('Initializing WebSocket connection to: $baseUrl');
@@ -36,7 +46,10 @@ class WebSocketService {
     _setupEventListeners();
   }
 
-  /// Setup WebSocket event listeners
+  /// Sets up event listeners for WebSocket connection and data events.
+  ///
+  /// Handles connection status, door status updates, and occupancy updates
+  /// from the backend server.
   void _setupEventListeners() {
     _socket?.onConnect((_) {
       _logger.info('WebSocket connected');
@@ -113,32 +126,41 @@ class WebSocketService {
     });
   }
 
-  /// Set callback for door status updates
+  /// Sets callback function for door status updates.
+  ///
+  /// The callback receives a Map containing door status information.
   void onDoorStatusUpdate(Function(Map<String, dynamic>) callback) {
     _onDoorStatusUpdate = callback;
   }
 
-  /// Set callback for connection status changes
+  /// Sets callback function for connection status changes.
+  ///
+  /// The callback is called when the WebSocket connects or disconnects.
   void onConnectionStatusChanged(Function() callback) {
     _onConnectionStatusChanged = callback;
   }
 
-  /// Set callback for lab status updates (includes door and occupancy)
+  /// Sets callback function for lab status updates.
+  ///
+  /// The callback receives a Map containing combined lab status information
+  /// including both door status and occupancy data.
   void onLabStatusUpdate(Function(Map<String, dynamic>) callback) {
     _onLabStatusUpdate = callback;
   }
 
-  /// Check if WebSocket is connected
+  /// Returns whether the WebSocket is currently connected.
   bool get isConnected => _isConnected;
 
-  /// Disconnect WebSocket
+  /// Disconnects the WebSocket and cleans up resources.
   void disconnect() {
     _socket?.disconnect();
     _socket?.dispose();
     _isConnected = false;
   }
 
-  /// Request initial status from server
+  /// Requests initial status from the server.
+  ///
+  /// Only works if the WebSocket is currently connected.
   void requestInitialStatus() {
     if (_isConnected) {
       _socket?.emit('requestInitialStatus', {});

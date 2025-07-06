@@ -3,11 +3,24 @@ import 'package:labcheck/features/setting/presentation/widgets/seats_input_widge
 import 'package:labcheck/features/setting/presentation/widgets/current_seats_input_widget.dart';
 import 'package:labcheck/features/setting/presentation/widgets/entrance_direction_widget.dart';
 
+/// Container widget that organizes all settings components in a scrollable layout.
+///
+/// Displays three main sections: maximum capacity, current occupancy,
+/// and door configuration, each in their own styled container.
 class SettingsContainerWidget extends StatelessWidget {
+  /// Controller for the maximum seats input field
   final TextEditingController maxSeatsController;
+  
+  /// Controller for the current seats input field
   final TextEditingController currentSeatsController;
+  
+  /// Callback function triggered when maximum seats are saved
   final VoidCallback onSaveMaxSeats;
+  
+  /// Callback function triggered when current seats are saved
   final VoidCallback onSaveCurrentSeats;
+  
+  /// Callback function triggered when entrance direction is inverted
   final VoidCallback onInvertDirection;
 
   const SettingsContainerWidget({

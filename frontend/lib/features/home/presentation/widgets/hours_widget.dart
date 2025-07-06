@@ -4,8 +4,15 @@ import 'dart:ui' as ui;
 import '../../../../core/theme/app_colors.dart';
 import '../../../../data/models/day_prediction_dto.dart';
 
+/// Widget displaying daily occupancy predictions as a line chart.
+///
+/// Shows predicted occupancy levels throughout the day with color-coded
+/// time slots and interactive chart visualization.
 class HoursWidget extends StatefulWidget {
+  /// List of daily occupancy predictions for different time slots
   final List<Prediction> predictions;
+  
+  /// Whether to show "No Data" state
   final bool noData;
 
   const HoursWidget({

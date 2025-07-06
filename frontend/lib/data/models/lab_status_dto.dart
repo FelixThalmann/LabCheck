@@ -1,9 +1,23 @@
+/// Data transfer object representing the current status of a laboratory.
+///
+/// Contains information about occupancy, availability, and last update timestamps.
 class LabStatusDto {
+  /// Whether the lab is currently open
   final bool isOpen;
+  
+  /// Current number of people in the lab
   final int currentOccupancy;
+  
+  /// Maximum capacity of the lab
   final int maxOccupancy;
+  
+  /// Color indicator for the lab status (e.g., "green", "yellow", "red")
   final String color;
+  
+  /// Current date and time
   final DateTime currentDate;
+  
+  /// Timestamp of the last status update
   final DateTime lastUpdated;
 
   LabStatusDto({
@@ -15,7 +29,7 @@ class LabStatusDto {
     required this.currentDate,
   });
 
-  // Factory constructor for creating from JSON
+  /// Creates a LabStatusDto instance from JSON data.
   factory LabStatusDto.fromJson(Map<String, dynamic> json) {
     return LabStatusDto(
       isOpen: json['isOpen'] as bool,
@@ -27,7 +41,7 @@ class LabStatusDto {
     );
   }
 
-  // Method to convert to JSON
+  /// Converts the LabStatusDto to JSON format.
   Map<String, dynamic> toJson() {
     return {
       'isOpen': isOpen,

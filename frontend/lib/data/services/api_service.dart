@@ -3,11 +3,15 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../../core/config/environment_config.dart';
 
+/// Service for handling HTTP API requests to the LabCheck backend.
+///
+/// Provides methods for GET, POST, PUT, and DELETE requests with proper
+/// error handling and authentication via API key.
 class ApiService {
   late final String baseUrl;
   late final String apiKey;
 
-  // Singleton-Pattern
+  /// Singleton instance of ApiService
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal() {
@@ -15,13 +19,15 @@ class ApiService {
     apiKey = EnvironmentConfig.apiKey;
   }
 
-  // HTTP-Header
+  /// HTTP headers for API requests
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
     'x-api-key': apiKey,
   };
 
-  // GET-Request
+  /// Performs a GET request to the specified endpoint.
+  ///
+  /// Returns the parsed JSON response or throws an appropriate exception.
   Future<dynamic> get(String endpoint) async {
     try {
       final response = await http.get(
@@ -34,7 +40,9 @@ class ApiService {
     }
   }
 
-  // POST-Request
+  /// Performs a POST request to the specified endpoint with JSON data.
+  ///
+  /// Returns the parsed JSON response or throws an appropriate exception.
   Future<dynamic> post(String endpoint, dynamic data) async {
     try {
       final response = await http.post(
@@ -48,7 +56,9 @@ class ApiService {
     }
   }
 
-  // PUT-Request
+  /// Performs a PUT request to the specified endpoint with JSON data.
+  ///
+  /// Returns the parsed JSON response or throws an appropriate exception.
   Future<dynamic> put(String endpoint, dynamic data) async {
     try {
       final response = await http.put(
@@ -62,7 +72,9 @@ class ApiService {
     }
   }
 
-  // DELETE-Request
+  /// Performs a DELETE request to the specified endpoint.
+  ///
+  /// Returns the parsed JSON response or throws an appropriate exception.
   Future<dynamic> delete(String endpoint) async {
     try {
       final response = await http.delete(
@@ -75,7 +87,10 @@ class ApiService {
     }
   }
 
-  // Response-Handler
+  /// Handles HTTP response and converts it to appropriate data or exception.
+  ///
+  /// Parses successful responses and throws specific exceptions for different
+  /// error status codes.
   dynamic _handleResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.isEmpty) return null;
@@ -107,7 +122,9 @@ class ApiService {
     }
   }
 
-  // Error Handling
+  /// Handles various types of errors and converts them to appropriate exceptions.
+  ///
+  /// Distinguishes between network errors, API errors, and unknown errors.
   Exception _handleError(dynamic error) {
     if (error is ApiException) return error;
 
@@ -153,9 +170,10 @@ class ApiService {
   }
 }
 
-// Exception Types
+/// Types of API exceptions that can occur
 enum ApiExceptionType { server, client, unauthorized, unknown }
 
+/// Types of network exceptions that can occur
 enum NetworkExceptionType {
   unreachable,
   serverUnavailable,
@@ -164,10 +182,17 @@ enum NetworkExceptionType {
   timeout,
 }
 
-// Custom Exception for API-Errors
+/// Custom exception for API-related errors.
+///
+/// Contains status code, error message, and exception type for proper error handling.
 class ApiException implements Exception {
+  /// HTTP status code of the failed request
   final int statusCode;
+  
+  /// Human-readable error message
   final String message;
+  
+  /// Type of API exception
   final ApiExceptionType type;
 
   ApiException({
@@ -180,10 +205,17 @@ class ApiException implements Exception {
   String toString() => 'ApiException: Status $statusCode - $message';
 }
 
-// Custom Exception for Network-Errors
+/// Custom exception for network-related errors.
+///
+/// Contains error message, exception type, and original error for debugging.
 class NetworkException implements Exception {
+  /// Human-readable error message
   final String message;
+  
+  /// Type of network exception
   final NetworkExceptionType type;
+  
+  /// Original error that caused this exception
   final dynamic originalError;
 
   NetworkException({

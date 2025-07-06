@@ -3,6 +3,10 @@ import 'package:labcheck/core/theme/app_colors.dart';
 import 'package:labcheck/shared/widgets/header_widget.dart';
 import 'package:labcheck/features/about/presentation/widgets/text_widget.dart';
 
+/// About page displaying information about the LabCheck application.
+///
+/// Features a gradient background matching the home page design
+/// and includes a back navigation button to return to the previous screen.
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
 

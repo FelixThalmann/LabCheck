@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:labcheck/core/theme/app_colors.dart';
 import '../../data/services/api_service.dart';
 
+/// Utility class for displaying various types of snackbar notifications.
+///
+/// Provides methods for showing error, success, warning, and network error
+/// messages with consistent styling and appropriate icons.
 class SnackbarUtils {
+  /// Shows an error snackbar with red background and error icon.
+  ///
+  /// Displays the given error message for 4 seconds with an "OK" action button.
   static void showError(BuildContext context, String message) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -39,6 +46,10 @@ class SnackbarUtils {
     );
   }
 
+  /// Shows a network error snackbar with specific error type handling.
+  ///
+  /// Displays different messages and icons based on the network exception type.
+  /// Shows for 5 seconds with a "Pull down to refresh" hint.
   static void showNetworkError(BuildContext context, NetworkException error) {
     String message;
     IconData icon;
@@ -114,6 +125,9 @@ class SnackbarUtils {
     );
   }
 
+  /// Shows a success snackbar with green background and check icon.
+  ///
+  /// Displays the given success message for 3 seconds.
   static void showSuccess(BuildContext context, String message) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -147,6 +161,9 @@ class SnackbarUtils {
     );
   }
 
+  /// Shows a warning snackbar with orange background and warning icon.
+  ///
+  /// Displays the given warning message for 4 seconds.
   static void showWarning(BuildContext context, String message) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -180,6 +197,9 @@ class SnackbarUtils {
     );
   }
 
+  /// Shows an authentication error snackbar with lock icon.
+  ///
+  /// Displays the given authentication error message for 4 seconds with an "OK" action.
   static void showAuthenticationError(BuildContext context, String message) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -216,7 +236,9 @@ class SnackbarUtils {
     );
   }
 
-  /// Show a subtle notification for real-time updates (WebSocket)
+  /// Shows a subtle notification for real-time updates from WebSocket.
+  ///
+  /// Displays a brief notification with WiFi icon and "Live:" prefix for 2 seconds.
   static void showUpdateNotification(BuildContext context, String message) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(

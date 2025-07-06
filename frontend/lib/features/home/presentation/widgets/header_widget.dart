@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+/// Header widget for the home page displaying lab branding and tagline.
+///
+/// Shows the Ubiquitous Systems Lab logo and "May I come in?" tagline
+/// with responsive sizing based on screen width.
 class HeaderWidget extends StatelessWidget {
   const HeaderWidget({super.key});
 

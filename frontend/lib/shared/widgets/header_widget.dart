@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 
+/// A reusable header widget for displaying titles across the application.
+///
+/// Provides consistent styling with responsive font sizing based on screen width
+/// and proper centering within a container that takes 15% of screen height.
 class HeaderWidget extends StatelessWidget {
+  /// The title text to display in the header
   final String title;
 
   const HeaderWidget({super.key, required this.title});
