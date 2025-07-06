@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsString, Min, Max, MinLength } from 'class-validator';
+import { IsInt, IsString, Min, Max } from 'class-validator';
 
 /**
  * @class SetLabCapacityDto
@@ -11,19 +11,16 @@ export class SetLabCapacityDto {
     description: 'Die neue Laborkapazität',
     example: 25,
     minimum: 1,
-    maximum: 1000,
+    maximum: 100,
   })
   @IsInt()
   @Min(1)
-  @Max(1000)
+  @Max(100)
   capacity: number;
 
   @ApiProperty({
     description: 'Administratorpasswort für die Kapazitätsänderung',
-    example: 'admin123',
-    minLength: 6,
   })
   @IsString()
-  @MinLength(6)
   password: string;
 }

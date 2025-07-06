@@ -21,7 +21,7 @@ class TextWidget extends StatelessWidget {
         children: [
           Center(
             child: Text(
-              'Is this the project work of the students of the University of Siegen.\n\nThe project is a part of the course "Ubiquitous Systems Lab" at the University of Siegen.',
+              'This is the project work of the students of the University of Siegen.\n\nThe project is a part of the course "Ubiquitous Systems Lab" at the University of Siegen.\n\n© All rights reserved. 2025',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,

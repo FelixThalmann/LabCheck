@@ -1,3 +1,5 @@
+/* eslint-disable prettier/prettier */
+import { Logger, Inject, forwardRef } from '@nestjs/common';
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -7,9 +9,9 @@ import {
   OnGatewayInit,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
-import { DoorEvent } from '@prisma/client'; // Assuming we send these types or parts thereof. PassageEvent is currently unused.
-import { OccupancyStatusModel } from 'src/door/models';
+import { Event } from '@prisma/client';
+import { OccupancyStatusDto } from 'src/door/models';
+import { LabStatusService } from '../../lab-status/services/lab-status.service';
 
 
 // WebSocket events emitted by the server
@@ -23,6 +25,11 @@ export const WS_EVENT_DOOR_STATUS_UPDATE = 'doorStatusUpdate';
  * @description WebSocket event name for occupancy updates.
  */
 export const WS_EVENT_OCCUPANCY_UPDATE = 'occupancyUpdate';
+/**
+ * @constant WS_EVENT_CAPACITY_UPDATE
+ * @description WebSocket event name for capacity updates.
+ */
+export const WS_EVENT_CAPACITY_UPDATE = 'capacityUpdate';
 
 /**
  * @class EventsGateway
@@ -59,13 +66,15 @@ export class EventsGateway
   @WebSocketServer()
   private server: Server; // Type Server from socket.io
 
+  constructor(@Inject(forwardRef(() => LabStatusService)) private readonly labStatusService: LabStatusService) {}
+
   /**
    * @method afterInit
    * @description Lifecycle hook called after the gateway has been initialized.
-   * @param {Server} server - The Socket.IO server instance.
+   * @param {Server} _server - The Socket.IO server instance.
    */
-  afterInit(server: Server): void {
-    // The 'server' parameter here is the same instance as 'this.server'
+  afterInit(_server: Server): void {
+    // The '_server' parameter here is the same instance as 'this.server'
     // It's provided by NestJS for convenience within this lifecycle hook.
     this.logger.log('WebSocket Gateway initialized');
   }
@@ -74,9 +83,9 @@ export class EventsGateway
    * @method handleConnection
    * @description Lifecycle hook called when a new client connects.
    * @param {Socket} client - The connected client socket.
-   * @param {any[]} args - Additional arguments passed during connection (rarely used).
+   * @param {any[]} _args - Additional arguments passed during connection (rarely used).
    */
-  handleConnection(client: Socket, ...args: any[]): void {
+  handleConnection(client: Socket, ..._args: any[]): void {
     this.logger.log(
       `Client connected: ${client.id} from IP ${client.handshake.address}`,
     );
@@ -113,34 +122,111 @@ export class EventsGateway
 
   /**
    * @method sendDoorStatusUpdate
-   * @description Broadcasts a door status update to all connected clients.
-   * @param {DoorEvent} doorEvent - The door event data to send.
+   * @description Broadcasts a door status update to all connected clients using LabStatusService.
+   * Uses centralized business logic for consistent data across REST API and WebSocket updates.
+   * @param {Event} event - The door event data to send.
    */
-  public sendDoorStatusUpdate(doorEvent: DoorEvent): void {
-    this.logger.log('Sending door status update:', doorEvent);
-    this.server.emit(WS_EVENT_DOOR_STATUS_UPDATE, {
-      isOpen: doorEvent.doorIsOpen,
-      timestamp: doorEvent.eventTimestamp, // or createdAt for backend time
-      sensorId: doorEvent.sensorId,
-    });
+    public async sendDoorStatusUpdate(event: Event): Promise<void> {
+    this.logger.log('Sending door status update:', event);
+    
+    try {
+      // Get current lab status from centralized service (Single Source of Truth)
+      const labStatus = await this.labStatusService.getCombinedLabStatus();
+      
+      // Override door status with the actual event status
+      const isOpen = event.isDoorOpen;
+      
+      // Determine color based on door status and occupancy using consistent logic
+      let color = labStatus.color;
+      if (!isOpen) {
+        color = 'red'; // Door closed always shows red
+      }
+      
+      this.logger.verbose(`Broadcasting door status: isOpen=${isOpen}, occupancy=${labStatus.currentOccupancy}/${labStatus.maxOccupancy}, color=${color}`);
+
+      this.server.emit(WS_EVENT_DOOR_STATUS_UPDATE, {
+        isOpen,
+        currentOccupancy: labStatus.currentOccupancy,
+        maxOccupancy: labStatus.maxOccupancy,
+        color,
+        currentDate: event.timestamp,
+        lastUpdated: event.timestamp,
+        sensorId: event.sensorId,
+        eventId: event.id,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to send door status update for event ${event.id}:`, error);
+    }
   }
 
   /**
    * @method sendOccupancyUpdate
-   * @description Broadcasts an occupancy status update to all connected clients.
-   * @param {LabCapacityResponseDto} occupancyStatus - The occupancy status data to send.
+   * @description Broadcasts an occupancy status update to all connected clients using LabStatusService.
+   * Uses centralized business logic for consistent data across REST API and WebSocket updates.
+   * @param {OccupancyStatusDto} occupancyStatus - The occupancy status data to send.
    */
-  public sendOccupancyUpdate(occupancyStatus: OccupancyStatusModel, maxCapacity: number): void {
+  public async sendOccupancyUpdate(occupancyStatus: OccupancyStatusDto): Promise<void> {
     this.logger.log('Sending occupancy update:', occupancyStatus);
-    this.server.emit(WS_EVENT_OCCUPANCY_UPDATE, occupancyStatus.currentOccupancy, maxCapacity);
+    
+    try {
+      // Get current lab status from centralized service (Single Source of Truth)
+      const labStatus = await this.labStatusService.getCombinedLabStatus();
+      
+      // Safe access to occupancyStatus properties (handle undefined/null gracefully)
+      const inputOccupancy = occupancyStatus?.currentOccupancy ?? 0;
+      
+      this.logger.verbose(`Broadcasting occupancy update: occupancy=${inputOccupancy}, maxOccupancy=${labStatus.maxOccupancy}, isOpen=${labStatus.isOpen}, color=${labStatus.color}`);
+
+      this.server.emit(WS_EVENT_OCCUPANCY_UPDATE, {
+        currentOccupancy: labStatus.currentOccupancy,
+        maxOccupancy: labStatus.maxOccupancy,
+        isOpen: labStatus.isOpen,
+        color: labStatus.color,
+        currentDate: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
+      });
+    } catch (error) {
+      this.logger.error('Failed to send occupancy update:', error);
+    }
   }
 
-  // If we also want to push MotionEvents:
-  // import { MotionEvent } from '@prisma/client';
-  // export const WS_EVENT_MOTION_DETECTED = 'motionDetected';
-  //
-  // public sendMotionEvent(motionEvent: MotionEvent): void {
-  //   this.logger.log('Sending motion event update:', motionEvent);
-  //   this.server.emit(WS_EVENT_MOTION_DETECTED, motionEvent);
-  // }
+  /**
+   * @method sendCapacityUpdate
+   * @description Broadcasts a capacity update to all connected clients using LabStatusService.
+   * Uses centralized business logic for consistent data across REST API and WebSocket updates.
+   * @param newMaxCapacity - Die neue maximale Kapazität
+   * @param currentOccupancy - Die aktuelle Belegung
+   * @param isOpen - Türstatus
+   */
+  public async sendCapacityUpdate(
+    newMaxCapacity: number,
+    currentOccupancy: number,
+    isOpen: boolean,
+  ): Promise<void> {
+    this.logger.log(`Sending capacity update: maxCapacity=${newMaxCapacity}, currentOccupancy=${currentOccupancy}`);
+    
+    try {
+      // Get current lab status from centralized service for consistent color logic
+      const labStatus = await this.labStatusService.getCombinedLabStatus();
+      
+      // Determine color based on door status - door closed always shows red
+      let color = labStatus.color;
+      if (!isOpen) {
+        color = 'red';
+      }
+      
+      this.logger.verbose(`Broadcasting capacity update: newMaxCapacity=${newMaxCapacity}, currentOccupancy=${currentOccupancy}, isOpen=${isOpen}, color=${color}`);
+
+      this.server.emit(WS_EVENT_CAPACITY_UPDATE, {
+        newMaxCapacity,
+        currentOccupancy,
+        isOpen,
+        color,
+        lastUpdated: new Date().toISOString(),
+      });
+    } catch (error) {
+      this.logger.error('Failed to send capacity update:', error);
+    }
+  }
+
 }

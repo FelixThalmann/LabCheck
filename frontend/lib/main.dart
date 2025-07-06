@@ -12,7 +12,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await EnvironmentConfig.initialize();
-
   EnvironmentConfig.printAllVariables();
 
   SystemChrome.setPreferredOrientations([

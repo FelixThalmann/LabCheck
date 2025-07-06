@@ -1,3 +1,11 @@
+/**
+ * @file WiFiConfig.h
+ * @brief WiFi connection management with persistent storage
+ * 
+ * Handles WiFi credentials storage, connection management, and status monitoring.
+ * Credentials are stored in ESP32 preferences for persistence across reboots.
+ */
+
 #ifndef WIFI_CONFIG_H
 #define WIFI_CONFIG_H
 
@@ -7,44 +15,74 @@
 #include <Preferences.h>
 #include <LED.h>
 
+/**
+ * @class WiFiConfig
+ * @brief Manages WiFi connection and credential storage
+ * 
+ * Provides persistent WiFi credential storage using ESP32 Preferences.
+ * Handles connection attempts with status feedback via LEDs.
+ */
 class WiFiConfig {
 public:
     WiFiConfig();
     
-    // Initialize WiFi configuration
+    /**
+     * @brief Initialize WiFi configuration system
+     */
     void begin();
     
-    // Connect to WiFi with stored credentials
+    /**
+     * @brief Attempt to connect to WiFi using stored credentials
+     * @return True if connection successful, false otherwise
+     */
     bool connect();
 
-    // Disconnect from WiFi
+    /**
+     * @brief Disconnect from current WiFi network
+     */
     void disconnect();
     
-    // Set new WiFi credentials
+    /**
+     * @brief Set new WiFi credentials and save to preferences
+     * @param newSsid Network SSID
+     * @param newPassword Network password
+     */
     void setCredentials(const String& newSsid, const String& newPassword);
     
-    // Get current SSID
+    /**
+     * @brief Get currently configured SSID
+     * @return Current SSID string
+     */
     String getSSID() const;
     
-    // Get current IP address (empty if not connected)
+    /**
+     * @brief Get current IP address if connected
+     * @return IP address string, empty if not connected
+     */
     String getIPAddress() const;
 
-    // Get mac address of the WiFi interface
+    /**
+     * @brief Get WiFi interface MAC address
+     * @return MAC address string
+     */
     String getMacAddress() const;
     
 private:
-    Preferences prefs;
-    String ssid;
-    String password;
-    static const String DEF_SSID;
-    static const String DEF_PASSWORD;
-
-    LED led;
+    Preferences prefs;              ///< Preferences storage for credentials
+    String ssid;                    ///< Current SSID
+    String password;                ///< Current password
+    static const String DEF_SSID;  ///< Default SSID fallback
+    static const String DEF_PASSWORD; ///< Default password fallback
+    LED led;                        ///< LED for status indication
     
-    // Load credentials from preferences
+    /**
+     * @brief Load WiFi credentials from preferences storage
+     */
     void loadCredentials();
     
-    // Save credentials to preferences
+    /**
+     * @brief Save current credentials to preferences storage
+     */
     void saveCredentials();
 };
 

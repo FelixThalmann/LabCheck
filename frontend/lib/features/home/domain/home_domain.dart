@@ -4,11 +4,53 @@ import '../../../data/models/lab_status_dto.dart';
 import '../../../data/services/api_service.dart';
 import 'package:logging/logging.dart';
 import '../../../core/config/environment_config.dart';
+import '../../../data/services/websocket_service.dart';
 
 class HomeDomain {
   final _logger = Logger('HomeDomain');
+  final WebSocketService _webSocketService = WebSocketService();
   Exception? lastException;
   bool isDemoMode = EnvironmentConfig.isDemoMode;
+
+  // Single callback for all lab status updates
+  Function(LabStatusDto)? _onLabStatusUpdate;
+
+  /// Initialize WebSocket connection and setup listeners
+  void initializeWebSocket(Function(LabStatusDto) onLabStatusUpdate) {
+    _onLabStatusUpdate = onLabStatusUpdate;
+
+    _webSocketService.initialize();
+
+    // Listen for lab status updates
+    _webSocketService.onLabStatusUpdate((data) {
+      _logger.info('Received WebSocket lab status update: $data');
+
+      try {
+        // Convert WebSocket data to LabStatusDto
+        final labStatus = LabStatusDto.fromJson(data);
+        _logger.info('Successfully parsed LabStatusDto');
+        _onLabStatusUpdate?.call(labStatus);
+      } catch (e) {
+        _logger.warning('Failed to parse WebSocket lab status data: $e');
+        _logger.warning('Raw data was: $data');
+      }
+    });
+
+    // Listen for connection status changes
+    _webSocketService.onConnectionStatusChanged(() {
+      _logger.info(
+        'WebSocket connection status changed: ${_webSocketService.isConnected}',
+      );
+    });
+
+    // Request initial status after connection is established
+    _webSocketService.requestInitialStatus();
+  }
+
+  /// Cleanup WebSocket connection
+  void dispose() {
+    _webSocketService.disconnect();
+  }
 
   Future<LabStatusDto?> getLabStatus() async {
     try {
@@ -18,7 +60,7 @@ class HomeDomain {
       return LabStatusDto.fromJson(response);
     } catch (e) {
       _logger.warning('Failed to fetch lab status from API: $e');
-      lastException = e as Exception;
+      lastException = e is Exception ? e : Exception(e.toString());
       if (isDemoMode) {
         _logger.info('Using demo data for lab status');
         // Fallback to Demo-Data if error
@@ -30,24 +72,14 @@ class HomeDomain {
   }
 
   Future<DayPredictionDto?> getDayPredictions() async {
-    if (isDemoMode) {
-      _logger.info('Using demo data for day predictions');
-      // Fallback to Demo-Data if error
-      return _getFallbackDayPredictions();
-    } else {
-      return null;
-    }
-
-    /*
     try {
-      // TODO: Implementierung für echte API-Aufrufe wenn Backend verfügbar
-      final url = '/api/lab/day-predictions';
+      final url = '/api/predictions/day';
       final response = await ApiService().get(url);
       _logger.info('DayPredictionDto: $response');
       return DayPredictionDto.fromJson(response);
     } catch (e) {
       _logger.warning('Failed to fetch day predictions from API: $e');
-      lastException = e as Exception;
+      lastException = e is Exception ? e : Exception(e.toString());
       if (isDemoMode) {
         _logger.info('Using demo data for day predictions');
         // Fallback to Demo-Data if error
@@ -56,28 +88,17 @@ class HomeDomain {
         return null;
       }
     }
-    */
   }
 
   Future<WeekPredictionDto?> getWeekPredictions() async {
-    if (isDemoMode) {
-      _logger.info('Using demo data for week predictions');
-      // Fallback to Demo-Data if error
-      return _getFallbackWeekPredictions();
-    } else {
-      return null;
-    }
-
-    /*
     try {
-      // TODO: Implementierung für echte API-Aufrufe wenn Backend verfügbar
-      final url = '/api/lab/week-predictions';
+      final url = '/api/predictions/week';
       final response = await ApiService().get(url);
       _logger.info('WeekPredictionDto: $response');
       return WeekPredictionDto.fromJson(response);
     } catch (e) {
       _logger.warning('Failed to fetch week predictions from API: $e');
-      lastException = e as Exception;
+      lastException = e is Exception ? e : Exception(e.toString());
       if (isDemoMode) {
         _logger.info('Using demo data for week predictions');
         // Fallback to Demo-Data if error
@@ -86,10 +107,17 @@ class HomeDomain {
         return null;
       }
     }
-    */
   }
 
-  Future<Map<String, dynamic>> refreshData() async {
+  Future<LabStatusDto?> refreshLabStatus() async {
+    final labStatus = await getLabStatus();
+    if (labStatus != null) {
+      _onLabStatusUpdate?.call(labStatus);
+    }
+    return labStatus;
+  }
+
+  Future<Map<String, dynamic>> refreshAllData() async {
     Map<String, dynamic> result = {};
     result['labStatus'] = await getLabStatus();
 
@@ -103,7 +131,7 @@ class HomeDomain {
       lastException = null;
     }
 
-    result['noDatalabStatus'] = result['labStatus'] == null;
+    result['noDataLabStatus'] = result['labStatus'] == null;
     result['noDataDayPredictions'] = result['dayPredictions'] == null;
     result['noDataWeekPredictions'] = result['weekPredictions'] == null;
 
@@ -137,14 +165,17 @@ class HomeDomain {
   }
 
   WeekPredictionDto _getFallbackWeekPredictions() {
+    final fallbackPredictions = [
+      WeekPrediction(occupancy: 1, day: 'Mon', color: 'green'),
+      WeekPrediction(occupancy: 4, day: 'Tue', color: 'yellow'),
+      WeekPrediction(occupancy: 10, day: 'Wed', color: 'red'),
+      WeekPrediction(occupancy: 4, day: 'Thu', color: 'yellow'),
+      WeekPrediction(occupancy: 2, day: 'Fri', color: 'green'),
+    ];
+
     return WeekPredictionDto(
-      predictions: [
-        WeekPrediction(occupancy: 1, day: 'Mon', color: 'green'),
-        WeekPrediction(occupancy: 4, day: 'Tue', color: 'yellow'),
-        WeekPrediction(occupancy: 10, day: 'Wed', color: 'red'),
-        WeekPrediction(occupancy: 4, day: 'Thu', color: 'yellow'),
-        WeekPrediction(occupancy: 2, day: 'Fri', color: 'green'),
-      ],
+      currentWeek: fallbackPredictions,
+      nextWeek: fallbackPredictions,
       lastUpdated: DateTime.now(),
     );
   }

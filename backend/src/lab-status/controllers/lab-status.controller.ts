@@ -1,13 +1,16 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-import { Controller, Get, Post, Body, Logger, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiSecurity } from '@nestjs/swagger';
 import { LabStatusService } from '../services/lab-status.service';
 import { 
   LabStatusResponseDto, 
   LabCapacityResponseDto, 
   LabSettingResponseDto,
-  SetLabCapacityDto 
+  SetLabCapacityDto,
+  SetCurrentLabCapacityDto,
+  SetEntranceDirectionDto,
+  LoginDto,
 } from '../dto';
 
 /**
@@ -16,7 +19,7 @@ import {
  * Implementiert die API-Spezifikation für /api/lab/* mit vollständiger GraphQL-Migration
  */
 @Controller('api/lab')
-@ApiTags('Lab Status & Settings')
+@ApiTags('🏠 Lab Status')
 @ApiSecurity('api-key')
 export class LabStatusController {
   private readonly logger = new Logger(LabStatusController.name);
@@ -62,7 +65,7 @@ export class LabStatusController {
     description: 'Laborkapazität erfolgreich abgerufen',
     type: LabCapacityResponseDto,
   })
-  async getLabCapacity(): Promise<LabCapacityResponseDto> {
+  async getLabCapacity(): Promise<number> {
     this.logger.debug('REST API: GET /api/lab/capacity');
     return this.labStatusService.getLabCapacity();
   }
@@ -92,7 +95,7 @@ export class LabStatusController {
   })
   async setLabCapacity(
     @Body() setCapacityDto: SetLabCapacityDto,
-  ): Promise<number> {
+  ): Promise<{ success: boolean; message: string }> {
     this.logger.debug(`REST API: POST /api/lab/capacity - capacity: ${setCapacityDto.capacity}`);
     return this.labStatusService.setLabCapacity(
       setCapacityDto.capacity,
@@ -100,30 +103,57 @@ export class LabStatusController {
     );
   }
 
-  /**
-   * @method getRoomStatus
-   * @description Prüft den Öffnungsstatus eines bestimmten Raums
-   * @param roomId - Die ID des zu prüfenden Raums
-   * @returns Promise<boolean> - true wenn der Raum offen ist, false wenn geschlossen
-   */
-  @Get('room/:roomId/status')
+  @Post('current-capacity')
   @ApiOperation({
-    summary: 'Raumstatus abrufen',
-    description: 'Prüft, ob ein bestimmter Raum geöffnet ist',
+    summary: 'Aktuelle Laborkapazität abrufen',
+    description: 'Liefert die aktuell konfigurierte Laborkapazität',
   })
   @ApiResponse({
     status: 200,
-    description: 'Raumstatus erfolgreich abgerufen',
-    type: Boolean,
+    description: 'Aktuelle Laborkapazität erfolgreich abgerufen',
+    type: LabCapacityResponseDto,
+  })
+  async setCurrentCapacity(
+    @Body() setCapacityDto: SetCurrentLabCapacityDto,
+  ): Promise<{ success: boolean; message: string }> {
+    this.logger.debug(`REST API: POST /api/lab/current-capacity - capacity: ${setCapacityDto.capacity}`);
+    return this.labStatusService.setCurrentCapacity(
+      setCapacityDto.capacity,
+      setCapacityDto.password,
+    );
+  }
+
+  @Post('entrance-direction')
+  @ApiOperation({
+    summary: 'Eingangrichtung setzen',
+    description: 'Setzt die Eingangrichtung',
   })
   @ApiResponse({
-    status: 404,
-    description: 'Raum nicht gefunden',
+    status: 200,
   })
-  async getRoomStatus(
-    @Param('roomId') roomId: string,
-  ): Promise<boolean> {
-    this.logger.debug(`REST API: GET /api/lab/room/${roomId}/status`);
-    return this.labStatusService.isRoomOpen(roomId);
+  async setEntranceDirection(
+    @Body() setEntranceDirectionDto: SetEntranceDirectionDto,
+  ): Promise<{ success: boolean; message: string }> {
+    this.logger.debug(`REST API: POST /api/lab/entrance-direction - password: ${setEntranceDirectionDto.password}`);
+    return this.labStatusService.setEntranceDirection(
+      setEntranceDirectionDto.password,
+    );
+  }
+
+  /**
+   * @method login
+   * @description Login
+   */
+  @Post('login')
+  @ApiOperation({
+    summary: 'Login',
+    description: 'Login',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Login erfolgreich',
+  })
+  async login(@Body() loginDto: LoginDto): Promise<{ success: boolean; message: string }> {
+    return this.labStatusService.login(loginDto.password);
   }
 }

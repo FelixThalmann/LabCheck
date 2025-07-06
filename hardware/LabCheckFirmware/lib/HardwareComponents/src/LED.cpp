@@ -1,41 +1,37 @@
+/**
+ * @file LED.cpp
+ * @brief Implementation of LED control functions
+ */
+
 #include "LED.h"
 
 LED::LED() {}
 
 void LED::begin() {
     pinMode(LEDGREEN, OUTPUT);
-    pinMode(LEDYELLOW, OUTPUT);
-    pinMode(LEDRED, OUTPUT);
-    
+    pinMode(SIGNALLED, OUTPUT);
+
     // Ensure all LEDs are off initially
+    setSignal(false);
     setGreen(false);
-    setYellow(false);
-    setRed(false);
 }
 
 void LED::setGreen(bool state) {
     digitalWrite(LEDGREEN, state ? HIGH : LOW);
 }
 
-void LED::setYellow(bool state) {
-    digitalWrite(LEDYELLOW, state ? HIGH : LOW);
-}
-
-void LED::setRed(bool state) {
-    digitalWrite(LEDRED, state ? HIGH : LOW);
+void LED::setSignal(bool state) {
+    digitalWrite(SIGNALLED, state ? HIGH : LOW);
 }
 
 void LED::testSequence() {
     Serial.println(F("Testing LEDs"));
+
+    Serial.print(F("Signal LED..."));
+    blinkLED(SIGNALLED);
     
-    Serial.print(F("Green..."));
+    Serial.print(F("Green LED..."));
     blinkLED(LEDGREEN);
-    
-    Serial.print(F("Yellow..."));
-    blinkLED(LEDYELLOW);
-    
-    Serial.print(F("Red..."));
-    blinkLED(LEDRED);
 }
 
 void LED::blinkLED(uint8_t pin, int times, int duration) {

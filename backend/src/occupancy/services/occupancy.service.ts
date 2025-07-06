@@ -5,15 +5,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
-import { PassageDirection } from '@prisma/client';
 import { EventsGateway } from '../../events/events/events.gateway';
-import { OccupancyStatusModel } from '../../door/models/occupancy-status.model';
+import { OccupancyStatusDto } from '../../door/models/occupancy-status.dto';
 
 /**
- * @class OccupancyService
- * @description Service für die Verwaltung der Raumbelegung basierend auf Sensor-Events.
- * Verwaltet die automatische Aktualisierung der aktuellen Belegung (capacity)
- * in der Room-Tabelle basierend auf eingehenden PassageEvents.
+ * Service for managing room occupancy based on sensor events
+ * Handles automatic updates of current occupancy (capacity)
+ * in the Room table based on incoming passage events
  */
 @Injectable()
 export class OccupancyService {
@@ -21,37 +19,35 @@ export class OccupancyService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly eventsGateway?: EventsGateway, // Optional für WebSocket-Updates
+    private readonly eventsGateway?: EventsGateway, // Optional for WebSocket updates
   ) {}
 
   /**
-   * @method updateRoomOccupancy
-   * @description Aktualisiert die Raumbelegung basierend auf einem Passage-Event.
-   * Verwendet Transaktionen für atomare Operationen und verhindert Race Conditions.
+   * Updates room occupancy based on a passage event
+   * Uses transactions for atomic operations and prevents race conditions
    *
-   * Technischer Ablauf:
-   * 1. Sensor mit zugehörigem Raum laden
-   * 2. Aktuelle Raumbelegung in einer Transaktion lesen und aktualisieren
-   * 3. Validierung: Belegung darf nicht negativ oder über maxCapacity sein
-   * 4. WebSocket-Update an alle verbundenen Clients senden
+   * Technical flow:
+   * 1. Load sensor with associated room
+   * 2. Read and update current room occupancy in a transaction
+   * 3. Validation: occupancy must not be negative or exceed maxCapacity
+   * 4. Send WebSocket update to all connected clients
    *
-   * @param {string} sensorId - Die Datenbank-ID des Sensors
-   * @param {PassageDirection} direction - Die Richtung des Passage-Events (IN oder OUT)
-   * @param {Date} eventTimestamp - Zeitstempel des Events für Logging
-   * @returns {Promise<{ newOccupancy: number; roomId: string } | null>} Neue Belegung und Raum-ID oder null bei Fehlern
+   * @param sensorId - The database ID of the sensor
+   * @param direction - The direction of the passage event (IN or OUT)
+   * @returns Promise with new occupancy and room ID or null on errors
    */
-  async     updateRoomOccupancy(
+  async updateRoomOccupancy(
     sensorId: string,
-    direction: PassageDirection,
+    direction: string,
   ): Promise<{ newOccupancy: number; roomId: string } | null> {
     this.logger.verbose(
       `Updating room occupancy for sensor ${sensorId}, direction: ${direction}`,
     );
 
     try {
-      // Verwende eine Prisma-Transaktion für atomare Operationen
+      // Use a Prisma transaction for atomic operations
       const result = await this.prisma.$transaction(async (tx) => {
-        // 1. Sensor mit zugehörigem Raum laden
+        // 1. Load sensor with associated room
         const sensor = await tx.sensor.findUnique({
           where: { id: sensorId },
           include: { room: true },
@@ -69,46 +65,41 @@ export class OccupancyService {
           return null;
         }
 
-        // 2. Aktuelle Raumbelegung berechnen
-        const capacityChange = direction === PassageDirection.IN ? 1 : -1;
+        // 2. Calculate current room occupancy based on entrance direction
+        const entranceDirection = sensor.room.entranceDirection ?? 'left';
+        this.logger.debug(`Room entrance direction: ${entranceDirection}, Passage direction: ${direction}, Current capacity: ${sensor.room.capacity}`);
+        
+        let capacityChange: number;
+        if (entranceDirection === 'left') {
+          capacityChange = direction === 'IN' ? 1 : -1;
+          this.logger.debug(`Left entrance logic: ${direction} = ${direction === 'IN' ? '+' : '-'}1`);
+        } else {
+          capacityChange = direction === 'IN' ? -1 : 1;
+          this.logger.debug(`Right entrance logic: ${direction} = ${direction === 'IN' ? '-' : '+'}1`);
+        }
+        
         const currentCapacity = sensor.room.capacity;
         const maxCapacity = sensor.room.maxCapacity;
         const newCapacity = currentCapacity + capacityChange;
 
-        // 3. Validierung der neuen Belegung
+        // 3. Apply bounds checking - no change if it would go out of bounds
         if (newCapacity < 0) {
           this.logger.warn(
             `Attempted to set negative occupancy for room ${sensor.room.name} (ID: ${sensor.room.id}). ` +
-              `Current: ${currentCapacity}, Change: ${capacityChange}. Setting to 0 instead.`,
+              `Current: ${currentCapacity}, Change: ${capacityChange}. Keeping current capacity.`,
           );
-          // Setze auf 0 statt negativen Wert
-          await tx.room.update({
-            where: { id: sensor.room.id },
-            data: {
-              capacity: 0,
-              updatedAt: new Date(),
-            },
-          });
-          return { newOccupancy: 0, roomId: sensor.room.id };
+          return { newOccupancy: currentCapacity, roomId: sensor.room.id };
         }
 
         if (newCapacity > maxCapacity) {
           this.logger.warn(
             `Attempted to exceed maximum capacity for room ${sensor.room.name} (ID: ${sensor.room.id}). ` +
-              `New: ${newCapacity}, Max: ${maxCapacity}. Setting to maximum instead.`,
+              `New: ${newCapacity}, Max: ${maxCapacity}. Keeping current capacity.`,
           );
-          // Setze auf maximale Kapazität
-          await tx.room.update({
-            where: { id: sensor.room.id },
-            data: {
-              capacity: maxCapacity,
-              updatedAt: new Date(),
-            },
-          });
-          return { newOccupancy: maxCapacity, roomId: sensor.room.id };
+          return { newOccupancy: currentCapacity, roomId: sensor.room.id };
         }
 
-        // 4. Normale Aktualisierung der Belegung
+        // 4. Normal occupancy update
         await tx.room.update({
           where: { id: sensor.room.id },
           data: {
@@ -119,13 +110,13 @@ export class OccupancyService {
 
         this.logger.log(
           `Successfully updated occupancy for room ${sensor.room.name} (ID: ${sensor.room.id}): ` +
-            `${currentCapacity} → ${newCapacity} (${direction === PassageDirection.IN ? '+1' : '-1'})`,
+            `${currentCapacity} → ${newCapacity} (${direction === 'IN' ? '+1' : '-1'}) [entrance: ${entranceDirection}]`,
         );
 
         return { newOccupancy: newCapacity, roomId: sensor.room.id };
       });
 
-      // 5. WebSocket-Update senden (außerhalb der Transaktion)
+      // 5. Send WebSocket update (outside transaction)
       if (result && this.eventsGateway) {
         await this.sendOccupancyUpdate(result.roomId, result.newOccupancy);
       }
@@ -143,14 +134,14 @@ export class OccupancyService {
 
   /**
    * @method getCurrentOccupancyStatus
-   * @description Holt den aktuellen Belegungsstatus für einen Raum und formatiert ihn als OccupancyStatusModel.
+   * @description Holt den aktuellen Belegungsstatus für einen Raum und formatiert ihn als OccupancyStatusDto.
    *
    * @param {string} roomId - Die ID des Raums
-   * @returns {Promise<OccupancyStatusModel | null>} Aktueller Belegungsstatus oder null bei Fehlern
+   * @returns {Promise<OccupancyStatusDto | null>} Aktueller Belegungsstatus oder null bei Fehlern
    */
   async getCurrentOccupancyStatus(
     roomId: string,
-  ): Promise<OccupancyStatusModel | null> {
+  ): Promise<OccupancyStatusDto | null> {
     try {
       const room = await this.prisma.room.findUnique({
         where: { id: roomId },
@@ -167,7 +158,7 @@ export class OccupancyService {
           ? Math.round((room.capacity / room.maxCapacity) * 100)
           : 0;
 
-      const occupancyStatus: OccupancyStatusModel = {
+      const occupancyStatus: OccupancyStatusDto = {
         currentOccupancy: room.capacity,
         totalCapacity: room.maxCapacity,
         timestamp: new Date(),
@@ -267,67 +258,6 @@ export class OccupancyService {
   }
 
   /**
-   * @method resetRoomOccupancy
-   * @description Setzt die Belegung eines Raums auf einen bestimmten Wert zurück.
-   * Nützlich für manuelle Korrekturen oder automatische Resets (z.B. nachts).
-   *
-   * @param {string} roomId - Die ID des Raums
-   * @param {number} newOccupancy - Die neue Belegung (default: 0)
-   * @returns {Promise<boolean>} True bei Erfolg, false bei Fehlern
-   */
-  async resetRoomOccupancy(
-    roomId: string,
-    newOccupancy: number = 0,
-  ): Promise<boolean> {
-    this.logger.log(
-      `Resetting occupancy for room ${roomId} to ${newOccupancy}`,
-    );
-
-    try {
-      const room = await this.prisma.room.findUnique({
-        where: { id: roomId },
-      });
-
-      if (!room) {
-        throw new BadRequestException(`Room with ID ${roomId} not found`);
-      }
-
-      // Validierung der neuen Belegung
-      if (newOccupancy < 0 || newOccupancy > room.maxCapacity) {
-        throw new BadRequestException(
-          `Invalid occupancy value ${newOccupancy}. Must be between 0 and ${room.maxCapacity}`,
-        );
-      }
-
-      await this.prisma.room.update({
-        where: { id: roomId },
-        data: {
-          capacity: newOccupancy,
-          updatedAt: new Date(),
-        },
-      });
-
-      this.logger.log(
-        `Successfully reset occupancy for room ${room.name} to ${newOccupancy}`,
-      );
-
-      // WebSocket-Update senden
-      if (this.eventsGateway) {
-        await this.sendOccupancyUpdate(roomId, newOccupancy);
-      }
-
-      return true;
-    } catch (error) {
-      this.logger.error(
-        `Failed to reset occupancy for room ${roomId} to ${newOccupancy}. ` +
-          `Error: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
-      return false;
-    }
-  }
-
-  /**
    * @private
    * @method sendOccupancyUpdate
    * @description Sendet ein WebSocket-Update über die Belegungsänderung an alle verbundenen Clients,
@@ -355,7 +285,7 @@ export class OccupancyService {
           `Sende Belegungs-Update via WebSocket für Raum ${roomId}: ${newOccupancy} (maxCapacity: ${room.maxCapacity})`,
         );
         // Sende occupancyStatus und maxCapacity an das Gateway
-        this.eventsGateway.sendOccupancyUpdate(occupancyStatus, room.maxCapacity);
+        this.eventsGateway.sendOccupancyUpdate(occupancyStatus);
       }
     } catch (error) {
       this.logger.error(
@@ -381,23 +311,33 @@ export class OccupancyService {
   ): Promise<void> {
     try {
       // Hole aktuelle Raumdaten
-      const room = await this.prisma.room.findUnique({
-        where: { id: roomId },
-        select: { name: true, isOpen: true },
-      });
+      const room = await this.prisma.room.findFirst();
+      
+      if (!room) {
+        this.logger.error(`Room with ID ${roomId} not found`);
+        return;
+      }
+
+      // Berechne den Belegungsgrad in Prozent
+      const percentageFull =
+        room.maxCapacity > 0
+          ? Math.round((room.capacity / room.maxCapacity) * 100)
+          : 0;
+
+      const occupancyStatus: OccupancyStatusDto = {
+        currentOccupancy: room.capacity,
+        totalCapacity: room.maxCapacity,
+        timestamp: new Date(),
+        percentageFull,
+      };
 
       if (room && this.eventsGateway) {
         this.logger.verbose(
           `Sende Raum-Status-Update via WebSocket für Raum ${roomId}: isOpen = ${isOpen}`,
         );
-        // Sende Raum-Status-Update an das Gateway
-        // TODO: EventsGateway Methode für Room-Status implementieren
-        // this.eventsGateway.sendRoomStatusUpdate({ roomId, roomName: room.name, isOpen });
-        
-        // Fallback: Verwende occupancy update mit aktuellen Daten
-        const occupancyStatus = await this.getCurrentOccupancyStatus(roomId);
+
         if (occupancyStatus) {
-          this.eventsGateway.sendOccupancyUpdate(occupancyStatus, 0); // maxCapacity wird separat geholt
+          this.eventsGateway.sendOccupancyUpdate(occupancyStatus); 
         }
       }
     } catch (error) {
@@ -409,76 +349,4 @@ export class OccupancyService {
     }
   }
 
-  /**
-   * @method getOccupancyStatistics
-   * @description Liefert Statistiken über die Raumbelegung für Analytics/Monitoring.
-   *
-   * @param {string} roomId - Die ID des Raums
-   * @param {Date} from - Startdatum für Statistiken
-   * @param {Date} to - Enddatum für Statistiken
-   * @returns {Promise<any>} Belegungsstatistiken
-   */
-  async getOccupancyStatistics(
-    roomId: string,
-    from: Date,
-    to: Date,
-  ): Promise<{
-    averageOccupancy: number;
-    maxOccupancy: number;
-    totalPassageEvents: number;
-    inEvents: number;
-    outEvents: number;
-  } | null> {
-    try {
-      // Hole alle Passage-Events für den Zeitraum der Sensoren des Raums
-      const passageEvents = await this.prisma.passageEvent.findMany({
-        where: {
-          sensor: {
-            roomId: roomId,
-          },
-          eventTimestamp: {
-            gte: from,
-            lte: to,
-          },
-        },
-        orderBy: {
-          eventTimestamp: 'asc',
-        },
-      });
-
-      const totalPassageEvents = passageEvents.length;
-      const inEvents = passageEvents.filter(
-        (e) => e.direction === PassageDirection.IN,
-      ).length;
-      const outEvents = passageEvents.filter(
-        (e) => e.direction === PassageDirection.OUT,
-      ).length;
-
-      // Hole aktuelle Raumdaten
-      const room = await this.prisma.room.findUnique({
-        where: { id: roomId },
-      });
-
-      if (!room) return null;
-
-      // Berechne Durchschnittsbelegung (vereinfacht)
-      const currentOccupancy = room.capacity;
-      const maxCapacity = room.maxCapacity;
-
-      return {
-        averageOccupancy: currentOccupancy, // Vereinfacht - könnte komplexer berechnet werden
-        maxOccupancy: maxCapacity,
-        totalPassageEvents,
-        inEvents,
-        outEvents,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to get occupancy statistics for room ${roomId}. ` +
-          `Error: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
-      return null;
-    }
-  }
 }

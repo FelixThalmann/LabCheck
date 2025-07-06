@@ -13,56 +13,47 @@ class SeatsInputWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final containerWidth = screenWidth * 0.85;
-    final padding = screenWidth * 0.05;
+    final screenHeight = MediaQuery.of(context).size.height;
 
-    return Center(
-      child: Container(
-        width: containerWidth,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(17.0),
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: padding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
-              TextField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: screenWidth * 0.035,
-                ),
-                decoration: InputDecoration(
-                  labelText: 'Number of Seats',
-                  labelStyle: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: screenWidth * 0.035,
-                  ),
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: onSave,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
-                  textStyle: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: screenWidth * 0.035,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                child: const Text('Save'),
-              ),
-            ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          style: TextStyle(fontFamily: 'Inter', fontSize: screenWidth * 0.032),
+          decoration: InputDecoration(
+            labelText: 'Number of Seats',
+            labelStyle: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: screenWidth * 0.032,
+            ),
+            border: const OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.03,
+              vertical: screenHeight * 0.015,
+            ),
           ),
         ),
-      ),
+        SizedBox(height: screenHeight * 0.015),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: onSave,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              textStyle: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: screenWidth * 0.032,
+                fontWeight: FontWeight.w700,
+              ),
+              padding: EdgeInsets.symmetric(vertical: screenHeight * 0.012),
+            ),
+            child: const Text('Save'),
+          ),
+        ),
+      ],
     );
   }
 }

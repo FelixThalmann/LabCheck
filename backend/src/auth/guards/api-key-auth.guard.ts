@@ -15,10 +15,24 @@ export class ApiKeyAuthGuard implements CanActivate {
     private readonly configService: ConfigService,
   ) {
     this.expectedApiKey = this.configService.get<string>('STATIC_API_KEY');
+    
+    // Debug: Alle verfügbaren Environment-Variablen loggen (nur zum Debugging)
+    this.logger.debug('Available environment variables:', Object.keys(process.env).filter(key => key.includes('API')));
+    this.logger.debug(`ConfigService.get('STATIC_API_KEY'): ${this.expectedApiKey ? '[SET]' : '[UNDEFINED]'}`);
+    this.logger.debug(`process.env.STATIC_API_KEY: ${process.env.STATIC_API_KEY ? '[SET]' : '[UNDEFINED]'}`);
+    
     if (!this.expectedApiKey) {
-      this.logger.error('STATIC_API_KEY is not defined in environment variables. API Key authentication will fail.');
-      // Optional: Anwendungstart verhindern, wenn Key fehlt
-      // throw new Error('STATIC_API_KEY is not defined in environment variables.');
+      this.logger.error('CRITICAL: STATIC_API_KEY is not defined in environment variables.');
+      this.logger.error('Please ensure STATIC_API_KEY is set in your .env file or environment.');
+      // Fallback auf process.env für den Fall, dass ConfigService nicht funktioniert
+      this.expectedApiKey = process.env.STATIC_API_KEY;
+      if (this.expectedApiKey) {
+        this.logger.warn('Using fallback process.env.STATIC_API_KEY');
+      } else {
+        this.logger.error('Neither ConfigService nor process.env contain STATIC_API_KEY');
+      }
+    } else {
+      this.logger.log('STATIC_API_KEY successfully loaded via ConfigService');
     }
   }
 
@@ -50,10 +64,12 @@ export class ApiKeyAuthGuard implements CanActivate {
       throw new UnauthorizedException('Interner Authentifizierungsfehler.');
     }
 
-    const apiKey = request.headers['x-api-key']; // Wir erwarten den API-Key im Header 'x-api-key'
+    // Node.js konvertiert HTTP-Header automatisch zu Kleinbuchstaben
+    // Client sendet: "X-API-Key: 12345" -> wird zu: request.headers['x-api-key']
+    const apiKey = request.headers['x-api-key'];
 
     if (!apiKey) {
-      this.logger.warn('API Key (x-api-key) missing from request headers.');
+      this.logger.warn('API Key (X-API-Key) missing from request headers.');
       throw new UnauthorizedException('API Key fehlt.');
     }
 
@@ -63,8 +79,10 @@ export class ApiKeyAuthGuard implements CanActivate {
       // request.user = { id: 'static-api-user', roles: ['admin'] }; 
       return true;
     } else {
+      this.logger.log(`Received API Key: ${apiKey}`);
+      this.logger.log(`Expected API Key: ${this.expectedApiKey}`);
       this.logger.warn('Invalid API Key received.');
       throw new UnauthorizedException('Ungültiger API Key.');
     }
   }
-} 
+}

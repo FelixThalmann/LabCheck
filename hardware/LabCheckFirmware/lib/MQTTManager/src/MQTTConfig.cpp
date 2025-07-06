@@ -1,4 +1,11 @@
 #include "MQTTConfig.h"
+#include <Preferences.h>
+
+const String MQTTConfig::DEF_BROKER = "192.168.137.1";
+const String MQTTConfig::DEF_PORT = "1883";
+const String MQTTConfig::DEF_USERNAME = "";
+const String MQTTConfig::DEF_PASSWORD = "";
+
 
 bool MQTTConfig::ackReceived = false;
 
@@ -8,20 +15,30 @@ void MQTTConfig::ackCallback(char* topic, byte* payload, unsigned int length) {
 
 MQTTConfig::MQTTConfig() : 
     mqttClient(wifiClient),
-    mqtt_username(nullptr),
-    mqtt_password(nullptr),
+    username(""),
+    password(""),
     credentialsSet(false) {
     pendingPublish.active = false;
 }
 
-void MQTTConfig::begin(const char* broker, uint16_t port) {
-    mqttClient.setServer(broker, port);
+void MQTTConfig::begin() {
+    loadCredentials();
+    loadBroker();
+    mqttClient.setServer(this->broker.c_str(), this->port);
 }
 
 void MQTTConfig::setCredentials(const char* username, const char* password) {
-    mqtt_username = username;
-    mqtt_password = password;
+    this->username = username;
+    this->password = password;
+    saveCredentials();
     credentialsSet = true;
+}
+
+void MQTTConfig::setServer(const char* broker, uint16_t port) {
+    this->broker = broker;
+    this->port = port;
+    mqttClient.setServer(broker, port);
+    saveBroker();
 }
 
 bool MQTTConfig::connect(const char* clientId) {
@@ -36,7 +53,7 @@ bool MQTTConfig::connect(const char* clientId) {
 
     while (attempts < maxAttempts) {
         if (credentialsSet) {
-            if (mqttClient.connect(clientId, mqtt_username, mqtt_password)) {
+            if (mqttClient.connect(clientId, username.c_str(), password.c_str())) {
                 Serial.println(F("MQTT connected!"));
                 return true;
             }
@@ -141,4 +158,32 @@ void MQTTConfig::reconnect(const char* clientId) {
             delay(5000);
         }
     }
+}
+
+void MQTTConfig::saveCredentials() {
+    prefs.begin("mqtt", false);
+    prefs.putString("mqtt_user", username ? username : "");
+    prefs.putString("mqtt_pass", password ? password : "");
+    prefs.end();
+}
+
+void MQTTConfig::loadCredentials() {
+    prefs.begin("mqtt", true);
+    username = prefs.getString("mqtt_user", DEF_USERNAME);
+    password = prefs.getString("mqtt_pass", DEF_PASSWORD);
+    prefs.end();
+}
+
+void MQTTConfig::saveBroker() {
+    prefs.begin("mqtt", false);
+    prefs.putString("mqtt_broker", broker.length() > 0 ? broker : DEF_BROKER);
+    prefs.putUShort("mqtt_port", port);
+    prefs.end();
+}
+
+void MQTTConfig::loadBroker() {
+    prefs.begin("mqtt", true);
+    broker = prefs.getString("mqtt_broker", DEF_BROKER);
+    port = prefs.getUShort("mqtt_port", DEF_PORT.toInt());
+    prefs.end();
 }

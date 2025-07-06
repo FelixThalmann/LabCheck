@@ -15,7 +15,7 @@ class LabStatusDto {
     required this.currentDate,
   });
 
-  // Factory-Konstruktor für die Erstellung aus JSON
+  // Factory constructor for creating from JSON
   factory LabStatusDto.fromJson(Map<String, dynamic> json) {
     return LabStatusDto(
       isOpen: json['isOpen'] as bool,
@@ -27,14 +27,14 @@ class LabStatusDto {
     );
   }
 
-  // Methode zum Konvertieren in JSON
+  // Method to convert to JSON
   Map<String, dynamic> toJson() {
     return {
       'isOpen': isOpen,
       'currentOccupancy': currentOccupancy,
       'maxOccupancy': maxOccupancy,
       'color': color,
-      'date': currentDate.toIso8601String(),
+      'currentDate': currentDate.toIso8601String(),
       'lastUpdated': lastUpdated.toIso8601String(),
     };
   }

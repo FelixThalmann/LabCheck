@@ -1,0 +1,43 @@
+# ---- DB Configuration ----
+
+# Within the container use postgres and from outside the container use localhost
+DATABASE_URL=
+
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+POSTGRES_DB=
+
+# ---- Backend Configuration ----
+
+# Host URL
+DEV_API_BASE_URL=
+
+# Backend Configuration
+PORT_BACKEND=
+
+ADMIN_PASSWORD=
+JWT_SECRET=
+JWT_ACCESS_TOKEN_EXPIRATION_TIME=
+STATIC_API_KEY=
+
+# Demo Mode Configuration
+DEMO_MODE=false
+DEMO_DAY=2025-07-07
+
+# ---- MQTT ----
+
+MQTT_BROKER_URL=
+MQTT_USERNAME=
+MQTT_PASSWORD=
+
+# ---- Prediction Configuration ----
+
+PORT_PREDICTION=
+DEBUG_PREDICTION=
+TRAINING_INTERVAL=
+
+# ---- Frontend Configuration ----
+
+ENVIRONMENT=development
+# Use demo data in the app
+DEMO_MODE=false

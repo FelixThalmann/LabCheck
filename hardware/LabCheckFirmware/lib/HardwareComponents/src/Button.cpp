@@ -1,4 +1,4 @@
-#include "Button.h"
+/* #include "Button.h"
 
 Button::Button() : 
     button1PrevState(HIGH),
@@ -76,3 +76,4 @@ void Button::onButton2Pressed(void (*callback)()) {
 void Button::onButton2Released(void (*callback)()) {
     button2ReleasedCallback = callback;
 }
+ */

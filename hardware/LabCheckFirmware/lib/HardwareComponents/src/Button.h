@@ -1,4 +1,4 @@
-#ifndef BUTTON_H
+/* #ifndef BUTTON_H
 #define BUTTON_H
 
 #include <Arduino.h>
@@ -35,3 +35,4 @@ private:
 };
 
 #endif // BUTTON_H
+ */

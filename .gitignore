@@ -1,14 +1,21 @@
 ## ----- Project -----
 
 .env
-
+SERVER.md
+backend/data-generator/node_modules/
+backend/data-generator/dist/
 # IDE
 .idea/
-
 ## ----- Backend -----
 
 # Database
 data/postgres/
+
+## ----- Prediction Service -----
+
+# Models
+prediction-service/models/
+
 
 
 ## ----- Frontend -----

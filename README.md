@@ -1,51 +1,101 @@
 # LabCheck
 
-## Frontend - Flutter
+## Setup (linux based systems)
 
-### Setup
-
-Add the `.env` file to the `frontend/assets/` directory.
-
-### Install dependencies
+Locate the `.env` file in the root directory.
+Copy the `.env` file to the different directories (backend, frontend, prediction-service).
 
 ```bash
-flutter pub get
+./sync-env.sh
 ```
 
-### Run the app on simulator
+## How to run the project
 
-```bash
-flutter run
-```
+### Run/Stop as production
 
-### Build the app
-
-Android:
-```bash
-flutter build apk
-```
-
-iOS:
-```bash
-flutter build ios
-```
-
-### Install the app on device (iOS)
-
-```bash
-flutter build ipa --release --export-method=development
-```
-
-Open the `ios/Runner.xcworkspace` in Xcode. Open "Window" -> "Devices and Simulators" and select the device. Drag the ".ipa" file into "Installed Apps"
-
-## Backend - Node.js and PostgreSQL
-
-### Database
-This project uses PostgreSQL as the database.
-
-#### Run Database
-
+Run all services:
 ```bash
 docker-compose up -d
 ```
 
+Stop all containers:
+```bash
+docker stop $(docker ps -aq)
+```
+
+Stop all containers and remove:
+```bash
+docker-compose down
+```
+
+### Docker helper commands
+Logs for all services (follow the logs):
+```bash
+docker-compose logs -f
+```
+
+Logs for one service (follow the logs):
+```bash
+docker-compose logs -f <service-name>
+```
+
+Rebuild the containers
+```bash
+docker-compose up -d --build
+```
+
+Remove images
+```bash
+docker image prune -f
+```
+
+Remove all containers and volumes
+```bash
+docker-compose down -v
+```
+
+Rebuild and run all services
+```bash
+docker-compose build --no-cache && docker-compose up -d
+```
+
+## Database
+
+To interact with the database from the outside, modify the `.env` file and update the `DATABASE_URL` variable for the localhost.
+
+### Show data in database
+
+```bash
+cd backend
+npx prisma studio
+```
+
+### Add demo data to database
+
+```bash
+cd backend
+npm run db:seed:test 
+```
+
+or
+
+```bash
+cd backend
+npx ts-node scripts/import-csv.ts data-generator/output/room_d4c6ogy1g0i6v8mv74fd1zwj/lstm_training_data.csv
+```
+
+## Frontend - Flutter
+
+[Frontend README](frontend/README.md)
+
+## Backend - NestJS, PostgreSQL, MQTT
+
+[Backend README](backend/README.md)
+
+## Prediction Service - Python
+
+[Prediction Service README](prediction-service/README.md)
+
+## Hardware
+
+[Hardware README](hardware/README.md)
