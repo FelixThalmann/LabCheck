@@ -8,9 +8,6 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma.service';
 import * as mqtt from 'mqtt';
 import { MqttClient, IClientOptions } from 'mqtt';
-import { plainToClass } from 'class-transformer';
-import { validate, ValidationError } from 'class-validator';
-import { EventsGateway } from '../../events/events/events.gateway';
 import { EventType, Sensor, Room } from '@prisma/client';
 import { OccupancyService } from '../../occupancy/services/occupancy.service';
 import { RoomManagementService } from '../../occupancy/services/room-management.service';
@@ -35,7 +32,6 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly configService: ConfigService,
     private readonly prismaService: PrismaService,
-    private readonly eventsGateway: EventsGateway,
     private readonly occupancyService: OccupancyService,
     private readonly roomManagementService: RoomManagementService,
   ) {}
@@ -50,11 +46,6 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
     const brokerUrl = this.configService.get<string>('MQTT_BROKER_URL');
     const mqttOptions: IClientOptions = {
       clientId: `nest-mqtt-ingestion-client-${Math.random().toString(16).substring(2, 8)}`,
-      // Additional standard options if needed:
-      // keepalive: 60,
-      // reconnectPeriod: 1000, // milliseconds until next connection attempt
-      // connectTimeout: 30 * 1000, // milliseconds
-      // clean: true, // if false, subscriptions and offline messages (QoS > 0) are retained
     };
     const username = this.configService.get<string>('MQTT_USERNAME');
     const password = this.configService.get<string>('MQTT_PASSWORD');
@@ -119,10 +110,6 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
             case 'entrance':
               // Entrance/Exit events: "1" = IN, "0" = OUT
               await this.handleLightBarrierEvent(esp32Id, messageContent);
-              break;
-            case 'status':
-              // General status messages
-              await this.handleGeneralStatusEvent(esp32Id, messageContent);
               break;
             default:
               this.logger.warn(`Unknown event type '${eventType}' for ESP32 ID '${esp32Id}' on topic '${topic}'. Message ignored.`);
@@ -241,60 +228,6 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
   /**
    * @private
    * @async
-   * @method validateAndLogErrors
-   * @description Validates the incoming data against a specified DTO class.
-   * Logs any validation errors and returns null if validation fails.
-   * @template T Extends a plain object.
-   * @param {unknown} data - The raw data to validate.
-   * @param {new () => T} DtoClass - The DTO class constructor to validate against.
-   * @param {string} sensorEsp32Id - The ESP32 ID of the sensor from which the data originated.
-   * @param {string} eventType - The type of event being validated (e.g., 'door', 'passage').
-   * @returns {Promise<T | null>} A promise that resolves to the validated DTO instance or null if validation fails.
-   */
-  private async validateAndLogErrors<T extends object>(
-    data: unknown,
-    DtoClass: new () => T,
-    sensorEsp32Id: string,
-    eventType: string
-  ): Promise<T | null> {
-    // Logge, dass die Validierung für diesen Event-Typ und diese Sensor-ID beginnt
-    this.logger.verbose(`Validiere ${eventType}-Event-Daten für ESP32 ID '${sensorEsp32Id}'.`);
-    
-    // Prüfe, ob die Daten ein Objekt sind (und nicht null)
-    if (typeof data !== 'object' || data === null) {
-      this.logger.warn(
-        `Validierung fehlgeschlagen für ${eventType}-Event von ESP32 ID '${sensorEsp32Id}': Daten sind kein Objekt. Empfangen: ${JSON.stringify(data)}. Event wird ignoriert.`
-      );
-      return null;
-    }
-
-    // Wandle die Rohdaten in eine Instanz der DTO-Klasse um
-    const dtoInstance = plainToClass(DtoClass, data);
-
-    // Führe die Validierung der Instanz durch (asynchron)
-    const errors: ValidationError[] = await validate(dtoInstance);
-
-    // Falls Fehler auftreten, logge alle Fehlermeldungen und gib null zurück
-    if (errors.length > 0) {
-      const errorMessages = errors
-        .map(err => Object.values(err.constraints || {}).join(', '))
-        .join('; ');
-      this.logger.warn(
-        `Validierung fehlgeschlagen für ${eventType}-Event von ESP32 ID '${sensorEsp32Id}': ${errorMessages}. Daten: ${JSON.stringify(data)}. Event wird ignoriert.`
-      );
-      return null;
-    }
-
-    // Validierung erfolgreich, logge dies und gib die Instanz zurück
-    this.logger.verbose(
-      `Validierung erfolgreich für ${eventType}-Event-Daten von ESP32 ID '${sensorEsp32Id}'.`
-    );
-    return dtoInstance;
-  }
-
-  /**
-   * @private
-   * @async
    * @method handleSimpleDoorEvent
    * @description Handles simple door status events from dynamic topics.
    * The payload is expected to be a simple string "1" (door open) or "0" (door closed).
@@ -360,32 +293,6 @@ export class MqttIngestionService implements OnModuleInit, OnModuleDestroy {
     } catch (error) {
       this.logger.error(`Failed to process door event for ESP32 ID '${esp32Id}'. Payload: "${statusPayload}". Error: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error.stack : undefined);
     }
-  }
-
-  /**
-   * @private
-   * @async
-   * @method handleGeneralStatusEvent
-   * @description Handles general status messages from ESP32 devices.
-   * @param {string} esp32Id - The ESP32 ID of the sensor.
-   * @param {string} statusPayload - The raw string payload.
-   * @returns {Promise<void>}
-   */
-  private async handleGeneralStatusEvent(esp32Id: string, statusPayload: string): Promise<void> {
-    this.logger.debug(`Processing general status event from ESP32 ID '${esp32Id}'. Payload: "${statusPayload}"`);
-
-    // Versuche, den Sensor anhand der ESP32-ID aus der Datenbank zu holen (oder ggf. anzulegen)
-    const sensor = await this.getSensor(esp32Id);
-    if (!sensor) {
-      this.logger.error(`Could not find or create sensor for ESP32 ID '${esp32Id}'. Status event cannot be processed.`);
-      return;
-    }
-
-    // Log das Status-Event für Monitoring (ohne Speicherung in der DB)
-    this.logger.log(`Status message from sensor ${sensor.esp32Id}: "${statusPayload}"`);
-    
-    // Optional: Hier könnte eine spezifische Logik für verschiedene Status-Messages implementiert werden
-    // z.B. WiFi-Status, Battery-Level, Sensor-Health, etc.
   }
 
   /**

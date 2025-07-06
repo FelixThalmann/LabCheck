@@ -4,7 +4,6 @@ import { PredictionsService } from '../services/predictions.service';
 import { ApiKeyAuthGuard } from '../../auth/guards/api-key-auth.guard';
 import {
   DayPredictionResponseDto,
-  WeekPredictionResponseDto,
   ExtendedWeekPredictionResponseDto,
   PredictionRequestDto,
   SinglePredictionResponseDto,

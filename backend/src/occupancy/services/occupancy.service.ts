@@ -6,7 +6,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { EventsGateway } from '../../events/events/events.gateway';
-import { OccupancyStatusDto } from '../../door/models/occupancy-status.dto';
+import { OccupancyStatusDto } from '../../door/models';
 
 /**
  * Service for managing room occupancy based on sensor events

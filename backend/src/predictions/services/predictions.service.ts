@@ -1,12 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { DemoDateService } from '../../core/services/demo-date.service';
-import { PredictionCalculationService } from './prediction-calculation.service';
 import { PredictionApiService } from './prediction-api.service';
 import { HolidayService } from './holiday.service';
 import {
   DayPredictionResponseDto,
-  WeekPredictionResponseDto,
   ExtendedWeekPredictionResponseDto,
   WeekPredictionItemDto,
   PredictionRequestDto,
@@ -410,65 +408,6 @@ export class PredictionsService {
         color: 'yellow',
       }));
     }
-  }
-
-  /**
-   * @method generateMLWeekPredictions
-   * @description Generiert ML-basierte Wochenvorhersagen (Durchschnitt pro Tag)
-   * @param weekStart - Startdatum der Woche
-   * @returns Array von Wochenvorhersagen
-   */
-  private async generateMLWeekPredictions(weekStart: Date): Promise<Array<{
-    occupancy: number;
-    day: string;
-    color: string;
-  }>> {
-    const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-    const weekPredictions: Array<{ occupancy: number; day: string; color: string; }> = [];
-
-    this.logger.debug('Generating ML week predictions');
-
-    for (let dayIndex = 0; dayIndex < 5; dayIndex++) { // Nur Wochentage
-      const currentDay = new Date(weekStart);
-      currentDay.setDate(weekStart.getDate() + dayIndex);
-      
-      // Überspringe Wochenenden und Feiertage
-      const isWeekend = currentDay.getDay() === 0 || currentDay.getDay() === 6;
-      const isHoliday = await this.holidayService.isHoliday(currentDay);
-      
-      if (isWeekend || isHoliday) {
-        const reason = isWeekend ? 'weekend' : 'holiday';
-        this.logger.debug(`Skipping ${reason} day ${dayIndex} in week predictions`);
-        continue;
-      }
-      
-      try {
-        // Hole Tagesvorhersagen für diesen Tag
-        const dayPredictions = await this.generateMLDayPredictions(currentDay);
-        
-        // Berechne Durchschnitt der Belegung für den Tag
-        const averageOccupancy = dayPredictions.reduce((sum, pred) => sum + pred.occupancy, 0) / dayPredictions.length;
-        const roundedOccupancy = Math.round(averageOccupancy);
-        const color = await this.calculateColorFromOccupancy(roundedOccupancy);
-        
-        weekPredictions.push({
-          occupancy: roundedOccupancy,
-          day: daysOfWeek[dayIndex],
-          color,
-        });
-      } catch (error) {
-        this.logger.warn(`Error generating predictions for day ${dayIndex}: ${error.message}`);
-        
-        // Fallback für einzelne Tage
-        weekPredictions.push({
-          occupancy: Math.floor(Math.random() * 8) + 1,
-          day: daysOfWeek[dayIndex],
-          color: 'yellow',
-        });
-      }
-    }
-
-    return weekPredictions;
   }
 
   /**
