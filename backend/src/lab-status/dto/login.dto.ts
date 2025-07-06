@@ -7,7 +7,8 @@ import { IsInt, IsString, Min, Max, MinLength } from 'class-validator';
  */
 export class LoginDto {
   @ApiProperty({
-    description: 'Administratorpasswort für die Kapazitätsänderung',
+    description: 'Administrator password for authentication',
+    example: 'admin123',
   })
   @IsString()
   password: string;

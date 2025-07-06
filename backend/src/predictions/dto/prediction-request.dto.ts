@@ -8,7 +8,7 @@ import { IsString, IsISO8601 } from 'class-validator';
  */
 export class PredictionRequestDto {
   @ApiProperty({
-    description: 'Zeitstempel für die Vorhersage im ISO 8601 Format',
+    description: 'Timestamp for prediction in ISO 8601 format',
     example: '2025-06-19T14:30:00',
     format: 'date-time'
   })

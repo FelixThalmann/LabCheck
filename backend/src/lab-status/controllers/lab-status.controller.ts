@@ -33,17 +33,17 @@ export class LabStatusController {
    */
   @Get('status')
   @ApiOperation({
-    summary: 'Aktueller Laborstatus',
-    description: 'Liefert den aktuellen Status und die Belegung des Labors',
+    summary: 'Get Laboratory Status',
+    description: 'Returns current laboratory status and occupancy information',
   })
   @ApiResponse({
     status: 200,
-    description: 'Laborstatus erfolgreich abgerufen',
+    description: 'Laboratory status retrieved successfully',
     type: LabStatusResponseDto,
   })
   @ApiResponse({
     status: 500,
-    description: 'Interner Server-Fehler',
+    description: 'Internal server error',
   })
   async getLabStatus(): Promise<LabStatusResponseDto> {
     this.logger.debug('REST API: GET /api/lab/status');
@@ -57,12 +57,12 @@ export class LabStatusController {
    */
   @Get('capacity')
   @ApiOperation({
-    summary: 'Aktuelle Laborkapazität abrufen',
-    description: 'Liefert die aktuell konfigurierte Laborkapazität',
+    summary: 'Get Laboratory Capacity',
+    description: 'Returns the currently configured laboratory capacity',
   })
   @ApiResponse({
     status: 200,
-    description: 'Laborkapazität erfolgreich abgerufen',
+    description: 'Laboratory capacity retrieved successfully',
     type: LabCapacityResponseDto,
   })
   async getLabCapacity(): Promise<number> {
@@ -77,21 +77,21 @@ export class LabStatusController {
    */
   @Post('capacity')
   @ApiOperation({
-    summary: 'Laborkapazität setzen',
-    description: 'Setzt die Laborkapazität mit Administratorpasswort-Schutz',
+    summary: 'Set Laboratory Capacity',
+    description: 'Sets the laboratory capacity with administrator password protection',
   })
   @ApiResponse({
     status: 200,
-    description: 'Laborkapazität erfolgreich gesetzt',
+    description: 'Laboratory capacity set successfully',
     type: LabSettingResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Ungültige Eingabedaten',
+    description: 'Invalid input data',
   })
   @ApiResponse({
     status: 401,
-    description: 'Ungültiges Administratorpasswort',
+    description: 'Invalid administrator password',
   })
   async setLabCapacity(
     @Body() setCapacityDto: SetLabCapacityDto,
@@ -105,13 +105,27 @@ export class LabStatusController {
 
   @Post('current-capacity')
   @ApiOperation({
-    summary: 'Aktuelle Laborkapazität abrufen',
-    description: 'Liefert die aktuell konfigurierte Laborkapazität',
+    summary: 'Set Current Laboratory Capacity',
+    description: 'Sets the current laboratory capacity with password protection',
   })
   @ApiResponse({
     status: 200,
-    description: 'Aktuelle Laborkapazität erfolgreich abgerufen',
-    type: LabCapacityResponseDto,
+    description: 'Current laboratory capacity set successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid password',
   })
   async setCurrentCapacity(
     @Body() setCapacityDto: SetCurrentLabCapacityDto,
@@ -125,11 +139,27 @@ export class LabStatusController {
 
   @Post('entrance-direction')
   @ApiOperation({
-    summary: 'Eingangrichtung setzen',
-    description: 'Setzt die Eingangrichtung',
+    summary: 'Set Entrance Direction',
+    description: 'Sets the entrance direction for the laboratory',
   })
   @ApiResponse({
     status: 200,
+    description: 'Entrance direction set successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid password',
   })
   async setEntranceDirection(
     @Body() setEntranceDirectionDto: SetEntranceDirectionDto,
@@ -147,11 +177,22 @@ export class LabStatusController {
   @Post('login')
   @ApiOperation({
     summary: 'Login',
-    description: 'Login',
+    description: 'Authenticate with administrator password',
   })
   @ApiResponse({
     status: 200,
-    description: 'Login erfolgreich',
+    description: 'Login successful',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid password',
   })
   async login(@Body() loginDto: LoginDto): Promise<{ success: boolean; message: string }> {
     return this.labStatusService.login(loginDto.password);

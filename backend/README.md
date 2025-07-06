@@ -1,268 +1,384 @@
 # LabCheck Backend
 
-Dieses Backend ist verantwortlich für die Entgegennahme von Sensordaten über MQTT, die Speicherung dieser Daten in einer PostgreSQL-Datenbank und die Bereitstellung einer GraphQL-API für den Datenzugriff.
+A comprehensive backend system for laboratory monitoring, occupancy tracking, and machine learning predictions. Built with NestJS, PostgreSQL, and MQTT for real-time sensor data processing.
 
-## Inhaltsverzeichnis
+## Table of Contents
 
-- [Voraussetzungen](#voraussetzungen)
-- [Umgebungsvariablen](#umgebungsvariablen)
-- [Datenbank einrichten (PostgreSQL)](#datenbank-einrichten-postgresql)
-- [MQTT-Broker einrichten (Mosquitto)](#mqtt-broker-einrichten-mosquitto)
-- [Installation der Abhängigkeiten](#installation-der-abhängigkeiten)
-- [Datenbankschema anwenden (Prisma Migrate)](#datenbankschema-anwenden-prisma-migrate)
-- [Anwendung starten](#anwendung-starten)
-- [Tests ausführen](#tests-ausführen)
-  - [Unit-Tests](#unit-tests)
-  - [End-to-End (E2E) Tests](#end-to-end-e2e-tests)
-- [Linting und Formatierung](#linting-und-formatierung)
-- [Für die Produktion bauen](#für-die-produktion-bauen)
-- [Mit der API interagieren (GraphQL)](#mit-der-api-interagieren-graphql)
-- [Hardware-in-the-Loop-Testing](#hardware-in-the-loop-testing)
+- [LabCheck Backend](#labcheck-backend)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Architecture](#architecture)
+  - [Prerequisites](#prerequisites)
+  - [Environment Variables](#environment-variables)
+  - [Quick Start with Docker Compose](#quick-start-with-docker-compose)
+  - [Manual Setup](#manual-setup)
+    - [1. Database Setup](#1-database-setup)
+    - [2. MQTT Broker Setup](#2-mqtt-broker-setup)
+    - [3. Backend Installation](#3-backend-installation)
+    - [4. Prediction Service (Optional)](#4-prediction-service-optional)
+  - [Development](#development)
+    - [Available Scripts](#available-scripts)
+    - [Project Structure](#project-structure)
+  - [Testing](#testing)
+  - [API Documentation](#api-documentation)
+    - [Features](#features)
+    - [Key Endpoints](#key-endpoints)
+      - [Lab Status (`/api/lab/*`)](#lab-status-apilab)
+      - [Predictions (`/api/predictions/*`)](#predictions-apipredictions)
+      - [Health Check](#health-check)
+    - [Authentication](#authentication)
+  - [Database Schema](#database-schema)
+    - [Key Relationships](#key-relationships)
+  - [MQTT Integration](#mqtt-integration)
+    - [Supported Event Types](#supported-event-types)
+  - [Production Deployment](#production-deployment)
+    - [Docker Production Build](#docker-production-build)
+    - [Environment Considerations](#environment-considerations)
+    - [Health Checks](#health-checks)
+  - [Troubleshooting](#troubleshooting)
+    - [Common Issues](#common-issues)
+    - [Logs](#logs)
 
-## Voraussetzungen
+## Overview
 
-Stellen Sie sicher, dass die folgende Software auf Ihrem System installiert ist:
+LabCheck Backend provides:
+- **Real-time laboratory monitoring** via MQTT sensor data ingestion
+- **REST API** for laboratory status and capacity management
+- **Machine learning predictions** for daily and weekly occupancy forecasting
+- **WebSocket events** for real-time updates
+- **API key authentication** for secure access
+- **Demo mode** for testing and presentations
 
--   [Node.js](https://nodejs.org/) (Version >= 18.x empfohlen)
--   [npm](https://www.npmjs.com/) (wird mit Node.js geliefert) oder [Yarn](https://yarnpkg.com/)
--   [Docker](https://www.docker.com/get-started) (für PostgreSQL und MQTT-Broker)
--   [Git](https://git-scm.com/)
+## Architecture
 
-## Umgebungsvariablen
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   ESP32 Sensors │    │   MQTT Broker   │    │   NestJS Backend│
+│   (Hardware)    │───▶│   (Mosquitto)   │───▶│   (REST API)    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                       │
+                       ┌─────────────────┐            │
+                       │  PostgreSQL DB  │◀───────────┘
+                       └─────────────────┘
+                                │
+                       ┌─────────────────┐
+                       │ Prediction      │
+                       │ Service (ML)    │
+                       └─────────────────┘
+```
 
-Das Backend verwendet Umgebungsvariablen zur Konfiguration. Erstellen Sie eine `.env`-Datei im Wurzelverzeichnis des `backend`-Projekts (`backend/.env`) basierend auf der `.env.example`-Datei (falls vorhanden) oder mit folgendem Inhalt:
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) (>= 18.x)
+- [npm](https://www.npmjs.com/) or [Yarn](https://yarnpkg.com/)
+- [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
+- [Git](https://git-scm.com/)
+
+## Environment Variables
+
+Create a `.env` file in the backend directory:
 
 ```env
-# PostgreSQL Datenbank Verbindungs-URL
-# Format: postgresql://USER:PASSWORD@HOST:PORT/DATABASE
+# Database Configuration
 DATABASE_URL="postgresql://admin:admin@localhost:5432/labcheck_db?schema=public"
 
-# MQTT Broker URL
-# Format: mqtt://HOST:PORT
+# MQTT Configuration
 MQTT_BROKER_URL="mqtt://localhost:1883"
 
-# Optional: Anmeldeinformationen für den MQTT-Broker, falls konfiguriert
-# MQTT_USERNAME="your_mqtt_username"
-# MQTT_PASSWORD="your_mqtt_password"
+# API Configuration
+PORT=3001
+STATIC_API_KEY="your-secure-api-key-here"
 
-# Port, auf dem die NestJS-Anwendung laufen soll
-# PORT=3000
+# Prediction Service
+PREDICTION_SERVICE_URL="http://localhost:8000"
+PORT_PREDICTION=8000
+DEBUG_PREDICTION=false
+TRAINING_INTERVAL=3600
+
+# Demo Mode (for testing/presentations)
+DEMO_MODE=false
+DEMO_DAY="2024-01-15"
+
+# Docker Compose Database
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=admin
+POSTGRES_DB=labcheck_db
+PORT_BACKEND=3001
 ```
 
-**Wichtige Hinweise:**
-- Passen Sie `USER`, `PASSWORD`, `HOST`, `PORT` und `DATABASE` in `DATABASE_URL` an Ihre lokale PostgreSQL-Konfiguration an.
-- Die Standardwerte oben gehen davon aus, dass Sie die unten stehenden Docker-Befehle verwenden.
+## Quick Start with Docker Compose
 
-## Datenbank einrichten (PostgreSQL)
+The easiest way to run the entire system:
 
-Wir empfehlen die Verwendung von Docker, um eine PostgreSQL-Datenbank schnell einzurichten:
+```bash
+# Clone the repository
+git clone <repository-url>
+cd LabCheck
 
-1.  **PostgreSQL-Container starten:**
-    ```bash
-    docker run --name labcheck-postgres -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin -e POSTGRES_DB=labcheck_db -p 5432:5432 -d postgres:15
-    ```
-    Dieser Befehl:
-    -   Startet einen PostgreSQL 15 Container namens `labcheck-postgres`.
-    -   Setzt den Benutzer auf `admin`, das Passwort auf `admin` und die Datenbank auf `labcheck_db`.
-    -   Mappt den Port `5432` des Containers auf Port `5432` Ihres Host-Systems.
-    -   Läuft im Hintergrund (`-d`).
+# Start all services
+docker-compose up -d
 
-2.  **Container stoppen (falls nötig):**
-    ```bash
-    docker stop labcheck-postgres
-    ```
+# Check service status
+docker-compose ps
 
-3.  **Container entfernen (falls nötig, Daten gehen verloren, wenn kein Volume gemountet ist):**
-    ```bash
-    docker rm labcheck-postgres
-    ```
+# View logs
+docker-compose logs -f backend
+```
 
-## MQTT-Broker einrichten (Mosquitto)
+The system will be available at:
+- **Backend API**: http://localhost:3001
+- **API Documentation**: http://localhost:3001/api/docs
+- **PostgreSQL**: localhost:5432
+- **MQTT Broker**: localhost:1883
 
-Wir empfehlen die Verwendung von Docker, um einen Mosquitto MQTT-Broker einzurichten:
+## Manual Setup
 
-1.  **Mosquitto-Container starten:**
-    ```bash
-    docker run --name labcheck-mosquitto -p 1883:1883 -p 9001:9001 -d eclipse-mosquitto:latest
-    ```
-    Dieser Befehl:
-    -   Startet einen Mosquitto-Container namens `labcheck-mosquitto`.
-    -   Mappt den MQTT-Standardport `1883` auf Port `1883` Ihres Host-Systems.
-    -   Mappt den Websocket-Port `9001` (optional, falls benötigt) auf Port `9001`.
-    -   Läuft im Hintergrund (`-d`).
+### 1. Database Setup
 
-2.  **Container stoppen (falls nötig):**
-    ```bash
-    docker stop labcheck-mosquitto
-    ```
+```bash
+# Start PostgreSQL with Docker
+docker run --name labcheck-postgres \
+  -e POSTGRES_USER=admin \
+  -e POSTGRES_PASSWORD=admin \
+  -e POSTGRES_DB=labcheck_db \
+  -p 5432:5432 \
+  -d postgres:15
 
-3.  **Container entfernen (falls nötig):**
-    ```bash
-    docker rm labcheck-mosquitto
-    ```
+# Or use the provided docker-compose
+docker-compose up postgres -d
+```
 
-## Installation der Abhängigkeiten
+### 2. MQTT Broker Setup
 
-Navigieren Sie in das `backend`-Verzeichnis und installieren Sie die Projekt-Abhängigkeiten:
+```bash
+# Start Mosquitto with Docker
+docker run --name labcheck-mosquitto \
+  -p 1883:1883 \
+  -p 9001:9001 \
+  -d eclipse-mosquitto:2.0
+
+# Or use the provided docker-compose
+docker-compose up mqtt -d
+```
+
+### 3. Backend Installation
 
 ```bash
 cd backend
+
+# Install dependencies
 npm install
-```
-Oder mit Yarn:
-```bash
-cd backend
-yarn install
-```
 
-## Datenbankschema anwenden (Prisma Migrate)
+# Apply database migrations
+npx prisma migrate deploy
 
-Nachdem die PostgreSQL-Datenbank läuft und die Abhängigkeiten installiert sind, wenden Sie das Datenbankschema mit Prisma Migrate an:
+# Generate Prisma client
+npx prisma generate
 
-```bash
-npx prisma migrate dev --name init
-```
-Dieser Befehl:
-- Initialisiert die Datenbank, falls sie leer ist.
-- Wendet alle ausstehenden Migrationen an, um die Tabellen entsprechend `prisma/schema.prisma` zu erstellen.
-- `--name init` ist ein Beispielname für die erste Migration. Sie können den Namen anpassen.
-
-Sie können Prisma Studio verwenden, um Ihre Datenbank zu inspizieren:
-```bash
-npx prisma studio
+# Start the application
+npm run start:dev
 ```
 
-## Anwendung starten
-
-Sie können die Anwendung in verschiedenen Modi starten:
-
--   **Entwicklungsmodus (mit Watch-Funktion für Änderungen):**
-    ```bash
-    npm run start:dev
-    ```
-    Die Anwendung ist standardmäßig unter `http://localhost:3000` erreichbar (falls `PORT` nicht in `.env` anders gesetzt wurde).
-
--   **Normaler Start:**
-    ```bash
-    npm run start
-    ```
-
--   **Produktionsmodus (nach dem Build-Prozess, siehe unten):**
-    ```bash
-    npm run start:prod
-    ```
-
--   **Debugging-Modus (mit Watch-Funktion):**
-    ```bash
-    npm run start:debug
-    ```
-
-## Tests ausführen
-
-Das Projekt enthält Konfigurationen für Unit- und End-to-End-Tests mit Jest.
-
-### Unit-Tests
-
-Unit-Tests überprüfen einzelne Komponenten (Controller, Services, Resolver) isoliert.
-
--   **Alle Unit-Tests einmalig ausführen:**
-    ```bash
-    npm run test
-    ```
-
--   **Unit-Tests im Watch-Modus ausführen (erneutes Ausführen bei Dateiänderungen):**
-    ```bash
-    npm run test:watch
-    ```
-
--   **Unit-Tests mit Coverage-Report ausführen:**
-    ```bash
-    npm run test:cov
-    ```
-    Der Report wird im Verzeichnis `coverage/` generiert.
-
-### End-to-End (E2E) Tests
-
-E2E-Tests überprüfen den gesamten Anwendungsfluss, einschließlich API-Endpunkten und Datenbankinteraktionen. Stellen Sie sicher, dass Ihre Anwendung (und die abhängigen Dienste wie Datenbank und MQTT-Broker) läuft, bevor Sie E2E-Tests ausführen, die eine laufende Instanz erfordern könnten, oder dass die Tests ihre eigene Umgebung (z.B. Testdatenbank) verwalten.
-
--   **E2E-Tests ausführen:**
-    ```bash
-    npm run test:e2e
-    ```
-    Die Konfiguration für E2E-Tests befindet sich in `test/jest-e2e.json`.
-
-## Linting und Formatierung
-
-Das Projekt verwendet ESLint für Linting und Prettier für die Code-Formatierung.
-
--   **Code-Formatierung prüfen und korrigieren:**
-    ```bash
-    npm run format
-    ```
-
--   **Linting-Fehler prüfen und automatisch beheben (wenn möglich):**
-    ```bash
-    npm run lint
-    ```
-
-## Für die Produktion bauen
-
-Um eine produktionsreife Version der Anwendung zu erstellen:
+### 4. Prediction Service (Optional)
 
 ```bash
-npm run build
+cd prediction-service
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Start the prediction service
+python app/main.py
 ```
-Dieser Befehl kompiliert den TypeScript-Code und legt die Ausgabe im Verzeichnis `dist/` ab.
-Anschließend können Sie die Anwendung mit `npm run start:prod` starten.
 
-## Mit der API interagieren (GraphQL)
+## Development
 
-Wenn die Anwendung läuft, ist der GraphQL-Endpunkt standardmäßig unter `http://localhost:3000/graphql` verfügbar (oder dem Port, den Sie in `.env` konfiguriert haben).
+### Available Scripts
 
-Sie können Tools wie:
--   **Apollo Sandbox** (oft direkt im Browser unter der `/graphql`-URL verfügbar, wenn `playground` in NestJS konfiguriert ist)
--   [Postman](https://www.postman.com/)
--   [Insomnia](https://insomnia.rest/)
-verwenden, um GraphQL-Queries und -Mutationen an das Backend zu senden.
+```bash
+# Development
+npm run start:dev          # Start with hot reload
+npm run start:debug        # Start with debugger
 
-Beispiel-Query (alle Laboreinstellungen abrufen):
-```graphql
-query {
-  labSettings {
-    key
-    value
-    notes
-    createdAt
-    updatedAt
-  }
+# Building
+npm run build              # Build for production
+npm run start:prod         # Start production build
+
+# Database
+npx prisma studio          # Open database GUI
+npx prisma migrate dev     # Create and apply migration
+npx prisma generate        # Generate Prisma client
+
+# Code Quality
+npm run format             # Format code with Prettier
+npm run lint               # Lint and fix code
+```
+
+### Project Structure
+
+```
+src/
+├── auth/                  # Authentication (API key)
+├── core/                  # Core services (demo mode)
+├── door/                  # Door event models
+├── events/                # WebSocket events
+├── lab-status/            # Laboratory status API
+├── mqtt/                  # MQTT message handling
+├── occupancy/             # Occupancy management
+├── predictions/           # ML prediction endpoints
+└── prisma/                # Database service
+```
+
+## Testing
+
+```bash
+# Unit tests
+npm run test
+npm run test:watch
+npm run test:cov
+
+# End-to-end tests
+npm run test:e2e
+
+# Debug tests
+npm run test:debug
+```
+
+## API Documentation
+
+Once the application is running, visit http://localhost:3001/api/docs for interactive API documentation with Swagger UI.
+
+### Features
+- **Interactive Testing**: Try out endpoints directly from the browser
+- **Request/Response Examples**: See expected data formats
+- **Authentication**: Configure API key for protected endpoints
+- **Filtering**: Search and filter endpoints by tags
+- **Schema Validation**: Automatic validation of request/response schemas
+
+### Key Endpoints
+
+#### Lab Status (`/api/lab/*`)
+- `GET /api/lab/status` - Current laboratory status and occupancy
+- `GET /api/lab/capacity` - Get current laboratory capacity
+- `POST /api/lab/capacity` - Set laboratory capacity (requires password)
+- `POST /api/lab/current-capacity` - Set current capacity (requires password)
+- `POST /api/lab/entrance-direction` - Set entrance direction (requires password)
+- `POST /api/lab/login` - Login endpoint
+
+#### Predictions (`/api/predictions/*`)
+- `GET /api/predictions/day` - Daily occupancy predictions (optional date parameter)
+- `GET /api/predictions/week` - Weekly occupancy predictions (current and next week)
+- `POST /api/predictions/single` - Single ML prediction for specific timestamp
+
+#### Health Check
+- `GET /` - Basic health check endpoint
+
+### Authentication
+
+Most endpoints require API key authentication:
+```bash
+curl -H "X-API-Key: your-api-key" http://localhost:3001/api/lab/status
+```
+
+## Database Schema
+
+The system uses PostgreSQL with the following main entities:
+
+- **Room**: Laboratory rooms with capacity and settings
+- **Sensor**: ESP32 sensors with location and type information
+- **Event**: Door and passage events from sensors
+- **DayPrediction**: Daily occupancy predictions
+- **WeekPrediction**: Weekly occupancy predictions
+
+### Key Relationships
+
+- Each room can have multiple sensors
+- Sensors generate events that are linked to rooms
+- Predictions are generated per room and time period
+
+## MQTT Integration
+
+The system receives sensor data via MQTT messages:
+
+**Topic Format**: `labcheck/room/{roomId}/sensor/{sensorId}/event`
+
+**Message Format**:
+```json
+{
+  "timestamp": "2024-01-15T10:30:00Z",
+  "personCount": 1,
+  "isDoorOpen": true,
+  "eventType": "DOOR_EVENT"
 }
 ```
 
-Beispiel-Mutation (Laborkapazität setzen):
-```graphql
-mutation {
-  setLabCapacity(input: { capacity: 50 }) {
-    key
-    value
-  }
-}
+### Supported Event Types
+
+- `DOOR_EVENT`: Door open/close events
+- `PASSAGE_EVENT`: Person passage detection
+- `TEST_EVENT`: Test events for development
+
+## Production Deployment
+
+### Docker Production Build
+
+```bash
+# Build production image
+docker build -t labcheck-backend:latest .
+
+# Run with environment variables
+docker run -d \
+  --name labcheck-backend \
+  -p 3001:3001 \
+  -e DATABASE_URL="postgresql://user:pass@host:5432/db" \
+  -e MQTT_BROKER_URL="mqtt://host:1883" \
+  -e STATIC_API_KEY="your-secure-key" \
+  labcheck-backend:latest
 ```
 
-## Hardware-in-the-Loop-Testing
+### Environment Considerations
 
-Um das Backend mit Ihrer tatsächlichen ESP32-Hardware und Lichtschrankensensoren zu testen:
+- Use strong API keys in production
+- Configure proper database credentials
+- Set up reverse proxy (nginx) for SSL termination
+- Configure proper MQTT authentication
+- Set up monitoring and logging
+- Use environment-specific configuration
 
-1.  **Backend lokal starten:** Befolgen Sie die Schritte oben, um Ihre PostgreSQL-Datenbank, den Mosquitto MQTT-Broker und die NestJS-Anwendung lokal zu starten.
-2.  **ESP32-Firmware konfigurieren:**
-    -   Stellen Sie sicher, dass die Firmware Ihres ESP32 so konfiguriert ist, dass sie MQTT-Nachrichten an die IP-Adresse Ihres Entwicklungsrechners und den Port des lokalen Mosquitto-Brokers (standardmäßig `1883`) sendet.
-    -   Die `esp32Id` in den MQTT-Nachrichten sollte mit den erwarteten Sensor-IDs im Backend übereinstimmen (oder das Backend sollte neue Sensoren dynamisch registrieren können, falls implementiert).
-3.  **Ereignisse auslösen:** Aktivieren Sie Ihre Lichtschranken.
-4.  **Überprüfung:**
-    -   **MQTT-Broker:** Verwenden Sie ein Tool wie [MQTT Explorer](http://mqtt-explorer.com/), um die auf dem lokalen Broker ankommenden Nachrichten zu beobachten.
-    -   **Backend-Logs:** Überprüfen Sie die Konsolenausgaben Ihrer NestJS-Anwendung.
-    -   **Datenbank:** Fragen Sie Ihre lokale PostgreSQL-Datenbank ab, um zu sehen, ob die Ereignisse (`DoorEvent`, `PassageEvent`, `MotionEvent`) korrekt gespeichert werden.
-    -   **GraphQL API:** Verwenden Sie die oben genannten Tools, um die API-Endpunkte (`passageEvents`, `currentOccupancy` etc.) abzufragen und die Ergebnisse zu verifizieren.
+### Health Checks
 
----
+The application provides health check endpoints:
+- `GET /` - Basic health check
+- `GET /health` - Detailed health status
 
-Bei Problemen oder Fragen, überprüfen Sie die Logs der einzelnen Komponenten (PostgreSQL-Container, Mosquitto-Container, NestJS-Anwendung).
+## Troubleshooting
+
+### Common Issues
+
+1. **Database Connection Failed**
+   - Verify PostgreSQL is running
+   - Check DATABASE_URL format
+   - Ensure migrations are applied
+
+2. **MQTT Connection Failed**
+   - Verify Mosquitto broker is running
+   - Check MQTT_BROKER_URL
+   - Verify network connectivity
+
+3. **API Key Authentication Fails**
+   - Verify STATIC_API_KEY is set
+   - Check X-API-Key header format
+   - Ensure key matches environment variable
+
+### Logs
+
+```bash
+# View application logs
+docker-compose logs -f backend
+
+# View database logs
+docker-compose logs -f postgres
+
+# View MQTT logs
+docker-compose logs -f mqtt
+```

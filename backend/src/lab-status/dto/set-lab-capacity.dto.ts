@@ -8,7 +8,7 @@ import { IsInt, IsString, Min, Max } from 'class-validator';
  */
 export class SetLabCapacityDto {
   @ApiProperty({
-    description: 'Die neue Laborkapazität',
+    description: 'The new laboratory capacity',
     example: 25,
     minimum: 1,
     maximum: 100,
@@ -19,7 +19,8 @@ export class SetLabCapacityDto {
   capacity: number;
 
   @ApiProperty({
-    description: 'Administratorpasswort für die Kapazitätsänderung',
+    description: 'Administrator password for capacity change',
+    example: 'admin123',
   })
   @IsString()
   password: string;

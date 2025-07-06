@@ -92,6 +92,9 @@ npx ts-node scripts/import-csv.ts data-generator/output/room_d4c6ogy1g0i6v8mv74f
 
 [Backend README](backend/README.md)
 
+### API Documentation (Swagger)
+Once the backend is running, access the interactive API documentation at: http://localhost:3001/api/docs
+
 ## Prediction Service - Python
 
 [Prediction Service README](prediction-service/README.md)

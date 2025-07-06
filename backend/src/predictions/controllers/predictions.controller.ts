@@ -32,13 +32,13 @@ export class PredictionsController {
    */
   @Get('day')
   @ApiOperation({
-    summary: 'Tagesvorhersagen für Laborbelegung',
+    summary: 'Get Daily Predictions',
     description:
-      'Liefert Vorhersagen für die Laborbelegung im Tagesverlauf. Standardmäßig für heute, oder für ein spezifisches Datum via `?date=YYYY-MM-DD`.',
+      'Returns daily occupancy predictions for the laboratory. Defaults to today, or specify a date using `?date=YYYY-MM-DD`.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Tagesvorhersagen erfolgreich abgerufen',
+    description: 'Daily predictions retrieved successfully',
     type: DayPredictionResponseDto,
   })
   async getDayPredictions(
@@ -57,12 +57,12 @@ export class PredictionsController {
    */
   @Get('week')
   @ApiOperation({
-    summary: 'Erweiterte Wochenvorhersagen für Laborbelegung',
-    description: 'Liefert Vorhersagen für aktuelle und nächste Woche (Montag-Freitag)',
+    summary: 'Get Weekly Predictions',
+    description: 'Returns predictions for current and next week (Monday-Friday)',
   })
   @ApiResponse({
     status: 200,
-    description: 'Erweiterte Wochenvorhersagen erfolgreich abgerufen',
+    description: 'Weekly predictions retrieved successfully',
     type: ExtendedWeekPredictionResponseDto,
   })
   async getWeekPredictions(): Promise<ExtendedWeekPredictionResponseDto> {
@@ -77,21 +77,21 @@ export class PredictionsController {
    */
   @Post('single')
   @ApiOperation({
-    summary: 'Einzelne ML-Vorhersage für spezifischen Zeitpunkt',
-    description: 'Ruft eine Vorhersage vom ML-Service für einen konkreten Zeitpunkt ab',
+    summary: 'Get Single ML Prediction',
+    description: 'Retrieves a prediction from the ML service for a specific timestamp',
   })
   @ApiResponse({
     status: 200,
-    description: 'ML-Vorhersage erfolgreich abgerufen',
+    description: 'ML prediction retrieved successfully',
     type: SinglePredictionResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Ungültiger Zeitstempel',
+    description: 'Invalid timestamp',
   })
   @ApiResponse({
     status: 503,
-    description: 'ML-Service nicht verfügbar oder Model nicht trainiert',
+    description: 'ML service unavailable or model not trained',
   })
   async getSinglePrediction(
     @Body() request: PredictionRequestDto,

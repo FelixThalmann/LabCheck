@@ -83,7 +83,7 @@ async function bootstrap() {
       - **Health Check** (/): Service health verification
       
       ## Real-time Communication
-      The system also provides WebSocket endpoints for real-time updates:
+      The system provides WebSocket endpoints for real-time updates:
       - Door status changes
       - Occupancy updates
       - Capacity modifications
@@ -105,7 +105,7 @@ async function bootstrap() {
         type: 'apiKey',
         name: 'X-API-Key',
         in: 'header',
-        description: 'API key for authentication. Set your API key in the STATIC_API_KEY environment variable. Format: X-API-Key: your-api-key-here',
+        description: 'API key for authentication. Set your API key in the STATIC_API_KEY environment variable.',
       },
       'api-key',
     )
